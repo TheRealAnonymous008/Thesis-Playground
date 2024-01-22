@@ -5,12 +5,7 @@ import matplotlib.pyplot as plt
 from enum import Enum 
 from typing import Dict 
 
-from .firm import Firm
 from .entity import Entity
-
-# TODO: Grid world simulation 
-# TODO: Consumers actions -- Move around, buy product, harvest resources 
-
 
 class Cell: 
     def __init__(self, x, y):
@@ -23,42 +18,37 @@ class Cell:
 
 
 class World:
-    def __init__(self, width, height):
+    """
+    Arguments
+
+    width - the width of the world
+
+    height - the height of the world 
+
+    _skills - the number of initial skills that is recognized in the current world.
+    """
+    def __init__(self, width: int, height: int , _skills: int = 10):
         self.width = width 
         self.height = height 
         self.grid = [[Cell(x, y) for x in range(width)] for y in range(height)]
 
         self.current_time = 0
-        self.firms : Dict[str, Firm] = {}
+        self._skills = _skills 
+
         self.entities : Dict[str, Entity]= {}
 
-        self._current_time = 0
-
-    def add_firm(self, firm : Firm):
-        self.firms[firm.id] = firm 
-
-        for firm in self.firms.values(): 
-            firm.update()
-
-        for entity in self.entities.values():
-            entity.update()
-
-    def add_entity(self, entity : Entity):
-        self.entities[entity.id] = entity 
+    def add_entity(self, count: int):
+        for _ in range(count):
+            self.entities[len(self.entities)] = Entity(len(self.entities), self)
 
     def reset(self):
         self._current_time = 0 
-        for firm in self.firms.values(): 
-            firm.reset()
-
         for entity in self.entities.values():
             entity.reset()
 
 
     def update(self):
         self._current_time += 1
-        for firm in self.firms.values(): 
-            firm.update()
 
         for entity in self.entities.values():
             entity.update()
@@ -71,15 +61,13 @@ class World:
             print(r)
 
     def generate_report(self):
-        print("===============================")
-        print("Time Step ", self._current_time)
-        print("Firm Report")
-        for firm in self.firms.values(): 
-            firm.report()
+        report = { 
+            "time": self._current_time
+        }
 
-        print("-------------------------------")
-        print("Entity Report")
-        for entity in self.entities.values():
-            entity.report()
+        agents = {}
+        for x in self.entities.values():
+            agents[x.id] = x.report()
 
-        print("===============================")
+        report["agents"] = agents 
+        return report 
