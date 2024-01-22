@@ -6,6 +6,7 @@ from enum import Enum
 from typing import Dict 
 
 from .entity import Entity
+from .market import Market
 
 class Cell: 
     def __init__(self, x, y):
@@ -25,15 +26,17 @@ class World:
 
     height - the height of the world 
 
-    _skills - the number of initial skills that is recognized in the current world.
+    _skills - the number of initial skills recognized in the current world.
+
+    _items - the number of initial items recognized in the current world 
     """
-    def __init__(self, width: int, height: int , _skills: int = 10):
+    def __init__(self, width: int, height: int, market: Market):
         self.width = width 
         self.height = height 
         self.grid = [[Cell(x, y) for x in range(width)] for y in range(height)]
 
         self.current_time = 0
-        self._skills = _skills 
+        self.market = market
 
         self.entities : Dict[str, Entity]= {}
 
@@ -43,6 +46,8 @@ class World:
 
     def reset(self):
         self._current_time = 0 
+        self.market.reset()
+
         for entity in self.entities.values():
             entity.reset()
 
@@ -70,4 +75,5 @@ class World:
             agents[x.id] = x.report()
 
         report["agents"] = agents 
+        report["market"] = self.market.report()
         return report 
