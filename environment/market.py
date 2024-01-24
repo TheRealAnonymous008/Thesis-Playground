@@ -1,6 +1,6 @@
 import numpy as np 
 
-from .industry import Industry 
+import environment as env
 
 class Market:
     """
@@ -12,19 +12,26 @@ class Market:
 
     def __init__(self,industries = 10): 
         self.industry_count = industries
-        self.industries : list[Industry] = []
+        self.industries : list[env.industry.Industry] = []
 
         self.reset()
+
+    def update(self):
+        for industry in self.industries:
+            industry.update()
 
     def reset(self):
         self._industry_count = self.industry_count 
         self.industries.clear()
 
         for i in range(0, self._industry_count):
-            self.industries.append(Industry(i))
+            self.industries.append(env.industry.Industry(i))
 
     def post_need(self, industry : int):
         self.industries[industry].demand += 1
+
+    def sell_product(self, industry : int, product : env.product.Product):
+        self.industries[industry].add_product(product)
 
     def sample_skills(self) -> np.ndarray:
         # Assume that the skillfulness of an agent in a particular worker is obtained by sampling from a

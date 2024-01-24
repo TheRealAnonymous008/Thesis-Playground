@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 from enum import Enum 
 from typing import Dict 
 
-from .entity import Entity
-from .market import Market
+import environment as env
 
 class Cell: 
     def __init__(self, x, y):
@@ -30,7 +29,7 @@ class World:
 
     _items - the number of initial items recognized in the current world 
     """
-    def __init__(self, width: int, height: int, market: Market):
+    def __init__(self, width: int, height: int, market: env.market.Market):
         self.width = width 
         self.height = height 
         self.grid = [[Cell(x, y) for x in range(width)] for y in range(height)]
@@ -38,11 +37,11 @@ class World:
         self.current_time = 0
         self.market = market
 
-        self.entities : Dict[str, Entity]= {}
+        self.entities : Dict[str, env.entity.Entity]= {}
 
     def add_entity(self, count: int):
         for _ in range(count):
-            self.entities[len(self.entities)] = Entity(len(self.entities), self)
+            self.entities[len(self.entities)] = env.entity.Entity(len(self.entities), self)
 
     def reset(self):
         self._current_time = 0 
@@ -57,6 +56,8 @@ class World:
 
         for entity in self.entities.values():
             entity.update()
+
+        self.market.update()
 
     def render(self):
         for row in self.grid:
