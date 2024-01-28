@@ -3,12 +3,12 @@
  ## Immediate
 :white_check_mark: Agents have attributes that model humans in the population
 :white_check_mark: Agents can demand for particular goods based on their own needs
-- Agents can produce goods based on their own skill level 
+:white_check_mark: Agents can produce goods based on their own skill level 
 - Agents can collaborate to form particular firms which may specialize in a particular industry.
-
-## Future
 - Labor Market
 - Financial Market
+
+## Future
 - Banks and Money 
 - Communication between Agents to share Public and Private Information
 - Trade 
