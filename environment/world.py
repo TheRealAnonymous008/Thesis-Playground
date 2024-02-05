@@ -2,7 +2,8 @@ import pygame
 from .tiles import Sprite, AssetProfiles
 from .components import FactoryComponent, Assembler
 from .factory import Factory
-from .constants import Vector
+from .vector import Vector
+from .direction import Direction
 
 class World:
     def __init__(self, width, height, block_size):
@@ -40,4 +41,5 @@ class World:
 
     def update(self):
         assembler : Assembler = self.factory.assemblers[0]
-        assembler.move(Vector(0, 1))
+        assembler.move_direction(Direction.SOUTH)
+        assembler.rotate_cw()

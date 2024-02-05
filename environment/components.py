@@ -1,8 +1,9 @@
 import pygame 
 
-from .direction import Direction
+from .direction import Direction, DirectionVectors
 from .tiles import Sprite, AssetProfiles
-from .constants import BLOCK_SIZE, Vector, DEFAULT_RECT, is_in_bounds
+from .constants import BLOCK_SIZE, DEFAULT_RECT, is_in_bounds
+from .vector import Vector
 
 class FactoryComponent: 
     def __init__(self, position = Vector(0, 0), rotation = 0, should_render = True ):
@@ -24,7 +25,7 @@ class FactoryComponent:
             return 
         self.position = position 
 
-        if not self.should_render:
+        if self.should_render:
             self.tile.set_coordinate(position)
 
     def move(self, offset : Vector):
@@ -32,9 +33,25 @@ class FactoryComponent:
 
     def rotate(self, rotation : int):
         self.rotation = rotation
-        if not self.should_render:
-            return
-        self.tile.set_rotation(rotation)
+        if self.should_render:
+            self.tile.set_rotation(rotation)
+
+    def rotate_cw(self):
+        self.rotate(self.rotation + 90)
+    
+    def rotate_ccw(self):
+        self.rotate(self.rotation -90)
+
+    def move_direction(self, direction : Direction):
+        match(direction):
+            case Direction.NORTH:
+                self.move(DirectionVectors.NORTH)
+            case Direction.SOUTH:
+                self.move(DirectionVectors.SOUTH)
+            case Direction.EAST:
+                self.move(DirectionVectors.EAST)
+            case Direction.WEST:
+                self.move(DirectionVectors.WEST)
 
 class Assembler(FactoryComponent):
     def __init__(self, position = Vector(0, 0), rotation = 0):

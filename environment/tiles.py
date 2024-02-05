@@ -1,7 +1,7 @@
 import pygame 
 import os
 from enum import Enum
-from .constants import Vector
+from .vector import Vector
 
 class Sprite(pygame.sprite.Sprite):
     def __init__(self, path, rect : pygame.Rect):
