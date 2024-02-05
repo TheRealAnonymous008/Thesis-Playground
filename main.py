@@ -33,6 +33,7 @@ class FactorySimulation():
 
     def update(self):
         pygame.display.update()
+        self.world.update()
 
     def draw(self):
         self.world.draw(pygame.display.get_surface())

@@ -13,7 +13,7 @@ class FactoryComponent:
     def render(self, surface : pygame.surface.Surface):
         self.tile.draw(surface)
 
-    def update(self, position : Vector, rotation : int):
+    def update_transform(self, position : Vector, rotation : int):
         self.position = position 
         self.rotation = rotation 
         self.tile.set_rotation(rotation)
@@ -23,5 +23,3 @@ class Assembler(FactoryComponent):
     def __init__(self):
         super().__init__()
         self.tile = Sprite(AssetProfiles.ASSEMBLER, pygame.rect.Rect(0, 0, BLOCK_SIZE, BLOCK_SIZE))
-
-        self.update(Vector(1, 2), 0)

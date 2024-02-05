@@ -36,3 +36,6 @@ class World:
         for comp in self.factory.components:
             comp.render(surface)
             
+
+    def update(self):
+        pass

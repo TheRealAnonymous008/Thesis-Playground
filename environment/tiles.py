@@ -35,3 +35,5 @@ class AssetProfiles:
     OUTPORT = os.path.join('./assets', 'OutPort.png')
     SPLITTER = os.path.join('./assets', 'Splitter.png')
     WALL = os.path.join('./assets', 'Wall.png')
+
+    ARM = os.path.join('./assets', 'Arm.png')
