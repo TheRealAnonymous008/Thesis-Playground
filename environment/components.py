@@ -1,41 +1,21 @@
-import pygame 
-
 from .direction import Direction, DirectionVectors
 from .tiles import Sprite, AssetProfiles
-from .constants import BLOCK_SIZE, DEFAULT_RECT, is_in_bounds
+from .constants import DEFAULT_RECT
 from .vector import Vector
+from .world_tile import WorldTile
 
-class FactoryComponent: 
+class FactoryComponent(WorldTile):
     def __init__(self, position = Vector(0, 0), rotation : int = 0 , should_render = True, sprite : Sprite = None ):
-        self.position : Vector = position
+        super().__init__(position=position,
+                         should_render=should_render,
+                         sprite=sprite
+                         )
         self.rotation : int = rotation
-        self.is_passable = True
-
-        self.tile : Sprite = sprite 
-        if sprite is None: 
-            self.should_render = False 
-        else: 
-            self.should_render = should_render
-        
-        self.place(self.position)
         self.rotate(self.rotation)
-
-
-    def render(self, surface : pygame.surface.Surface):
-        if self.should_render:
-            self.tile.draw(surface)
 
     def update_transform(self, position : Vector, rotation : Direction):
         self.place(position)
         self.rotate(rotation)
-    
-    def place(self, position : Vector):
-        if not is_in_bounds(position):
-            return 
-        self.position = position 
-
-        if self.should_render:
-            self.tile.set_coordinate(position)
 
     def move(self, offset : Vector):
         self.place(self.position.add(offset))
@@ -54,7 +34,7 @@ class FactoryComponent:
 
         self.rotation = rotation
         if self.should_render:
-            self.tile.set_rotation(rotation)
+            self.sprite.set_rotation(rotation)
 
     def rotate_cw(self):
         self.rotate(self.rotation + 90)

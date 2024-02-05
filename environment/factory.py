@@ -1,12 +1,12 @@
 from . import components as cmp 
 from .vector import Vector
 from .direction import Direction
-from .constants import BOUNDS
 
 class Factory:
-    def __init__(self):
-        self.components : list(list(cmp.FactoryComponent)) = [[None for _ in range(BOUNDS.y)] for _ in range(BOUNDS.x)]
+    def __init__(self, bounds):
+        self.components : list(list(cmp.FactoryComponent)) = [[None for _ in range(bounds.y)] for _ in range(bounds.x)]
         self.assemblers = []
+        self.bounds : Vector = bounds
 
     def add_component(self, component : cmp.FactoryComponent, position : Vector, rotation : Direction):
         self.components[position.x][position.y] = component 
@@ -17,7 +17,7 @@ class Factory:
         self.add_component(assembler, position, rotation)
 
     def update(self, world):
-        buffer = [[None for _ in range(BOUNDS.y)] for _ in range(BOUNDS.x)]
+        buffer = [[None for _ in range(self.bounds.y)] for _ in range(self.bounds.x)]
 
         for row in self.components:
             for comp in row: 
@@ -42,9 +42,9 @@ class Factory:
         return self.components[position.x][position.y] != None
     
     def is_passable(self, position : Vector):
-        cmp = self.components[position.x][position.y]
+        component : cmp.FactoryComponent= self.components[position.x][position.y]
 
-        if cmp is None:
+        if component is None:
             return True 
         
-        return cmp.is_passable
+        return component.is_passable
