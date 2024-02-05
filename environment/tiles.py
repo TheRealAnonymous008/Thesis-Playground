@@ -15,9 +15,11 @@ class Sprite(pygame.sprite.Sprite):
     
     # Coord is unscaled. 
     def set_coordinate(self, coord : Vector):
-        self.rect = self.rect.move(
+        self.rect = pygame.Rect(
             coord.x * self.sprite.get_width(),
-            coord.y * self.sprite.get_height()
+            coord.y * self.sprite.get_height(),
+            self.sprite.get_width(),
+            self.sprite.get_height()
         ) 
 
     def reset(self):

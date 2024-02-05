@@ -2,6 +2,7 @@ import pygame
 from .tiles import Sprite, AssetProfiles
 from .components import FactoryComponent, Assembler
 from .factory import Factory
+from .constants import Vector
 
 class World:
     def __init__(self, width, height, block_size):
@@ -38,4 +39,5 @@ class World:
             
 
     def update(self):
-        pass
+        assembler : Assembler = self.factory.assemblers[0]
+        assembler.move(Vector(0, 1))

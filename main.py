@@ -1,6 +1,6 @@
 import pygame
 from pygame.locals import *
-from environment.constants import BLOCK_SIZE
+from environment.constants import BLOCK_SIZE, BOUNDS
 from environment.world import World
 from environment.factory import Factory
 
@@ -12,7 +12,7 @@ class FactorySimulation():
         
         self.running = True 
 
-        self.world = World(10, 10, BLOCK_SIZE)
+        self.world = World(BOUNDS.x, BOUNDS.y, BLOCK_SIZE)
 
     def run(self):
         pygame.init()
@@ -22,9 +22,11 @@ class FactorySimulation():
             for event in pygame.event.get():
                 if event.type == QUIT:
                     self.running = False 
-                    break
+                if event.type == KEYDOWN: 
+                    if event.key == K_SPACE:
+                        self.update()
 
-            self.update()
+
             self.draw()
         
         
