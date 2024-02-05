@@ -34,6 +34,7 @@ class FactorySimulation():
 
     def draw(self):
         self.world.draw(pygame.display.get_surface())
+        pygame.display.flip()
 
 if __name__ == "__main__":
     FactorySimulation().run()
