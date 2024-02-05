@@ -25,7 +25,7 @@ class Sprite(pygame.sprite.Sprite):
         self.set_coordinate(0, 0)
 
     def draw(self, surface):
-        surface.blit(self.image, self.rect)
+        surface.blit(self.sprite, self.rect)
 
 class AssetProfiles:
     ASSEMBLER = os.path.join('./assets', 'Assembler.png')
