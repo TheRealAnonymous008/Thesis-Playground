@@ -4,6 +4,7 @@ from .components import FactoryComponent, Assembler
 from .factory import Factory
 from .vector import Vector
 from .direction import Direction
+from .constants import is_in_bounds
 
 class World:
     def __init__(self, width, height, block_size):
@@ -11,7 +12,7 @@ class World:
         self.height = height
         self.block_size = block_size
 
-        self.grid = [[None for _ in range(height)] for _ in range(width)]
+        self.wall_mask = [[False for _ in range(height)] for _ in range(width)]
         self.sprites : [[Sprite]]= [[None for _ in range(height)] for _ in range(width)]
 
         self.factory = Factory()
@@ -40,3 +41,15 @@ class World:
 
     def update(self):
         self.factory.update(self)
+
+    def is_passable(self, position : Vector):
+        # Is it in bounds
+        if not is_in_bounds(position):
+            return False
+        
+        # Is there a wall 
+        if self.wall_mask[position.x][position.y]: 
+            return False 
+        
+        # Is there a component from the factory that is passable
+        return self.factory.is_passable(position)

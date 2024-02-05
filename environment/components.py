@@ -9,6 +9,7 @@ class FactoryComponent:
     def __init__(self, position = Vector(0, 0), rotation : int = 0 , should_render = True, sprite : Sprite = None ):
         self.position : Vector = position
         self.rotation : int = rotation
+        self.is_passable = True
 
         self.tile : Sprite = sprite 
         if sprite is None: 

@@ -24,7 +24,7 @@ class Factory:
                 if comp != None: 
                     comp.update(world)
 
-        # Update the array to take into account potentially new positions
+        # Update the array to take into account the objects being in new positions
         for row in self.components:
             for comp in row: 
                 if comp != None:
@@ -40,3 +40,11 @@ class Factory:
 
     def has_component(self, position : Vector):
         return self.components[position.x][position.y] != None
+    
+    def is_passable(self, position : Vector):
+        cmp = self.components[position.x][position.y]
+
+        if cmp is None:
+            return True 
+        
+        return cmp.is_passable
