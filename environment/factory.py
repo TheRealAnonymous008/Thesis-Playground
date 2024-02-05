@@ -17,8 +17,20 @@ class Factory:
         self.add_component(assembler, position, rotation)
 
     def update(self):
-        for components in self.components:
-            components.update()
+        buffer = [[None for _ in range(BOUNDS.y)] for _ in range(BOUNDS.x)]
+
+        for row in self.components:
+            for comp in row: 
+                if comp != None: 
+                    comp.update()
+
+        # Update the array to take into account potentially new positions
+        for row in self.components:
+            for comp in row: 
+                if comp != None:
+                    buffer[comp.x][comp.y] = comp 
+
+        self.components = buffer
 
     def render(self, surface):
         for row in self.components:
