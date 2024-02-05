@@ -10,7 +10,7 @@ class FactorySimulation():
         
         self.running = True 
 
-        self.world = World(10, 10, 32)
+        self.world = World(10, 10, 48)
 
     def run(self):
         pygame.init()
