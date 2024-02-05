@@ -1,6 +1,8 @@
 import pygame
 from pygame.locals import *
+from environment.constants import BLOCK_SIZE
 from environment.world import World
+from environment.factory import Factory
 
 class FactorySimulation():
     def __init__(self):
@@ -10,7 +12,7 @@ class FactorySimulation():
         
         self.running = True 
 
-        self.world = World(10, 10, 48)
+        self.world = World(10, 10, BLOCK_SIZE)
 
     def run(self):
         pygame.init()

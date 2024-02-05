@@ -1,15 +1,28 @@
 import pygame 
 import os
 from enum import Enum
+from .constants import Vector
 
 class Sprite(pygame.sprite.Sprite):
     def __init__(self, path, rect : pygame.Rect):
         super().__init__()
         self.image = pygame.transform.scale(pygame.image.load(path), (rect.w, rect.h))
-        self.rect = rect
+        self.sprite = self.image
+        self.rect : pygame.Rect = rect
 
-    def rotate(self, angle):
-        self.image = pygame.transform.rotate(self.image, angle)
+    def set_rotation(self, angle):
+        self.sprite = pygame.transform.rotate(self.image, angle)
+    
+    # Coord is unscaled. 
+    def set_coordinate(self, coord : Vector):
+        self.rect = self.rect.move(
+            coord.x * self.sprite.get_width(),
+            coord.y * self.sprite.get_height()
+        ) 
+
+    def reset(self):
+        self.set_rotation(0)
+        self.set_coordinate(0, 0)
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)
