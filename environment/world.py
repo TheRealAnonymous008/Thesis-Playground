@@ -39,6 +39,4 @@ class World:
             
 
     def update(self):
-        assembler : Assembler = self.factory.assemblers[0]
-        assembler.move_direction(Direction.SOUTH)
-        assembler.rotate_cw()
+        self.factory.update(self)

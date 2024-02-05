@@ -72,7 +72,7 @@ class FactoryComponent:
             case Direction.WEST:
                 self.move(DirectionVectors.WEST)
 
-    def update(self):
+    def update(self, world):
         pass 
 
 class Assembler(FactoryComponent):
@@ -81,6 +81,10 @@ class Assembler(FactoryComponent):
                          rotation = rotation, 
                          should_render= should_render, 
                          sprite = Sprite(AssetProfiles.ASSEMBLER, DEFAULT_RECT))
+
+    def update(self, world):
+        self.move_direction(Direction.SOUTH)
+        self.rotate_cw()
 
 
 class ConveyorBelt(FactoryComponent):
@@ -92,7 +96,7 @@ class ConveyorBelt(FactoryComponent):
         self.is_occupied = False
 
 
-    def update(self):
+    def update(self, world):
         # Check if the current tile is occupied by anything
 
         # Conveyor belts pull resources from the opposite of where they are facing if they are not occupied
