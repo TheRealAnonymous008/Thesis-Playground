@@ -1,80 +1,32 @@
-import gym
-import torch 
-import numpy as np 
-import matplotlib.pyplot as plt
-from enum import Enum 
-from typing import Dict 
-
-import environment as env
-
-class Cell: 
-    def __init__(self, x, y):
-        self.contents = 0
-        self.x = x 
-        self.y = y
-
-    def __str__(self) -> str:
-        return str(self.contents)
-
+import pygame
 
 class World:
-    """
-    Arguments
+    def __init__(self, width, height, block_size):
+        self.width = width
+        self.height = height
+        self.block_size = block_size
+        self.grid = [[None for _ in range(height)] for _ in range(width)]
+        
+    def draw(self, surface):
+        for x in range(self.width):
+            for y in range(self.height):
+                rect = pygame.Rect(x * self.block_size, y * self.block_size, self.block_size, self.block_size)
+                pygame.draw.rect(surface, (255, 255, 255), rect, 1)
 
-    width - the width of the world
+    def fill_cell(self, x, y, color):
+        if 0 <= x < self.width and 0 <= y < self.height:
+            self.grid[x][y] = color
+        else:
+            raise IndexError("Cell ({}, {}) is outside the grid bounds.".format(x, y))
 
-    height - the height of the world 
+    def clear_cell(self, x, y):
+        if 0 <= x < self.width and 0 <= y < self.height:
+            self.grid[x][y] = None
+        else:
+            raise IndexError("Cell ({}, {}) is outside the grid bounds.".format(x, y))
 
-    _skills - the number of initial skills recognized in the current world.
-
-    _items - the number of initial items recognized in the current world 
-    """
-    def __init__(self, width: int, height: int, market: env.market.Market):
-        self.width = width 
-        self.height = height 
-        self.grid = [[Cell(x, y) for x in range(width)] for y in range(height)]
-
-        self.current_time = 0
-        self.market = market
-
-        self.entities : Dict[str, env.entity.Entity]= {}
-
-    def add_entity(self, count: int):
-        for _ in range(count):
-            self.entities[len(self.entities)] = env.entity.Entity(len(self.entities), self)
-
-    def reset(self):
-        self._current_time = 0 
-        self.market.reset()
-
-        for entity in self.entities.values():
-            entity.reset()
-
-
-    def update(self):
-        self._current_time += 1
-
-        for entity in self.entities.values():
-            entity.update()
-
-        self.market.update()
-
-    def render(self):
-        for row in self.grid:
-            r = ""
-            for cell in row: 
-                r += str(cell) + " "
-            print(r)
-
-    def generate_report(self):
-        report = { 
-            "time": self._current_time
-        }
-
-        agents = {}
-        for x in self.entities.values():
-            agents[x.id] = x.report()
-
-        report["agents"] = agents 
-        report["market"] = self.market.report()
-        return report 
+    def get_cell_color(self, x, y):
+        if 0 <= x < self.width and 0 <= y < self.height:
+            return self.grid[x][y]
+        else:
+            raise IndexError("Cell ({}, {}) is outside the grid bounds.".format(x, y))
