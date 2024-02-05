@@ -26,7 +26,7 @@ class World:
                 self.sprites[x][y] = Sprite(AssetProfiles.EMPTY, rect)
     
     def init_factory(self):
-        self.factory.add_assembler(Assembler())
+        self.factory.add_assembler(Assembler(), Vector(3, 4), Direction.WEST)
 
     def draw(self, surface):
         # Draw the base 
@@ -35,8 +35,7 @@ class World:
                 self.sprites[x][y].draw(surface)
 
         # Draw the factory components 
-        for comp in self.factory.components:
-            comp.render(surface)
+        self.factory.render(surface)
             
 
     def update(self):

@@ -24,7 +24,7 @@ class FactoryComponent:
         if self.should_render:
             self.tile.draw(surface)
 
-    def update_transform(self, position : Vector, rotation : int):
+    def update_transform(self, position : Vector, rotation : Direction):
         self.place(position)
         self.rotate(rotation)
     
@@ -76,12 +76,25 @@ class FactoryComponent:
         pass 
 
 class Assembler(FactoryComponent):
-    def __init__(self, position = Vector(0, 0), rotation = Direction.EAST, ):
-        super().__init__(position, rotation, sprite = Sprite(AssetProfiles.ASSEMBLER, DEFAULT_RECT))
+    def __init__(self, position = Vector(0, 0), rotation = Direction.EAST, should_render = True ):
+        super().__init__(position = position, 
+                         rotation = rotation, 
+                         should_render= should_render, 
+                         sprite = Sprite(AssetProfiles.ASSEMBLER, DEFAULT_RECT))
 
 
 class ConveyorBelt(FactoryComponent):
-    def __init__(self, position = Vector(0, 0), rotation = Direction.EAST):
-        super().__init__(position, rotation, sprite = Sprite(AssetProfiles.CONVEYOR_BELT, DEFAULT_RECT))
+    def __init__(self, position = Vector(0, 0), rotation = Direction.EAST, should_render = True):
+        super().__init__(position = position, 
+                         rotation = rotation, 
+                         should_render= should_render,
+                         sprite = Sprite(AssetProfiles.CONVEYOR_BELT, DEFAULT_RECT))
+        self.is_occupied = False
 
+
+    def update(self):
+        # Check if the current tile is occupied by anything
+
+        # Conveyor belts pull resources from the opposite of where they are facing if they are not occupied
+        pass 
     
