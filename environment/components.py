@@ -6,11 +6,19 @@ from .constants import BLOCK_SIZE, DEFAULT_RECT, is_in_bounds
 from .vector import Vector
 
 class FactoryComponent: 
-    def __init__(self, position = Vector(0, 0), rotation = 0, should_render = True ):
+    def __init__(self, position = Vector(0, 0), rotation : int = 0 , should_render = True, sprite : Sprite = None ):
         self.position : Vector = position
-        self.rotation : Direction = rotation
-        self.tile : Sprite = None 
-        self.should_render = should_render
+        self.rotation : int = rotation
+
+        self.tile : Sprite = sprite 
+        if sprite is None: 
+            self.should_render = False 
+        else: 
+            self.should_render = should_render
+        
+        self.place(self.position)
+        self.rotate(self.rotation)
+
 
     def render(self, surface : pygame.surface.Surface):
         if self.should_render:
@@ -31,7 +39,18 @@ class FactoryComponent:
     def move(self, offset : Vector):
         self.place(self.position.add(offset))
 
-    def rotate(self, rotation : int):
+    def rotate(self, direction : Direction):
+        rotation = 0
+        match(direction):
+            case Direction.NORTH:
+                rotation = 90
+            case Direction.SOUTH:
+                rotation = -90
+            case Direction.EAST:
+                rotation = 0 
+            case Direction.WEST:
+                rotation = -180
+
         self.rotation = rotation
         if self.should_render:
             self.tile.set_rotation(rotation)
@@ -54,9 +73,10 @@ class FactoryComponent:
                 self.move(DirectionVectors.WEST)
 
 class Assembler(FactoryComponent):
-    def __init__(self, position = Vector(0, 0), rotation = 0):
-        super().__init__(position, rotation)
-        self.tile = Sprite(AssetProfiles.ASSEMBLER, DEFAULT_RECT)
+    def __init__(self, position = Vector(0, 0), rotation = Direction.EAST, ):
+        super().__init__(position, rotation, sprite = Sprite(AssetProfiles.ASSEMBLER, DEFAULT_RECT))
 
-        self.update_transform(self.position, self.rotation)
 
+class ConveyorBelt(FactoryComponent):
+    def __init__(self, position = Vector(0, 0), rotation = Direction.EAST):
+        super().__init__(position, rotation, sprite = Sprite(AssetProfiles.CONVEYOR_BELT, DEFAULT_RECT))

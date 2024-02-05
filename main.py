@@ -26,9 +26,7 @@ class FactorySimulation():
                     if event.key == K_SPACE:
                         self.update()
 
-
             self.draw()
-        
         
         pygame.quit()
 
