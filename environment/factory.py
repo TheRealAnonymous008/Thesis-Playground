@@ -11,3 +11,7 @@ class Factory:
     def add_assembler(self, assembler : cmp.Assembler):
         self.assemblers.append(assembler)
         self.components.append(assembler)
+
+    def update(self):
+        for components in self.components:
+            self.components.update()

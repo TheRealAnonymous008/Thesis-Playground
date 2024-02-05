@@ -72,6 +72,9 @@ class FactoryComponent:
             case Direction.WEST:
                 self.move(DirectionVectors.WEST)
 
+    def update(self):
+        pass 
+
 class Assembler(FactoryComponent):
     def __init__(self, position = Vector(0, 0), rotation = Direction.EAST, ):
         super().__init__(position, rotation, sprite = Sprite(AssetProfiles.ASSEMBLER, DEFAULT_RECT))
@@ -80,3 +83,5 @@ class Assembler(FactoryComponent):
 class ConveyorBelt(FactoryComponent):
     def __init__(self, position = Vector(0, 0), rotation = Direction.EAST):
         super().__init__(position, rotation, sprite = Sprite(AssetProfiles.CONVEYOR_BELT, DEFAULT_RECT))
+
+    
