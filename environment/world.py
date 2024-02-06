@@ -17,6 +17,7 @@ class World:
 
         self.init_tiles()
         self.init_factory()
+        self.init_resources()
 
         
     def init_tiles(self):
@@ -31,7 +32,7 @@ class World:
         self.factory.add_assembler(self, Vector(3, 4), Direction.WEST)
 
     def init_resources(self):
-        pass
+        self.resource_map.place_resource(self, ResourceType.RED, Vector(5, 5))
 
     def draw(self, surface):
         # Draw the base 

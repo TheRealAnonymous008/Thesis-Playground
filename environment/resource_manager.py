@@ -7,11 +7,14 @@ class ResourceMap:
         self.bounds = bounds 
         self.resources = [[None for _ in range(self.bounds.y)] for _ in range(self.bounds.x)]
 
-    def place_resource(self, position : Vector, type : ResourceType):
+    def place_resource(self, world, type : ResourceType, position : Vector ):
+        resource: ResourceTile = None
         match(type):
-            case ResourceType.RED: resource = RedResource(position )
+            case ResourceType.RED: 
+                resource = RedResource(world, position )
 
         self.resources[position.x][position.y] = resource 
+        print("This ran")
 
     def draw(self, surface : Surface):
         for row in self.resources:
