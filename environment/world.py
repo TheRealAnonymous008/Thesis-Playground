@@ -14,15 +14,18 @@ class World:
 
         self.tiles : [[WorldTile]]= [[None for _ in range(height)] for _ in range(width)]
 
-        self.init_rects()
+
+        self.init_tiles()
         self.init_factory()
 
         
-    def init_rects(self):
+    def init_tiles(self):
         for x in range(self.width):
             for y in range(self.height):
                 self.tiles[x][y] = EmptyTile(Vector(x, y))
     
+        self.tiles[3][7] =  WallTile(Vector(3, 7))
+
     def init_factory(self):
         self.factory = Factory(bounds= Vector(self.width, self.height))
         self.factory.add_assembler(Assembler(), Vector(3, 4), Direction.WEST)
@@ -46,8 +49,8 @@ class World:
             return False
         
         # Is there a wall 
-        if self.tiles[position.x][position.y] is WallTile: 
-            return False 
+        if not self.tiles[position.x][position.y].is_passable: 
+            return False
         
         # Is there a component from the factory that is passable
         return self.factory.is_passable(position)
