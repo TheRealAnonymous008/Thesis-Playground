@@ -48,7 +48,7 @@ class WorldTile:
             case Direction.WEST:
                 self.move(world, DirectionVectors.WEST)
 
-    def render(self, surface : Surface):
+    def draw(self, surface : Surface):
         if self.should_render:
             self.sprite.draw(surface)
 

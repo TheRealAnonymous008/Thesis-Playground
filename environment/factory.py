@@ -33,11 +33,11 @@ class Factory:
 
         self.components = buffer
 
-    def render(self, surface):
+    def draw(self, surface):
         for row in self.components:
             for comp in row:
                 if comp != None:
-                    comp.render(surface)
+                    comp.draw(surface)
 
     def has_component(self, position : Vector):
         return self.components[position.x][position.y] != None

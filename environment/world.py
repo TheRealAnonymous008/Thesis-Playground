@@ -4,6 +4,8 @@ from .factory import Factory
 from .vector import Vector, ZERO_VECTOR, is_in_bounds
 from .direction import Direction
 from .world_tile import WallTile, EmptyTile, WorldTile
+from .resource_manager import ResourceMap
+from .resource import ResourceType
 
 class World:
     def __init__(self, width, height, block_size):
@@ -11,7 +13,7 @@ class World:
         self.block_size = block_size
 
         self.tiles : [[WorldTile]]= [[None for _ in range(height)] for _ in range(width)]
-
+        self.resource_map  : ResourceMap = ResourceMap(self.bounds)
 
         self.init_tiles()
         self.init_factory()
@@ -28,6 +30,9 @@ class World:
         self.factory = Factory(bounds= Vector(self.bounds.x, self.bounds.y))
         self.factory.add_assembler(self, Vector(3, 4), Direction.WEST)
 
+    def init_resources(self):
+        pass
+
     def draw(self, surface):
         # Draw the base 
         for x in range(self.bounds.x):
@@ -35,7 +40,10 @@ class World:
                 self.tiles[x][y].draw(surface)
 
         # Draw the factory components 
-        self.factory.render(surface)
+        self.factory.draw(surface)
+
+        # Draw the resources
+        self.resource_map.draw(surface)
             
 
     def update(self):
