@@ -14,6 +14,7 @@ class ResourceTile(WorldTile):
         
 class ResourceType(Enum):
     RED = 1,
+    BLUE = 2,
 
 
 class RedResource(ResourceTile):
@@ -21,4 +22,11 @@ class RedResource(ResourceTile):
         super().__init__( world = world,
                          position=position,
                          sprite = Sprite(AssetProfiles.RED_RESOURCE, DEFAULT_RECT)
+                         )        
+        
+class RedResource(ResourceTile):
+    def __init__(self, world, position : Vector):
+        super().__init__( world = world,
+                         position=position,
+                         sprite = Sprite(AssetProfiles.BLUE_RESOURCE, DEFAULT_RECT)
                          )        

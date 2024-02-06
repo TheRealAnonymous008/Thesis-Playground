@@ -45,3 +45,4 @@ class AssetProfiles:
     
     # Resources
     RED_RESOURCE = os.path.join('./assets', 'Red_Resource.png')
+    BLUE_RESOURCE = os.path.join('./assets', 'BLue_Resource.png')
