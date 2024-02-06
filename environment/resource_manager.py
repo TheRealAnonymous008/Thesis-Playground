@@ -14,7 +14,6 @@ class ResourceMap:
                 resource = RedResource(world, position )
 
         self.resources[position.x][position.y] = resource 
-        print("This ran")
 
     def draw(self, surface : Surface):
         for row in self.resources:
