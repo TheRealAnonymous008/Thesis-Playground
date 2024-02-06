@@ -30,12 +30,18 @@ class Sprite(pygame.sprite.Sprite):
         surface.blit(self.sprite, self.rect)
 
 class AssetProfiles:
+    # World Tiles 
+    EMPTY = os.path.join('./assets', 'Empty.png')
+    WALL = os.path.join('./assets', 'Wall.png')
+
+    # Factory Components 
     ASSEMBLER = os.path.join('./assets', 'Assembler.png')
     CONVEYOR_BELT = os.path.join('./assets', 'ConveyorBelt.png')
-    EMPTY = os.path.join('./assets', 'Empty.png')
     MERGER = os.path.join('./assets', 'Merger.png')
     OUTPORT = os.path.join('./assets', 'OutPort.png')
     SPLITTER = os.path.join('./assets', 'Splitter.png')
-    WALL = os.path.join('./assets', 'Wall.png')
 
     ARM = os.path.join('./assets', 'Arm.png')
+    
+    # Resources
+    RED_RESOURCE = os.path.join('./assets', 'Red_Resource.png')

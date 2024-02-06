@@ -5,16 +5,17 @@ from .vector import Vector
 from .world_tile import WorldTile
 
 class FactoryComponent(WorldTile):
-    def __init__(self, position = Vector(0, 0), rotation : int = 0 , should_render = True, sprite : Sprite = None ):
-        super().__init__(position=position,
+    def __init__(self, world, position : Vector,  rotation : int = 0 , should_render = True, sprite : Sprite = None ):
+        super().__init__(world=world,
+                         position=position,
                          should_render=should_render,
                          sprite=sprite
                          )
         self.rotation : int = rotation
         self.rotate(self.rotation)
 
-    def update_transform(self, position : Vector, rotation : Direction):
-        self.place(position)
+    def update_transform(self, world, position : Vector, rotation : Direction):
+        self.place(world, position)
         self.rotate(rotation)
 
     def rotate(self, direction : Direction):
@@ -43,20 +44,22 @@ class FactoryComponent(WorldTile):
         pass 
 
 class Assembler(FactoryComponent):
-    def __init__(self, position = Vector(0, 0), rotation = Direction.EAST, should_render = True ):
-        super().__init__(position = position, 
+    def __init__(self, position : Vector, world,  rotation = Direction.EAST, should_render = True ):
+        super().__init__(position = position,
+                         world = world, 
                          rotation = rotation, 
                          should_render= should_render, 
                          sprite = Sprite(AssetProfiles.ASSEMBLER, DEFAULT_RECT))
 
     def update(self, world):
-        self.move_direction(Direction.SOUTH, world)
+        self.move_direction(world, Direction.SOUTH)
         self.rotate_cw()
 
 
 class ConveyorBelt(FactoryComponent):
-    def __init__(self, position = Vector(0, 0), rotation = Direction.EAST, should_render = True):
-        super().__init__(position = position, 
+    def __init__(self, position : Vector, world,  rotation = Direction.EAST, should_render = True):
+        super().__init__(position = position,
+                         world = world, 
                          rotation = rotation, 
                          should_render= should_render,
                          sprite = Sprite(AssetProfiles.CONVEYOR_BELT, DEFAULT_RECT))

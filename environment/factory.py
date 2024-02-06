@@ -8,13 +8,14 @@ class Factory:
         self.assemblers = []
         self.bounds : Vector = bounds
 
-    def add_component(self, component : cmp.FactoryComponent, position : Vector, rotation : Direction):
+    def add_component(self, component : cmp.FactoryComponent, world, position : Vector, rotation : Direction):
         self.components[position.x][position.y] = component 
-        component.update_transform(position, rotation)
+        component.update_transform(world, position, rotation)
 
-    def add_assembler(self, assembler : cmp.Assembler, position : Vector, rotation : Direction):
+    def add_assembler(self, world, position : Vector, rotation : Direction):
+        assembler = cmp.Assembler(position, world, rotation)
         self.assemblers.append(assembler)
-        self.add_component(assembler, position, rotation)
+        self.add_component(assembler, world, position, rotation)
 
     def update(self, world):
         buffer = [[None for _ in range(self.bounds.y)] for _ in range(self.bounds.x)]

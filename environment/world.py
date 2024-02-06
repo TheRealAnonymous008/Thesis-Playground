@@ -1,15 +1,13 @@
 import pygame
 from .components import FactoryComponent, Assembler
 from .factory import Factory
-from .vector import Vector
+from .vector import Vector, ZERO_VECTOR, is_in_bounds
 from .direction import Direction
-from .constants import is_in_bounds
 from .world_tile import WallTile, EmptyTile, WorldTile
 
 class World:
     def __init__(self, width, height, block_size):
-        self.width = width
-        self.height = height
+        self.bounds : Vector = Vector(width, height)
         self.block_size = block_size
 
         self.tiles : [[WorldTile]]= [[None for _ in range(height)] for _ in range(width)]
@@ -20,20 +18,20 @@ class World:
 
         
     def init_tiles(self):
-        for x in range(self.width):
-            for y in range(self.height):
-                self.tiles[x][y] = EmptyTile(Vector(x, y))
+        for x in range(self.bounds.x):
+            for y in range(self.bounds.y):
+                self.tiles[x][y] = EmptyTile(self, Vector(x, y))
     
-        self.tiles[3][7] =  WallTile(Vector(3, 7))
+        self.tiles[3][7] =  WallTile(self, Vector(3, 7))
 
     def init_factory(self):
-        self.factory = Factory(bounds= Vector(self.width, self.height))
-        self.factory.add_assembler(Assembler(), Vector(3, 4), Direction.WEST)
+        self.factory = Factory(bounds= Vector(self.bounds.x, self.bounds.y))
+        self.factory.add_assembler(self, Vector(3, 4), Direction.WEST)
 
     def draw(self, surface):
         # Draw the base 
-        for x in range(self.width):
-            for y in range(self.height):
+        for x in range(self.bounds.x):
+            for y in range(self.bounds.y):
                 self.tiles[x][y].draw(surface)
 
         # Draw the factory components 
@@ -45,7 +43,7 @@ class World:
 
     def is_passable(self, position : Vector):
         # Is it in bounds
-        if not is_in_bounds(position):
+        if not is_in_bounds(position, ZERO_VECTOR, self.bounds):
             return False
         
         # Is there a wall 
