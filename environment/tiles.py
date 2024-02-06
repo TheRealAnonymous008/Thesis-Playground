@@ -4,11 +4,13 @@ from enum import Enum
 from .vector import Vector
 
 class Sprite(pygame.sprite.Sprite):
-    def __init__(self, path, rect : pygame.Rect):
+    def __init__(self, path, rect : pygame.Rect, layer = 0):
         super().__init__()
         self.image = pygame.transform.scale(pygame.image.load(path), (rect.w, rect.h))
         self.sprite = self.image
         self.rect : pygame.Rect = rect
+
+        self._layer = layer
 
     def set_rotation(self, angle):
         self.sprite = pygame.transform.rotate(self.image, angle)

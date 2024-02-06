@@ -3,6 +3,7 @@ from .tiles import Sprite, AssetProfiles
 from .constants import DEFAULT_RECT
 from .vector import Vector
 from .world_tile import WorldTile
+from enum import Enum
 
 class FactoryComponent(WorldTile):
     def __init__(self, world, position : Vector,  rotation : int = 0 , sprite : Sprite = None ):
@@ -44,12 +45,16 @@ class FactoryComponent(WorldTile):
     def update(self, world):
         pass 
 
+class ComponentTypes(Enum):
+    ASSEMBLER = 1,
+    CONVEYOR = 2,
+
 class Assembler(FactoryComponent):
-    def __init__(self, position : Vector, world,  rotation = Direction.EAST ):
+    def __init__(self, world, position : Vector,  rotation = Direction.EAST ):
         super().__init__(position = position,
                          world = world, 
                          rotation = rotation, 
-                         sprite = Sprite(AssetProfiles.ASSEMBLER, DEFAULT_RECT))
+                         sprite = Sprite(AssetProfiles.ASSEMBLER, DEFAULT_RECT, 1))
 
     def update(self, world):
         self.move_direction(world, Direction.SOUTH)
@@ -57,11 +62,11 @@ class Assembler(FactoryComponent):
 
 
 class ConveyorBelt(FactoryComponent):
-    def __init__(self, position : Vector, world,  rotation = Direction.EAST):
+    def __init__(self, world, position : Vector,  rotation = Direction.EAST):
         super().__init__(position = position,
                          world = world, 
                          rotation = rotation, 
-                         sprite = Sprite(AssetProfiles.CONVEYOR_BELT, DEFAULT_RECT))
+                         sprite = Sprite(AssetProfiles.CONVEYOR_BELT, DEFAULT_RECT, 1))
         self.is_occupied = False
 
 

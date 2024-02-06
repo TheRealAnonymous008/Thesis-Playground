@@ -1,9 +1,9 @@
 import pygame
-from .components import FactoryComponent, Assembler
+from .components import * 
 from .factory import Factory
 from .vector import Vector, ZERO_VECTOR, is_in_bounds
 from .direction import Direction
-from .world_tile import WallTile, EmptyTile, WorldTile
+from .world_tile import *
 from .resource_manager import ResourceMap
 from .resource import ResourceType
 
@@ -29,7 +29,9 @@ class World:
 
     def init_factory(self):
         self.factory = Factory(bounds= Vector(self.bounds.x, self.bounds.y))
-        self.factory.add_assembler(self, Vector(3, 4), Direction.WEST)
+        self.factory.add_component(self, ComponentTypes.ASSEMBLER, Vector(3, 4), Direction.WEST)
+
+        self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(5, 5), Direction.EAST)
 
     def init_resources(self):
         self.resource_map.place_resource(self, ResourceType.RED, Vector(5, 5))

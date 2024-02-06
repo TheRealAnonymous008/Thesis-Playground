@@ -11,12 +11,13 @@ class FactorySimulation():
         self.DISPLAY_HEIGHT = 600
         
         self.running = True 
+        
+        pygame.init()
+        pygame.display.set_mode((self.DISPLAY_WIDTH, self.DISPLAY_HEIGHT))
 
         self.world = World(BOUNDS.x, BOUNDS.y, BLOCK_SIZE)
 
     def run(self):
-        pygame.init()
-        pygame.display.set_mode((self.DISPLAY_WIDTH, self.DISPLAY_HEIGHT))
 
         while self.running:
             for event in pygame.event.get():
