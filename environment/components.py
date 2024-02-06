@@ -1,4 +1,4 @@
-from .direction import Direction, DirectionVectors
+from .direction import *
 from .tiles import Sprite, AssetProfiles
 from .constants import DEFAULT_RECT
 from .vector import Vector
@@ -42,9 +42,6 @@ class FactoryComponent(WorldTile):
         self.sprite.set_rotation(self.rotation)
         super().draw(surface)
 
-    def update(self, world):
-        pass 
-
 class ComponentTypes(Enum):
     ASSEMBLER = 1,
     CONVEYOR = 2,
@@ -67,12 +64,11 @@ class ConveyorBelt(FactoryComponent):
                          world = world, 
                          rotation = rotation, 
                          sprite = Sprite(AssetProfiles.CONVEYOR_BELT, DEFAULT_RECT, 1))
-        self.is_occupied = False
-
-
+        self.direction = rotation
+        
     def update(self, world):
-        # Check if the current tile is occupied by anything
-
-        # Conveyor belts pull resources from the opposite of where they are facing if they are not occupied
-        pass 
-    
+        # Check if the current tile is occupied by a resource. If it is move the resource in the direction 
+        # of the flow
+        if world.has_resource(self.position):
+            rsrc = world.get_resource(self.position)
+            rsrc.move_direction(world, self.direction)

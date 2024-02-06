@@ -12,3 +12,10 @@ class DirectionVectors:
     SOUTH = Vector(0, 1)
     EAST = Vector(1, 0)
     WEST = Vector(-1, 0)
+
+def get_forward(dir : Direction):
+    match(dir):
+        case Direction.NORTH: return DirectionVectors.NORTH
+        case Direction.SOUTH: return DirectionVectors.SOUTH
+        case Direction.EAST: return DirectionVectors.EAST
+        case Direction.WEST: return DirectionVectors.WEST

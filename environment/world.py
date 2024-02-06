@@ -51,6 +51,7 @@ class World:
 
     def update(self):
         self.factory.update(self)
+        self.resource_map.update(self)
 
     def is_passable(self, position : Vector):
         # Is it in bounds
@@ -63,3 +64,9 @@ class World:
         
         # Is there a component from the factory that is passable
         return self.factory.is_passable(position)
+    
+    def has_resource(self, position : Vector):
+        return self.resource_map.has_resource(position)
+    
+    def get_resource(self, position: Vector):
+        return self.resource_map.get_resource(position)

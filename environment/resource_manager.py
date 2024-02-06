@@ -20,3 +20,25 @@ class ResourceMap:
             for rsrc in row: 
                 if rsrc != None:
                     rsrc.draw(surface)
+
+    def has_resource(self, position : Vector):
+        return self.resources[position.x][position.y] != None
+    
+    def get_resource(self, position : Vector):
+        return self.resources[position.x][position.y]
+    
+    def update(self, world):
+        buffer = [[None for _ in range(self.bounds.y)] for _ in range(self.bounds.x)]
+
+        for row in self.resources:
+            for rsrc in row:
+                if rsrc != None: 
+                    rsrc.update(world)
+
+        # Update the array to take into account the objects being in new positions
+        for row in self.resources:
+            for rsrc in row: 
+                if rsrc != None:
+                    buffer[rsrc.position.x][rsrc.position.y] = rsrc  
+
+        self.resources = buffer

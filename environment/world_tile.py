@@ -16,6 +16,9 @@ class WorldTile:
         self.sprite.draw(surface)
 
     
+    def update(self, world):
+        pass 
+
     def place(self, world, position : Vector):
         if not is_in_bounds(position, ZERO_VECTOR, world.bounds):
             return 
