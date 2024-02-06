@@ -2,6 +2,7 @@ from pygame.surface import Surface
 from .vector import Vector  
 from .constants import is_in_bounds, DEFAULT_RECT
 from .tiles import Sprite, AssetProfiles
+from .direction import Direction, DirectionVectors
 
 class WorldTile: 
     def __init__(self, position : Vector, should_render = True, sprite : Sprite = None ):
@@ -28,6 +29,24 @@ class WorldTile:
 
         if self.should_render:
             self.sprite.set_coordinate(position)
+
+    
+    def move(self, offset : Vector, world):
+        if not world.is_passable(self.position.add(offset)):
+            return 
+        
+        self.place(self.position.add(offset))
+        
+    def move_direction(self, direction : Direction, world):
+        match(direction):
+            case Direction.NORTH:
+                self.move(DirectionVectors.NORTH, world)
+            case Direction.SOUTH:
+                self.move(DirectionVectors.SOUTH, world)
+            case Direction.EAST:
+                self.move(DirectionVectors.EAST, world)
+            case Direction.WEST:
+                self.move(DirectionVectors.WEST, world)
 
     def render(self, surface : Surface):
         if self.should_render:

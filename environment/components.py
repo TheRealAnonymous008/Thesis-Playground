@@ -17,12 +17,6 @@ class FactoryComponent(WorldTile):
         self.place(position)
         self.rotate(rotation)
 
-    def move(self, offset : Vector, world):
-        if not world.is_passable(self.position.add(offset)):
-            return 
-        
-        self.place(self.position.add(offset))
-
     def rotate(self, direction : Direction):
         rotation = 0
         match(direction):
@@ -44,17 +38,6 @@ class FactoryComponent(WorldTile):
     
     def rotate_ccw(self):
         self.rotate(self.rotation -90)
-
-    def move_direction(self, direction : Direction, world):
-        match(direction):
-            case Direction.NORTH:
-                self.move(DirectionVectors.NORTH, world)
-            case Direction.SOUTH:
-                self.move(DirectionVectors.SOUTH, world)
-            case Direction.EAST:
-                self.move(DirectionVectors.EAST, world)
-            case Direction.WEST:
-                self.move(DirectionVectors.WEST, world)
 
     def update(self, world):
         pass 
