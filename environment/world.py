@@ -35,6 +35,7 @@ class World:
 
     def init_resources(self):
         self.resource_map.place_resource(self, ResourceType.RED, Vector(5, 5))
+        self.resource_map.place_resource(self, ResourceType.RED, Vector(6, 5))
 
     def draw(self, surface):
         # Draw the base 

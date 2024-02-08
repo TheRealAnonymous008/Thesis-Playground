@@ -28,20 +28,33 @@ class WorldTile:
     
     def move(self, world, offset : Vector):
         if not world.is_passable(self.position.add(offset)):
-            return 
+            return False
         
         self.place(world, self.position.add(offset))
         
     def move_direction(self, world, direction : Direction):
+        # FIrst get all the resources in that 
+        current = self.position 
+        offset = None 
         match(direction):
             case Direction.NORTH:
-                self.move(world, DirectionVectors.NORTH)
+                offset = DirectionVectors.NORTH
             case Direction.SOUTH:
-                self.move(world, DirectionVectors.SOUTH)
+                offset = DirectionVectors.SOUTH
             case Direction.EAST:
-                self.move(world, DirectionVectors.EAST)
+                offset= DirectionVectors.EAST 
             case Direction.WEST:
-                self.move(world, DirectionVectors.WEST)
+                offset = DirectionVectors.WEST
+
+        resources_to_update = []
+        while (world.has_resource(current)):
+            resources_to_update.append(world.get_resource(current))
+            current = current.add(offset)
+
+        for rsrc in resources_to_update:
+            rsrc : WorldTile = rsrc 
+            rsrc.move(world, offset)
+
 
     def draw(self, surface : Surface):
         self.sprite.set_coordinate(self.position)

@@ -24,7 +24,7 @@ class RedResource(ResourceTile):
                          sprite = Sprite(AssetProfiles.RED_RESOURCE, DEFAULT_RECT, 2)
                          )        
         
-class RedResource(ResourceTile):
+class BlueResource(ResourceTile):
     def __init__(self, world, position : Vector):
         super().__init__( world = world,
                          position=position,
