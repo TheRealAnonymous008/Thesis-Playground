@@ -19,7 +19,7 @@ class FactorySimulation():
         self.world = World(BOUNDS.x, BOUNDS.y, BLOCK_SIZE)
 
     def run(self):
-        assembler : Assembler  = self.world.factory.assemblers[0]
+        assembler : Assembler  = self.world.factory.assemblers[3][4]
 
         while self.running:
             for event in pygame.event.get():
@@ -36,7 +36,6 @@ class FactorySimulation():
                         assembler.move_direction(self.world, Direction.WEST)
                     self.update()
                         
-
             self.draw()
         
         pygame.quit()
