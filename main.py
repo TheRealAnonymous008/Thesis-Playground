@@ -3,6 +3,7 @@ from pygame.locals import *
 from environment.constants import BLOCK_SIZE, BOUNDS
 from environment.world import World
 from environment.factory import Factory
+from environment.components import *
 
 class FactorySimulation():
     def __init__(self):
@@ -18,14 +19,23 @@ class FactorySimulation():
         self.world = World(BOUNDS.x, BOUNDS.y, BLOCK_SIZE)
 
     def run(self):
+        assembler : Assembler  = self.world.factory.assemblers[0]
 
         while self.running:
             for event in pygame.event.get():
                 if event.type == QUIT:
                     self.running = False 
                 if event.type == KEYDOWN: 
-                    if event.key == K_SPACE:
-                        self.update()
+                    if event.key == K_w: 
+                        assembler.move_direction(self.world, Direction.NORTH)
+                    if event.key == K_s: 
+                        assembler.move_direction(self.world, Direction.SOUTH)
+                    if event.key == K_d: 
+                        assembler.move_direction(self.world, Direction.EAST)
+                    if event.key == K_a:
+                        assembler.move_direction(self.world, Direction.WEST)
+                    self.update()
+                        
 
             self.draw()
         

@@ -33,9 +33,6 @@ class WorldTile:
         self.place(world, self.position.add(offset))
         
     def move_direction(self, world, direction : Direction):
-        # FIrst get all the resources in that 
-        current = self.position 
-        offset = None 
         match(direction):
             case Direction.NORTH:
                 offset = DirectionVectors.NORTH
@@ -45,15 +42,8 @@ class WorldTile:
                 offset= DirectionVectors.EAST 
             case Direction.WEST:
                 offset = DirectionVectors.WEST
-
-        resources_to_update = []
-        while (world.has_resource(current)):
-            resources_to_update.append(world.get_resource(current))
-            current = current.add(offset)
-
-        for rsrc in resources_to_update:
-            rsrc : WorldTile = rsrc 
-            rsrc.move(world, offset)
+        
+        self.move(world, offset)
 
 
     def draw(self, surface : Surface):

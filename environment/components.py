@@ -54,9 +54,7 @@ class Assembler(FactoryComponent):
                          sprite = Sprite(AssetProfiles.ASSEMBLER, DEFAULT_RECT, 1))
 
     def update(self, world):
-        self.move_direction(world, Direction.SOUTH)
-        self.rotate_cw()
-
+        pass 
 
 class ConveyorBelt(FactoryComponent):
     def __init__(self, world, position : Vector,  rotation = Direction.EAST):
