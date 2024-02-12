@@ -54,11 +54,8 @@ class ResourceTile(WorldTile):
         # Check if there is another resource in the way 
         next_rsrc = world.get_resource(next)
         if next_rsrc is not None:
-            # Case 1: Counter flow
-            if next_rsrc.velocity.is_equal(opposite):
-                return False 
-            # Case 2: Jam
-            if next_rsrc.velocity.is_equal(ZERO_VECTOR):
+            # Counter flow
+            if not next_rsrc.velocity.is_equal(offset):
                 return False 
 
         if offset.is_equal(ZERO_VECTOR):
@@ -76,7 +73,9 @@ class ResourceTile(WorldTile):
         self.move_offset(world, self.velocity)
 
     def post_update(self, world):
-        self.velocity = ZERO_VECTOR
+        component = world.factory.get_component(self.position)
+        if component is None: 
+            self.velocity = ZERO_VECTOR
     
     def merge(self, other):
         self.links.add(other)

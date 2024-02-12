@@ -2,7 +2,7 @@ from environment.direction import Direction
 from .direction import *
 from .tiles import Sprite, AssetProfiles
 from .constants import DEFAULT_RECT
-from .vector import Vector
+from .vector import *
 from .world_tile import WorldTile
 from .resource import ResourceTile
 from enum import Enum
@@ -73,7 +73,7 @@ class Assembler(FactoryComponent):
 
         rsrc : ResourceTile = world.get_resource(self.position.add(offset))
         if rsrc is not None:
-            if rsrc.can_move(world, offset): 
+            if rsrc.can_move(world, offset) and rsrc.velocity.is_equal(ZERO_VECTOR): 
                 rsrc.apply_velocity(direction)
                 super().move_direction(world, direction)
         else:

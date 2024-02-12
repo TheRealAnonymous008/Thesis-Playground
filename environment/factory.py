@@ -68,7 +68,12 @@ class Factory:
                     comp.draw(surface)
 
     def has_component(self, position : Vector):
-        return self.components[position.x][position.y] != None and self.components[position.x][position.y]
+        return self.components[position.x][position.y] != None or self.assemblers[position.x][position.y]
+    
+    def get_component(self, position):
+        if self.has_component(position):
+            return self.components[position.x][position.y]
+        return None
     
     def is_passable(self, position : Vector):
         component : cmp.FactoryComponent= self.components[position.x][position.y]

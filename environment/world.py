@@ -38,7 +38,7 @@ class World:
     def init_resources(self):
         r1 = self.resource_map.place_resource(self, ResourceType.BLUE, Vector(5, 5))
         r2 = self.resource_map.place_resource(self, ResourceType.RED, Vector(6, 5))
-        r2 = self.resource_map.place_resource(self, ResourceType.RED, Vector(2, 2))
+        r3 = self.resource_map.place_resource(self, ResourceType.RED, Vector(2, 2))
 
         # r1.merge(r2)
 
