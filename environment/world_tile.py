@@ -31,6 +31,7 @@ class WorldTile:
             return False
         
         self.place(world, self.position.add(offset))
+        return True 
         
     def move_direction(self, world, direction : Direction):
         match(direction):

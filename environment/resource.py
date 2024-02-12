@@ -40,7 +40,13 @@ class ResourceTile(WorldTile):
                     return False 
                 if not next.velocity.is_equal(offset) and not next.velocity.is_equal(ZERO_VECTOR):
                     break 
-            
+        
+        # Get if it is possible to move
+        can_move = world.is_passable(current)
+        if not can_move:
+            return False 
+        
+        resources_to_update.reverse()
         for rsrc in resources_to_update:
             rsrc : WorldTile = rsrc 
             rsrc.move(world, offset)
