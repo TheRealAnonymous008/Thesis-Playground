@@ -11,21 +11,21 @@ class ResourceTile(WorldTile):
                          position=position,
                          sprite=sprite
                          )
-        self.is_passable = False 
+        self.is_passable = True 
         self.velocity = Vector(0, 0)
 
     
-    def move_direction(self, world, direction : Direction):
+    def move_direction(self, world, direction : Direction) -> bool:
         # FIrst get all the resources in that 
         if direction == Direction.NONE:
-            return 
+            return False 
 
         offset = get_forward(direction)
         self.move_offset(world, offset)
 
-    def move_offset(self, world, offset: Vector):
+    def move_offset(self, world, offset: Vector) -> bool:
         if offset.is_equal(ZERO_VECTOR):
-            return 
+            return False 
         
         opposite = offset.mult(-1)
         current = self.position 
@@ -37,13 +37,15 @@ class ResourceTile(WorldTile):
             next = world.get_resource(current)
             if next is not None:
                 if next.velocity.is_equal(opposite):
-                    return 
+                    return False 
                 if not next.velocity.is_equal(offset) and not next.velocity.is_equal(ZERO_VECTOR):
                     break 
             
         for rsrc in resources_to_update:
             rsrc : WorldTile = rsrc 
             rsrc.move(world, offset)
+
+        return True 
 
     def apply_velocity(self, direction : Direction) :
         self.velocity = get_forward(direction)

@@ -24,9 +24,14 @@ class ResourceMap:
                     rsrc.draw(surface)
 
     def has_resource(self, position : Vector):
-        return self.resources[position.x][position.y] != None
+        if is_in_bounds(position, ZERO_VECTOR, self.bounds):
+            return self.resources[position.x][position.y] != None
+        
+        return False 
     
     def get_resource(self, position : Vector):
+        if not self.has_resource(position):
+            return None 
         return self.resources[position.x][position.y]
     
     def update(self, world):

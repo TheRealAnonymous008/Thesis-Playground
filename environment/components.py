@@ -1,8 +1,10 @@
+from environment.direction import Direction
 from .direction import *
 from .tiles import Sprite, AssetProfiles
 from .constants import DEFAULT_RECT
 from .vector import Vector
 from .world_tile import WorldTile
+from .resource import ResourceTile
 from enum import Enum
 
 class FactoryComponent(WorldTile):
@@ -46,12 +48,49 @@ class ComponentTypes(Enum):
     ASSEMBLER = 1,
     CONVEYOR = 2,
 
+class AssemblerMode(Enum):
+    PUSH = 1,
+    PULL = 2
+
 class Assembler(FactoryComponent):
     def __init__(self, world, position : Vector,  rotation = Direction.EAST ):
         super().__init__(position = position,
                          world = world, 
                          rotation = rotation, 
                          sprite = Sprite(AssetProfiles.ASSEMBLER, DEFAULT_RECT, 1))
+        
+        self.mode = AssemblerMode.PUSH
+
+    def move_direction(self, world, direction: Direction):
+        if self.mode == AssemblerMode.PUSH:
+            self.push(world, direction)
+        else: 
+            self.pull(world, direction)
+    
+    def push(self, world, direction : Direction):
+        offset : Vector = get_forward(direction)
+        position = self.position.add(offset)
+
+        rsrc : ResourceTile = world.get_resource(position)
+
+        if rsrc is not None:
+            if rsrc.move_direction(world, direction): 
+                super().move_direction(world, direction)
+        else:
+            super().move_direction(world, direction)
+
+    def pull(self, world, direction : Direction):
+        offset : Vector = get_forward(direction).mult(-1)
+        position = self.position.add(offset)
+
+        rsrc : ResourceTile = world.get_resource(position)
+
+        if rsrc is not None:
+            if rsrc.move_direction(world, direction): 
+                super().move_direction(world, direction)
+        else:
+            super().move_direction(world, direction)
+
 
     def update(self, world):
         pass 
