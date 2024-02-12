@@ -6,12 +6,12 @@ from .world_tile import WorldTile
 from enum import Enum
 
 class FactoryComponent(WorldTile):
-    def __init__(self, world, position : Vector,  rotation : int = 0 , sprite : Sprite = None ):
+    def __init__(self, world, position : Vector,  rotation : Direction = 0 , sprite : Sprite = None ):
         super().__init__(world=world,
                          position=position,
                          sprite=sprite
                          )
-        self.rotation : int = rotation
+        self.rotation : Direction = rotation
         self.rotate(self.rotation)
 
     def update_transform(self, world, position : Vector, rotation : Direction):
@@ -69,4 +69,4 @@ class ConveyorBelt(FactoryComponent):
         # of the flow
         if world.has_resource(self.position):
             rsrc = world.get_resource(self.position)
-            rsrc.move_direction(world, self.direction)
+            rsrc.apply_velocity(self.direction)

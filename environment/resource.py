@@ -1,5 +1,5 @@
 from .world_tile import WorldTile
-from .vector import Vector 
+from .vector import *
 from .tiles import Sprite, AssetProfiles
 from .constants import DEFAULT_RECT
 from enum import Enum
@@ -12,30 +12,45 @@ class ResourceTile(WorldTile):
                          sprite=sprite
                          )
         self.is_passable = False 
+        self.velocity = Vector(0, 0)
 
     
     def move_direction(self, world, direction : Direction):
         # FIrst get all the resources in that 
-        current = self.position 
-        offset = None 
-        match(direction):
-            case Direction.NORTH:
-                offset = DirectionVectors.NORTH
-            case Direction.SOUTH:
-                offset = DirectionVectors.SOUTH
-            case Direction.EAST:
-                offset= DirectionVectors.EAST 
-            case Direction.WEST:
-                offset = DirectionVectors.WEST
+        if direction == Direction.NONE:
+            return 
 
+        offset = get_forward(direction)
+        self.move_offset(world, offset)
+
+    def move_offset(self, world, offset: Vector):
+        if offset.is_equal(ZERO_VECTOR):
+            return 
+        
+        opposite = offset.mult(-1)
+        current = self.position 
         resources_to_update = []
-        while (world.has_resource(current)):
+        while world.has_resource(current):
             resources_to_update.append(world.get_resource(current))
             current = current.add(offset)
 
+            next = world.get_resource(current)
+            if next is not None:
+                if next.velocity.is_equal(opposite):
+                    return 
+                if not next.velocity.is_equal(offset) and not next.velocity.is_equal(ZERO_VECTOR):
+                    break 
+            
         for rsrc in resources_to_update:
             rsrc : WorldTile = rsrc 
             rsrc.move(world, offset)
+
+    def apply_velocity(self, direction : Direction) :
+        self.velocity = get_forward(direction)
+
+    def update(self, world): 
+        self.move_offset(world, self.velocity)
+        self.velocity = ZERO_VECTOR
         
 class ResourceType(Enum):
     RED = 1,

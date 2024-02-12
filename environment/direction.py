@@ -5,13 +5,15 @@ class Direction(Enum):
     NORTH = 1
     SOUTH = 2,
     EAST = 3, 
-    WEST = 4
+    WEST = 4,
+    NONE = 5,
 
 class DirectionVectors:
     NORTH = Vector(0, -1)
     SOUTH = Vector(0, 1)
     EAST = Vector(1, 0)
     WEST = Vector(-1, 0)
+    NONE = Vector(0, 0)
 
 def get_forward(dir : Direction):
     match(dir):
@@ -19,3 +21,4 @@ def get_forward(dir : Direction):
         case Direction.SOUTH: return DirectionVectors.SOUTH
         case Direction.EAST: return DirectionVectors.EAST
         case Direction.WEST: return DirectionVectors.WEST
+        case Direction.NONE: return DirectionVectors.NONE
