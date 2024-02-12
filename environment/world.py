@@ -30,6 +30,7 @@ class World:
     def init_factory(self):
         self.factory = Factory(bounds= Vector(self.bounds.x, self.bounds.y))
         self.factory.add_component(self, ComponentTypes.ASSEMBLER, Vector(3, 4), Direction.WEST)
+        self.factory.add_component(self, ComponentTypes.ASSEMBLER, Vector(3, 5), Direction.WEST)
 
         self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(5, 5), Direction.EAST)
         self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(6, 5), Direction.NORTH)

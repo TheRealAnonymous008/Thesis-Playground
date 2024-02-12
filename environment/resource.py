@@ -17,9 +17,10 @@ class ResourceTile(WorldTile):
         self.velocity = Vector(0, 0)
 
         self.links = set()
+        self.id = 0
 
         # This is used to iterate over neighbors
-        self.updated_flag = False 
+        self.updated_flag = False
 
     def move(self, world, offset : Vector):
         if self.updated_flag:
@@ -46,28 +47,14 @@ class ResourceTile(WorldTile):
             return False 
         
         opposite = offset.mult(-1)
-        current = self.position 
-        resources_to_update = []
-        while world.has_resource(current):
-            resources_to_update.append(world.get_resource(current))
-            current = current.add(offset)
+        current = self.position
 
-            next = world.get_resource(current)
-            if next is not None:
-                if next.velocity.is_equal(opposite):
-                    return False 
-                if not next.velocity.is_equal(offset) and not next.velocity.is_equal(ZERO_VECTOR):
-                    break 
-        
         # Get if it is possible to move
         can_move = world.is_passable(current)
         if not can_move:
             return False 
         
-        resources_to_update.reverse()
-        for rsrc in resources_to_update:
-            rsrc : WorldTile = rsrc 
-            rsrc.move(world, offset)
+        self.move(world, offset)
 
         return True 
 

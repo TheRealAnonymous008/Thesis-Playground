@@ -60,6 +60,7 @@ class Assembler(FactoryComponent):
                          sprite = Sprite(AssetProfiles.ASSEMBLER, DEFAULT_RECT, 1))
         
         self.mode = AssemblerMode.PUSH
+        self.is_passable = False 
 
     def move_direction(self, world, direction: Direction):
         if self.mode == AssemblerMode.PUSH:
@@ -80,16 +81,13 @@ class Assembler(FactoryComponent):
             super().move_direction(world, direction)
 
     def pull(self, world, direction : Direction):
-        offset : Vector = get_forward(direction).mult(-1)
-        position = self.position.add(offset)
+        if super().move_direction(world, direction): 
+            offset : Vector = get_forward(direction).mult(-2)
+            position = self.position.add(offset)
 
-        rsrc : ResourceTile = world.get_resource(position)
-
-        if rsrc is not None:
-            if rsrc.move_direction(world, direction): 
-                super().move_direction(world, direction)
-        else:
-            super().move_direction(world, direction)
+            rsrc : ResourceTile = world.get_resource(position)
+            if rsrc != None:
+                rsrc.move_direction(world, direction)
 
 
     def switch_mode(self):

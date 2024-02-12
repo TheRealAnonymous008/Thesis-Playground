@@ -44,7 +44,7 @@ class WorldTile:
             case Direction.WEST:
                 offset = DirectionVectors.WEST
         
-        self.move(world, offset)
+        return self.move(world, offset)
 
 
     def draw(self, surface : Surface):
