@@ -47,10 +47,16 @@ class ResourceTile(WorldTile):
             self.move(world, offset)
 
     def can_move(self, world, offset : Vector):
+        if not self.can_push(world, offset):
+            return False 
+
         next_rsrc = self.get_next_resource(world, offset)
         if next_rsrc is not None:
             return False 
 
+        return True 
+    
+    def can_push(self, world, offset: Vector): 
         if offset.is_equal(ZERO_VECTOR):
             return False 
         

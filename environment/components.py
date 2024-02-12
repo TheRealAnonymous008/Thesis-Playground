@@ -73,9 +73,14 @@ class Assembler(FactoryComponent):
 
         rsrc : ResourceTile = world.get_resource(self.position.add(offset))
         if rsrc is not None:
-            if rsrc.can_move(world, offset) and rsrc.velocity.is_equal(ZERO_VECTOR): 
+            if rsrc.can_push(world, offset) and rsrc.velocity.is_equal(ZERO_VECTOR): 
                 rsrc.apply_velocity(direction)
                 super().move_direction(world, direction)
+
+                # Merge two resources
+                next_rsrc : ResourceTile = rsrc.get_next_resource(world, offset)
+                if next_rsrc != None: 
+                    next_rsrc.merge(rsrc)
         else:
             super().move_direction(world, direction)
 
