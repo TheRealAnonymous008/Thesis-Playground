@@ -12,6 +12,8 @@ class ResourceMap:
         match(type):
             case ResourceType.RED: 
                 resource = RedResource(world, position )
+            case ResourceType.BLUE:
+                resource = BlueResource(world, position)
 
         self.resources[position.x][position.y] = resource 
 

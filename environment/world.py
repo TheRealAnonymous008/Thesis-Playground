@@ -35,7 +35,7 @@ class World:
         self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(6, 5), Direction.NORTH)
 
     def init_resources(self):
-        self.resource_map.place_resource(self, ResourceType.RED, Vector(5, 5))
+        self.resource_map.place_resource(self, ResourceType.BLUE, Vector(5, 5))
         self.resource_map.place_resource(self, ResourceType.RED, Vector(6, 5))
 
     def draw(self, surface):
