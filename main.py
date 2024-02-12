@@ -34,6 +34,8 @@ class FactorySimulation():
                         assembler.move_direction(self.world, Direction.EAST)
                     if event.key == K_a:
                         assembler.move_direction(self.world, Direction.WEST)
+                    if event.key == K_SPACE:
+                        assembler.switch_mode()
                     self.update()
                         
             self.draw()

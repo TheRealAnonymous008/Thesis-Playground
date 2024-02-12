@@ -92,6 +92,11 @@ class Assembler(FactoryComponent):
             super().move_direction(world, direction)
 
 
+    def switch_mode(self):
+        if self.mode == AssemblerMode.PULL:
+            self.mode = AssemblerMode.PUSH
+        else:
+            self.mode = AssemblerMode.PULL
     def update(self, world):
         pass 
 
