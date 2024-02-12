@@ -4,6 +4,8 @@ from .tiles import Sprite, AssetProfiles
 from .constants import DEFAULT_RECT
 from enum import Enum
 from .direction import * 
+from pygame.surface import Surface
+import pygame as pg
 
 class ResourceTile(WorldTile):
     def __init__(self, world, position : Vector, sprite : Sprite = None ):
@@ -14,7 +16,23 @@ class ResourceTile(WorldTile):
         self.is_passable = True 
         self.velocity = Vector(0, 0)
 
-    
+        self.links = set()
+
+        # This is used to iterate over neighbors
+        self.updated_flag = False 
+
+    def move(self, world, offset : Vector):
+        if self.updated_flag:
+            return 
+        
+        super().move(world, offset)
+        self.updated_flag  = True 
+        for neighbor in self.links:
+            neighbor : ResourceTile = neighbor 
+            neighbor.move(world, offset)
+
+        self.updated_flag = False 
+
     def move_direction(self, world, direction : Direction) -> bool:
         # FIrst get all the resources in that 
         if direction == Direction.NONE:
@@ -61,7 +79,21 @@ class ResourceTile(WorldTile):
 
     def post_update(self, world):
         self.velocity = ZERO_VECTOR
+    
+    def merge(self, other):
+        self.links.add(other)
+        other.links.add(self)
+
+    def draw(self, surface : Surface):
+        if self.updated_flag: 
+            return 
         
+        super().draw(surface)
+        for neighbor in self.links:
+            neighbor : ResourceTile = neighbor 
+            pg.draw.line(surface, (255, 255, 255), self.sprite.get_position(), neighbor.sprite.get_position(), 10)
+
+
 class ResourceType(Enum):
     RED = 1,
     BLUE = 2,

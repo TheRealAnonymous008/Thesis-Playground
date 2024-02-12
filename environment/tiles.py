@@ -12,6 +12,9 @@ class Sprite(pygame.sprite.Sprite):
 
         self._layer = layer
 
+    def get_position(self):
+        return self.rect.center
+
     def set_rotation(self, angle):
         self.sprite = pygame.transform.rotate(self.image, angle)
     
