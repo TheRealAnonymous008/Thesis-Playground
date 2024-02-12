@@ -32,7 +32,7 @@ class World:
         self.factory.add_component(self, ComponentTypes.ASSEMBLER, Vector(3, 4), Direction.WEST)
 
         self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(5, 5), Direction.EAST)
-        self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(6, 5), Direction.WEST)
+        self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(6, 5), Direction.NORTH)
 
     def init_resources(self):
         self.resource_map.place_resource(self, ResourceType.RED, Vector(5, 5))

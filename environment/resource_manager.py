@@ -35,6 +35,12 @@ class ResourceMap:
                 if rsrc != None: 
                     rsrc.update(world)
 
+        # Perform updates that ar after
+        for row in self.resources:
+            for rsrc in row:
+                if rsrc != None: 
+                    rsrc.post_update(world)             
+
         # Update the array to take into account the objects being in new positions
         for row in self.resources:
             for rsrc in row: 

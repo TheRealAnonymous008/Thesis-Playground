@@ -50,6 +50,8 @@ class ResourceTile(WorldTile):
 
     def update(self, world): 
         self.move_offset(world, self.velocity)
+
+    def post_update(self, world):
         self.velocity = ZERO_VECTOR
         
 class ResourceType(Enum):
