@@ -12,7 +12,7 @@ class World:
         self.bounds : Vector = Vector(width, height)
         self.block_size = block_size
 
-        self.tiles : [[WorldTile]]= [[None for _ in range(height)] for _ in range(width)]
+        self.tiles : list(list(WorldTile))= [[None for _ in range(height)] for _ in range(width)]
         self.resource_map  : ResourceMap = ResourceMap(self.bounds)
 
         self.init_tiles()
@@ -32,6 +32,7 @@ class World:
         self.factory.add_component(self, ComponentTypes.ASSEMBLER, Vector(3, 4), Direction.WEST)
 
         self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(5, 5), Direction.EAST)
+        self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(6, 5), Direction.SOUTH)
 
     def init_resources(self):
         self.resource_map.place_resource(self, ResourceType.RED, Vector(5, 5))
