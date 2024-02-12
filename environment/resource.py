@@ -47,24 +47,19 @@ class ResourceTile(WorldTile):
             self.move(world, offset)
 
     def can_move(self, world, offset : Vector):
-        opposite = offset.mult(-1)
-        current = self.position
-        next = current.add(offset)
-        
-        # Check if there is another resource in the way 
-        next_rsrc = world.get_resource(next)
+        next_rsrc = self.get_next_resource(world, offset)
         if next_rsrc is not None:
-            # Counter flow
-            if not next_rsrc.velocity.is_equal(offset):
-                return False 
+            return False 
 
         if offset.is_equal(ZERO_VECTOR):
             return False 
         
-        # Get if it is possible to move
-        if not world.is_passable(next):
+        if not world.is_passable(self.position.add(offset)):
             return False 
         return True 
+    
+    def get_next_resource(self, world ,offset):
+        return world.get_resource(self.position.add(offset))
 
     def apply_velocity(self, direction : Direction) :
         self.velocity = get_forward(direction)

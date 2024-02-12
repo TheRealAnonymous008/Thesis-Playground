@@ -33,7 +33,8 @@ class World:
         self.factory.add_component(self, ComponentTypes.ASSEMBLER, Vector(3, 5), Direction.WEST)
 
         self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(5, 5), Direction.EAST)
-        self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(6, 5), Direction.NORTH)
+        self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(6, 5), Direction.EAST)
+        self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(7, 5), Direction.EAST)
 
     def init_resources(self):
         r1 = self.resource_map.place_resource(self, ResourceType.BLUE, Vector(5, 5))
