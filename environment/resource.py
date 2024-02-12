@@ -13,7 +13,7 @@ class ResourceTile(WorldTile):
                          position=position,
                          sprite=sprite
                          )
-        self.is_passable = True 
+        self.is_passable = False
         self.velocity = Vector(0, 0)
 
         self.links = set()
@@ -34,28 +34,39 @@ class ResourceTile(WorldTile):
 
         self.updated_flag = False 
 
-    def move_direction(self, world, direction : Direction) -> bool:
+    def move_direction(self, world, direction : Direction):
         # FIrst get all the resources in that 
         if direction == Direction.NONE:
-            return False 
-
+            return 
+        
         offset = get_forward(direction)
         self.move_offset(world, offset)
 
-    def move_offset(self, world, offset: Vector) -> bool:
+    def move_offset(self, world, offset: Vector):
+        if self.can_move(world, offset):
+            self.move(world, offset)
+
+    def can_move(self, world, offset : Vector):
+        opposite = offset.mult(-1)
+        current = self.position
+        next = current.add(offset)
+        
+        # Check if there is another resource in the way 
+        next_rsrc = world.get_resource(next)
+        if next_rsrc is not None:
+            # Case 1: Counter flow
+            if next_rsrc.velocity.is_equal(opposite):
+                return False 
+            # Case 2: Jam
+            if next_rsrc.velocity.is_equal(ZERO_VECTOR):
+                return False 
+
         if offset.is_equal(ZERO_VECTOR):
             return False 
         
-        opposite = offset.mult(-1)
-        current = self.position
-
         # Get if it is possible to move
-        can_move = world.is_passable(current)
-        if not can_move:
+        if not world.is_passable(next):
             return False 
-        
-        self.move(world, offset)
-
         return True 
 
     def apply_velocity(self, direction : Direction) :

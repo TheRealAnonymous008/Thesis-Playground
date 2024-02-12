@@ -38,8 +38,9 @@ class World:
     def init_resources(self):
         r1 = self.resource_map.place_resource(self, ResourceType.BLUE, Vector(5, 5))
         r2 = self.resource_map.place_resource(self, ResourceType.RED, Vector(6, 5))
+        r2 = self.resource_map.place_resource(self, ResourceType.RED, Vector(2, 2))
 
-        r1.merge(r2)
+        # r1.merge(r2)
 
     def draw(self, surface):
         # Draw the base 
@@ -66,7 +67,7 @@ class World:
         # Is there a wall 
         if not self.tiles[position.x][position.y].is_passable: 
             return False
-        
+
         # Is there a component from the factory that is passable
         return self.factory.is_passable(position)
     
