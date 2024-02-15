@@ -92,17 +92,17 @@ class ResourceTile(WorldTile):
         if self.can_push(world, offset) and not self.velocity.is_equal(ZERO_VECTOR):
             return False 
         
-        self.pushed_flag = True
         next_rsrc = self.get_next_resource(world, offset)
         if next_rsrc != None: 
             self.merge(next_rsrc)
-        self.apply_velocity(direction)
+        else: 
+            self.apply_velocity(direction)
 
-        # Also push the neighbors 
-        for neighbor in self.links:
-            if not neighbor.pushed_flag:
-                neighbor.push(world, direction)
-        return True 
+        # # Also push the neighbors 
+        # for neighbor in self.links:
+        #     if not neighbor.pushed_flag:
+        #         neighbor.push(world, direction)
+        # return True 
                 
     def merge(self, other):
         self.links.add(other)

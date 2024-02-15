@@ -77,8 +77,7 @@ class Assembler(FactoryComponent):
 
         rsrc : ResourceTile = world.get_resource(self.position.add(offset))
         if rsrc is not None:
-            if rsrc.push(world, direction):
-                super().move_direction(world, direction)
+            rsrc.push(world, direction)
         else:
             super().move_direction(world, direction)
 
