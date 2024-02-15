@@ -17,6 +17,7 @@ class ResourceTile(WorldTile):
         self.is_passable = False
         self.velocity = Vector(0, 0)
         self.ignore_same = False 
+        self.has_moved = False 
 
         self.links = set()
         self.id = -1
@@ -30,8 +31,25 @@ class ResourceTile(WorldTile):
         self.move_offset(world, offset)
 
     def move_offset(self, world, offset: Vector):
-        if self.can_move(world, offset):
-            self.move(world, offset)
+        # Move this entire cluster 
+        if self.has_moved:
+            return
+
+        if self.can_move(world, offset): 
+            stack = [self]
+            visited = set()
+
+            while len(stack) > 0:
+                current = stack.pop()
+                if current in visited:
+                    continue 
+                visited.add(current)
+                current.has_moved = True 
+
+                current.place(world, current.position.add(offset))
+
+                for neighbor in current.links:
+                    stack.append(neighbor)
 
     def can_move(self, world, offset : Vector):
         if not self.can_push(world, offset):
@@ -90,8 +108,8 @@ class ResourceTile(WorldTile):
         component = world.factory.get_component(self.position)
         if component is None: 
             self.velocity = ZERO_VECTOR
-
-        self.pushed_flag = False 
+ 
+        self.has_moved = False 
     
     def push(self, world, direction : Direction):
         if direction == Direction.NONE:
