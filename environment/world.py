@@ -37,10 +37,7 @@ class World:
         self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(7, 5), Direction.NORTH)
 
     def init_resources(self):
-        self.place_resource(ResourceType.BLUE, Vector(5, 5))
-        self.place_resource(ResourceType.RED, Vector(6, 5))
-        self.place_resource(ResourceType.RED, Vector(2, 2))
-
+        pass
         # r1.merge(r2)
 
     def place_resource(self, resource_type : ResourceType, position : Vector):
@@ -60,8 +57,8 @@ class World:
             
 
     def update(self):
-        self.resource_map.update(self)
         self.factory.update(self)
+        self.resource_map.update(self)
 
     def is_passable(self, position : Vector):
         # Is it in bounds
@@ -80,3 +77,6 @@ class World:
     
     def get_resource(self, position: Vector):
         return self.resource_map.get_resource(position)
+    
+    def move_resource(self, position: Vector):
+        self.resource_map.request_move(self, position)
