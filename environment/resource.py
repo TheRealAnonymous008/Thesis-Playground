@@ -32,8 +32,6 @@ class ResourceTile(WorldTile):
             neighbor : ResourceTile = neighbor 
             neighbor.move(world, offset)
 
-        self.updated_flag = False 
-
     def move_direction(self, world, direction : Direction):
         # FIrst get all the resources in that 
         if direction == Direction.NONE:
@@ -62,11 +60,11 @@ class ResourceTile(WorldTile):
             if neighbor.updated_flag == True:
                 continue 
             
-            neighbor.updated_flag = True  
             if not neighbor.can_move(world, offset):
+                neighbor.updated_flag = True  
                 return False 
         
-        self.updated_flag = False 
+        self.reset_updated_flag()
         return True 
     
     def can_push(self, world, offset):
@@ -86,8 +84,7 @@ class ResourceTile(WorldTile):
             neighbor.updated_flag = True  
             if not neighbor.can_push(world, offset):
                 return False 
-        
-        self.updated_flag = False 
+            
         return True 
 
     def get_next_resource(self, world ,offset):
@@ -103,6 +100,8 @@ class ResourceTile(WorldTile):
         component = world.factory.get_component(self.position)
         if component is None: 
             self.velocity = ZERO_VECTOR
+
+        self.reset_updated_flag()
     
     def merge(self, other):
         self.links.add(other)
@@ -111,6 +110,7 @@ class ResourceTile(WorldTile):
         other.id = self.id
 
     def draw(self, surface : Surface):
+        
         if self.updated_flag: 
             return 
         
@@ -119,6 +119,11 @@ class ResourceTile(WorldTile):
             neighbor : ResourceTile = neighbor 
             pg.draw.line(surface, (255, 255, 255), self.sprite.get_position(), neighbor.sprite.get_position(), 10)
 
+    def reset_updated_flag(self):
+        self.updated_flag = False 
+        for neighbor in self.links: 
+            if neighbor.updated_flag:
+                neighbor.reset_updated_flag()
 
 class ResourceType(Enum):
     RED = 1,
