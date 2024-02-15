@@ -3,6 +3,8 @@ from .resource import *
 from .vector import Vector
 
 class ResourceMap:
+    current_id = 0
+
     def __init__(self, bounds : Vector): 
         self.bounds = bounds 
         self.resources = [[None for _ in range(self.bounds.y)] for _ in range(self.bounds.x)]
@@ -14,7 +16,9 @@ class ResourceMap:
                 resource = RedResource(world, position )
             case ResourceType.BLUE:
                 resource = BlueResource(world, position)
-
+        
+        resource.id = self.current_id
+        self.current_id += 1
         self.resources[position.x][position.y] = resource 
         return resource
 
@@ -56,3 +60,6 @@ class ResourceMap:
                     buffer[rsrc.position.x][rsrc.position.y] = rsrc  
 
         self.resources = buffer
+
+    def reset():
+        id = 1

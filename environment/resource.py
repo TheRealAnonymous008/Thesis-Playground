@@ -17,7 +17,7 @@ class ResourceTile(WorldTile):
         self.velocity = Vector(0, 0)
 
         self.links = set()
-        self.id = 0
+        self.id = -1
 
         # This is used to iterate over neighbors
         self.updated_flag = False
@@ -50,20 +50,46 @@ class ResourceTile(WorldTile):
         if not self.can_push(world, offset):
             return False 
 
-        next_rsrc = self.get_next_resource(world, offset)
-        if next_rsrc is not None:
+        # Check if it can move. Ignore any resources that are part of this cluster 
+        next_rsrc : ResourceTile = self.get_next_resource(world, offset)
+        if next_rsrc is not None and next_rsrc.id != self.id :
             return False 
 
+        # Check if all its neighbors can move 
+        self.updated_flag = True 
+        for neighbor in self.links:
+            neighbor : ResourceTile = neighbor 
+            if neighbor.updated_flag == True:
+                continue 
+            
+            neighbor.updated_flag = True  
+            if not neighbor.can_move(world, offset):
+                return False 
+        
+        self.updated_flag = False 
         return True 
     
-    def can_push(self, world, offset: Vector): 
+    def can_push(self, world, offset):
+         # Check if all its neighbors can move 
         if offset.is_equal(ZERO_VECTOR):
             return False 
         
         if not world.is_passable(self.position.add(offset)):
             return False 
+        
+        self.updated_flag = True 
+        for neighbor in self.links:
+            neighbor : ResourceTile = neighbor 
+            if neighbor.updated_flag == True:
+                continue 
+            
+            neighbor.updated_flag = True  
+            if not neighbor.can_push(world, offset):
+                return False 
+        
+        self.updated_flag = False 
         return True 
-    
+
     def get_next_resource(self, world ,offset):
         return world.get_resource(self.position.add(offset))
 
@@ -81,6 +107,8 @@ class ResourceTile(WorldTile):
     def merge(self, other):
         self.links.add(other)
         other.links.add(self)
+
+        other.id = self.id
 
     def draw(self, surface : Surface):
         if self.updated_flag: 
