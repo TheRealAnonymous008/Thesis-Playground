@@ -19,11 +19,6 @@ class ResourceTile(WorldTile):
         self.links = set()
         self.id = -1
 
-        # This is used to iterate over neighbors
-        self.updated_flag = False
-        self.pushed_flag = False 
-
-
     def move_direction(self, world, direction : Direction):
         # FIrst get all the resources in that 
         if direction == Direction.NONE:
@@ -46,17 +41,14 @@ class ResourceTile(WorldTile):
             return False 
 
         # Check if all its neighbors can move 
-        self.updated_flag = True 
-        for neighbor in self.links:
-            neighbor : ResourceTile = neighbor 
-            if neighbor.updated_flag == True:
-                continue 
+        # for neighbor in self.links:
+        #     neighbor : ResourceTile = neighbor 
+        #     if neighbor.updated_flag == True:
+        #         continue 
             
-            if not neighbor.can_move(world, offset):
-                neighbor.updated_flag = True  
-                return False 
-        
-        self.reset_updated_flag()
+        #     if not neighbor.can_move(world, offset):
+        #         neighbor.updated_flag = True  
+        #         return False 
         return True 
     
     def can_push(self, world, offset):
@@ -67,15 +59,15 @@ class ResourceTile(WorldTile):
         if not world.is_passable(self.position.add(offset)):
             return False 
         
-        self.updated_flag = True 
-        for neighbor in self.links:
-            neighbor : ResourceTile = neighbor 
-            if neighbor.updated_flag == True:
-                continue 
+        # self.updated_flag = True 
+        # for neighbor in self.links:
+        #     neighbor : ResourceTile = neighbor 
+        #     if neighbor.updated_flag == True:
+        #         continue 
             
-            neighbor.updated_flag = True  
-            if not neighbor.can_push(world, offset):
-                return False 
+        #     neighbor.updated_flag = True  
+        #     if not neighbor.can_push(world, offset):
+        #         return False 
             
         return True 
 
@@ -94,7 +86,6 @@ class ResourceTile(WorldTile):
             self.velocity = ZERO_VECTOR
 
         self.pushed_flag = False 
-        self.reset_updated_flag()
     
     def push(self, world, direction : Direction):
         offset : Vector = get_forward(direction)
@@ -120,20 +111,10 @@ class ResourceTile(WorldTile):
         other.id = self.id
 
     def draw(self, surface : Surface):
-        
-        if self.updated_flag: 
-            return 
-        
         super().draw(surface)
         for neighbor in self.links:
             neighbor : ResourceTile = neighbor 
             pg.draw.line(surface, (255, 255, 255), self.sprite.get_position(), neighbor.sprite.get_position(), 10)
-
-    def reset_updated_flag(self):
-        self.updated_flag = False 
-        for neighbor in self.links: 
-            if neighbor.updated_flag:
-                neighbor.reset_updated_flag()
 
 class ResourceType(Enum):
     RED = 1,
