@@ -1,3 +1,4 @@
+# TODO: Fix issue where functionality doesn't work for north and west face due to iteration. 
 from .world_tile import WorldTile
 from .vector import *
 from .tiles import Sprite, AssetProfiles
@@ -15,6 +16,7 @@ class ResourceTile(WorldTile):
                          )
         self.is_passable = False
         self.velocity = Vector(0, 0)
+        self.ignore_same = False 
 
         self.links = set()
         self.id = -1
@@ -35,20 +37,22 @@ class ResourceTile(WorldTile):
         if not self.can_push(world, offset):
             return False 
 
-        # Check if it can move. Ignore any resources that are part of this cluster 
-        next_rsrc : ResourceTile = self.get_next_resource(world, offset)
-        if next_rsrc is not None and next_rsrc.id != self.id :
-            return False 
+        stack = [self]
+        visited = set()
+        while len(stack) > 0: 
+            current = stack.pop()
+            if current in visited:
+                continue 
+            visited.add(current)
 
-        # Check if all its neighbors can move 
-        # for neighbor in self.links:
-        #     neighbor : ResourceTile = neighbor 
-        #     if neighbor.updated_flag == True:
-        #         continue 
+            # Check if it can move. Ignore any resources that are part of this cluster 
+            next_rsrc : ResourceTile = current.get_next_resource(world, offset)
+            if next_rsrc is not None and next_rsrc.id != current.id and not current.ignore_same :
+                return False 
             
-        #     if not neighbor.can_move(world, offset):
-        #         neighbor.updated_flag = True  
-        #         return False 
+            for neighbor in current.links: 
+                stack.append(neighbor)
+
         return True 
     
     def can_push(self, world, offset):
@@ -56,26 +60,28 @@ class ResourceTile(WorldTile):
         if offset.is_equal(ZERO_VECTOR):
             return False 
         
-        if not world.is_passable(self.position.add(offset)):
-            return False 
-        
-        # self.updated_flag = True 
-        # for neighbor in self.links:
-        #     neighbor : ResourceTile = neighbor 
-        #     if neighbor.updated_flag == True:
-        #         continue 
+        stack = [self]
+        visited = set()
+        while len(stack) > 0: 
+            current = stack.pop()
+            if current in visited:
+                continue 
+            visited.add(current)
+
+            if not world.is_passable(current.position.add(offset)):
+                return False 
             
-        #     neighbor.updated_flag = True  
-        #     if not neighbor.can_push(world, offset):
-        #         return False 
-            
+            for neighbor in current.links: 
+                stack.append(neighbor)
+
         return True 
 
     def get_next_resource(self, world ,offset):
         return world.get_resource(self.position.add(offset))
 
-    def apply_velocity(self, direction : Direction) :
+    def apply_velocity(self, direction : Direction, ignore_neighbors = False) :
         self.velocity = get_forward(direction)
+        self.ignore_same = ignore_neighbors
 
     def update(self, world): 
         self.move_offset(world, self.velocity)
@@ -88,21 +94,37 @@ class ResourceTile(WorldTile):
         self.pushed_flag = False 
     
     def push(self, world, direction : Direction):
-        offset : Vector = get_forward(direction)
-        if self.can_push(world, offset) and not self.velocity.is_equal(ZERO_VECTOR):
+        if direction == Direction.NONE:
             return False 
         
-        next_rsrc = self.get_next_resource(world, offset)
-        if next_rsrc != None: 
-            self.merge(next_rsrc)
-        else: 
-            self.apply_velocity(direction)
+        offset : Vector = get_forward(direction)
+        if not self.can_push(world, offset):
+            return False 
 
-        # # Also push the neighbors 
-        # for neighbor in self.links:
-        #     if not neighbor.pushed_flag:
-        #         neighbor.push(world, direction)
-        # return True 
+        visited = set()
+        stack = []
+        # Also push the neighbors 
+        stack.append(self)
+
+        has_merged = False 
+        while len(stack) > 0:
+            current = stack.pop()
+            if current in visited:
+                continue 
+            visited.add(current)
+
+            next_rsrc = current.get_next_resource(world, offset)
+            if next_rsrc != None and not (next_rsrc in current.links or current in next_rsrc.links) :
+                current.merge(next_rsrc)
+                has_merged = True 
+            for neighbor in current.links:
+                stack.append(neighbor)
+        
+        # Apply velocity to all nodes if no merging happened
+        if not has_merged:
+            for x in visited:
+                x.apply_velocity(direction, True)
+        return True 
                 
     def merge(self, other):
         self.links.add(other)
