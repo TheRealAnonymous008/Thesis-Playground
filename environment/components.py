@@ -51,7 +51,7 @@ class ComponentTypes(Enum):
     SPLITTER = 4,
     MERGER = 5,
     OUTPORT = 6
-    
+
 class AssemblerMode(Enum):
     PUSH = 1,
     PULL = 2
@@ -77,14 +77,8 @@ class Assembler(FactoryComponent):
 
         rsrc : ResourceTile = world.get_resource(self.position.add(offset))
         if rsrc is not None:
-            if rsrc.can_push(world, offset) and rsrc.velocity.is_equal(ZERO_VECTOR): 
-                rsrc.apply_velocity(direction)
-                # Merge two resources
-                next_rsrc : ResourceTile = rsrc.get_next_resource(world, offset)
-                if next_rsrc != None: 
-                    next_rsrc.merge(rsrc)
-                else: 
-                    super().move_direction(world, direction)
+            if rsrc.push(world, direction):
+                super().move_direction(world, direction)
         else:
             super().move_direction(world, direction)
 

@@ -21,16 +21,13 @@ class ResourceTile(WorldTile):
 
         # This is used to iterate over neighbors
         self.updated_flag = False
+        self.pushed_flag = False 
 
     def move(self, world, offset : Vector):
         if self.updated_flag:
             return 
         
         super().move(world, offset)
-        self.updated_flag  = True 
-        for neighbor in self.links:
-            neighbor : ResourceTile = neighbor 
-            neighbor.move(world, offset)
 
     def move_direction(self, world, direction : Direction):
         # FIrst get all the resources in that 
@@ -101,8 +98,26 @@ class ResourceTile(WorldTile):
         if component is None: 
             self.velocity = ZERO_VECTOR
 
+        self.pushed_flag = False 
         self.reset_updated_flag()
     
+    def push(self, world, direction : Direction):
+        offset : Vector = get_forward(direction)
+        if self.can_push(world, offset) and not self.velocity.is_equal(ZERO_VECTOR):
+            return False 
+        
+        self.pushed_flag = True
+        next_rsrc = self.get_next_resource(world, offset)
+        if next_rsrc != None: 
+            self.merge(next_rsrc)
+        self.apply_velocity(direction)
+
+        # Also push the neighbors 
+        for neighbor in self.links:
+            if not neighbor.pushed_flag:
+                neighbor.push(world, direction)
+        return True 
+                
     def merge(self, other):
         self.links.add(other)
         other.links.add(self)
