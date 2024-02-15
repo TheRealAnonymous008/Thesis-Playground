@@ -4,7 +4,7 @@ from .tiles import Sprite, AssetProfiles
 from .constants import DEFAULT_RECT
 from .vector import *
 from .world_tile import WorldTile
-from .resource import ResourceTile
+from .resource import *
 from enum import Enum
 
 class FactoryComponent(WorldTile):
@@ -47,7 +47,11 @@ class FactoryComponent(WorldTile):
 class ComponentTypes(Enum):
     ASSEMBLER = 1,
     CONVEYOR = 2,
-
+    SPAWNER = 3, 
+    SPLITTER = 4,
+    MERGER = 5,
+    OUTPORT = 6
+    
 class AssemblerMode(Enum):
     PUSH = 1,
     PULL = 2
@@ -101,6 +105,20 @@ class Assembler(FactoryComponent):
             self.mode = AssemblerMode.PULL
     def update(self, world):
         pass 
+
+class Spawner(FactoryComponent):
+    def __init__(self, world, position : Vector, resource : ResourceType):
+        super().__init__(position = position, 
+                         world = world,
+                         sprite = Sprite(AssetProfiles.SPAWNER, DEFAULT_RECT, 1),
+                         )
+        self.resource_type = resource 
+
+    def update(self, world):
+        if world.has_resource(self.position):
+            return 
+        
+        world.place_resource(self.resource_type, self.position)
 
 class ConveyorBelt(FactoryComponent):
     def __init__(self, world, position : Vector,  rotation = Direction.EAST):

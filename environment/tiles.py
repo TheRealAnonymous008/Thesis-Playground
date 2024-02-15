@@ -43,6 +43,7 @@ class AssetProfiles:
     ASSEMBLER = os.path.join('./assets', 'Assembler.png')
     CONVEYOR_BELT = os.path.join('./assets', 'ConveyorBelt.png')
     MERGER = os.path.join('./assets', 'Merger.png')
+    SPAWNER = os.path.join('./assets', 'Spawner.png')
     OUTPORT = os.path.join('./assets', 'OutPort.png')
     SPLITTER = os.path.join('./assets', 'Splitter.png')
 

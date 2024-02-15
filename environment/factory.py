@@ -8,17 +8,20 @@ class Factory:
         self.assemblers : list(list(cmp.Assembler)) = [[None for _ in range(bounds.y)] for _ in range(bounds.x)]
         self.bounds : Vector = bounds
 
-    def add_component(self, world, type : cmp.ComponentTypes, position : Vector, rotation : Direction):
+    def add_component(self, world, type : cmp.ComponentTypes, position : Vector, arg):
         component = None 
         match(type):
             case cmp.ComponentTypes.ASSEMBLER: 
-                component = cmp.Assembler(world, position, rotation)
+                component = cmp.Assembler(world, position, arg)
                 self.assemblers[position.x][position.y] = component
             case cmp.ComponentTypes.CONVEYOR:
-                component = cmp.ConveyorBelt(world, position ,rotation)
+                component = cmp.ConveyorBelt(world, position ,arg)
+                self.components[position.x][position.y] = component 
+            case cmp.ComponentTypes.SPAWNER: 
+                component = cmp.Spawner(world, position, arg)
                 self.components[position.x][position.y] = component 
 
-        component.update_transform(world, position, rotation)
+
 
     def update(self, world):
         self.update_components(world)
