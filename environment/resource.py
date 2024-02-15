@@ -28,6 +28,10 @@ class ResourceTile(WorldTile):
             return 
         
         super().move(world, offset)
+        for neighbor in self.links:
+            neighbor : ResourceTile = neighbor 
+            neighbor.updated_flag = True 
+            neighbor.move(world, offset)
 
     def move_direction(self, world, direction : Direction):
         # FIrst get all the resources in that 

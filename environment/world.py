@@ -60,8 +60,8 @@ class World:
             
 
     def update(self):
-        self.factory.update(self)
         self.resource_map.update(self)
+        self.factory.update(self)
 
     def is_passable(self, position : Vector):
         # Is it in bounds

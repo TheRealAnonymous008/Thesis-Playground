@@ -22,6 +22,7 @@ class Factory:
                 self.components[position.x][position.y] = component 
 
 
+        component.update_transform(world, position, arg)
 
     def update(self, world):
         self.update_components(world)
