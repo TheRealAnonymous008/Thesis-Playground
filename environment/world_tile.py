@@ -27,9 +27,9 @@ class WorldTile:
 
     
     def move(self, world, offset : Vector):
-        if not world.is_passable(self.position.add(offset)):
+        if not world.is_passable(self.position + offset):
             return False
-        new_loc = self.position.add(offset)
+        new_loc = self.position + offset
         self.place(world, new_loc)
         return True 
         

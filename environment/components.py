@@ -75,17 +75,18 @@ class Assembler(FactoryComponent):
     def push(self, world, direction : Direction):
         offset : Vector = get_forward(direction)
 
-        rsrc : ResourceTile = world.get_resource(self.position.add(offset))
+        rsrc : ResourceTile = world.get_resource(self.position + offset)
         if rsrc is not None:
             rsrc.push(world, direction)
         else:
             super().move_direction(world, direction)
 
     def pull(self, world, direction : Direction):
-        rsrc : ResourceTile = world.get_resource(self.position)
+        reverse_offset = get_forward(get_reverse(self.rotation))
+        rsrc : ResourceTile = world.get_resource(self.position + reverse_offset)
         super().move_direction(world, direction)
         if rsrc is not None:
-            rsrc.pull(world, self, direction)
+            rsrc.push(world, get_reverse(direction))
 
     def switch_mode(self):
         if self.mode == AssemblerMode.PULL:

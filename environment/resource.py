@@ -46,7 +46,7 @@ class ResourceTile(WorldTile):
                 visited.add(current)
                 current.has_moved = True 
 
-                current.place(world, current.position.add(offset))
+                current.place(world, current.position + offset)
 
                 for neighbor in current.links:
                     stack.append(neighbor)
@@ -75,7 +75,7 @@ class ResourceTile(WorldTile):
     
     def can_push(self, world, offset):
          # Check if all its neighbors can move 
-        if offset.is_equal(ZERO_VECTOR):
+        if offset == ZERO_VECTOR:
             return False 
         
         stack = [self]
@@ -86,7 +86,7 @@ class ResourceTile(WorldTile):
                 continue 
             visited.add(current)
 
-            if not world.is_passable(current.position.add(offset)):
+            if not world.is_passable(current.position + offset):
                 return False 
             
             for neighbor in current.links: 
@@ -95,7 +95,7 @@ class ResourceTile(WorldTile):
         return True 
 
     def get_next_resource(self, world ,offset):
-        return world.get_resource(self.position.add(offset))
+        return world.get_resource(self.position + offset)
 
     def apply_velocity(self, direction : Direction, ignore_neighbors = False) :
         self.velocity = get_forward(direction)
