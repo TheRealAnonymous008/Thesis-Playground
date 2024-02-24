@@ -143,9 +143,6 @@ class ResourceTile(WorldTile):
             for x in visited:
                 x.apply_velocity(direction, True)
         return True 
-    
-    def pull(self, world, assembler, direction):
-        pass
 
 
     def merge(self, other):

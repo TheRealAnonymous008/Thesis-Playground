@@ -4,8 +4,8 @@ from .direction import Direction
 
 class Factory:
     def __init__(self, bounds):
-        self.components : list(list(cmp.FactoryComponent)) = [[None for _ in range(bounds.y)] for _ in range(bounds.x)]
-        self.assemblers : list(list(cmp.Assembler)) = [[None for _ in range(bounds.y)] for _ in range(bounds.x)]
+        self.components = [[None for _ in range(bounds.y)] for _ in range(bounds.x)]
+        self.assemblers = [[None for _ in range(bounds.y)] for _ in range(bounds.x)]
         self.bounds : Vector = bounds
 
     def add_component(self, world, type : cmp.ComponentTypes, position : Vector, arg):

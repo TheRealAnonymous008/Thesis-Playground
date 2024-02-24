@@ -12,7 +12,7 @@ class World:
         self.bounds : Vector = Vector(width, height)
         self.block_size = block_size
 
-        self.tiles : list(list(WorldTile))= [[None for _ in range(height)] for _ in range(width)]
+        self.tiles = [[None for _ in range(height)] for _ in range(width)]
         self.resource_map  : ResourceMap = ResourceMap(self.bounds)
 
         self.init_tiles()
@@ -71,6 +71,26 @@ class World:
 
         # Is there a component from the factory that is passable
         return self.factory.is_passable(position)
+    
+    def get_object_at(self, position : Vector):
+        # Is it in bounds
+        if not is_in_bounds(position, ZERO_VECTOR, self.bounds):
+            return None
+        
+        # Is there a wall 
+        if not self.tiles[position.x][position.y].is_passable: 
+            return self.tiles[position.x][position.y]
+        
+        comp = self.factory.get_component(position)
+        if comp != None:
+            return comp
+        
+        rsrc = self.resource_map.get_resource(position)
+        if rsrc != None:
+            return rsrc 
+        
+        return None
+
     
     def has_resource(self, position : Vector):
         return self.resource_map.has_resource(position)
