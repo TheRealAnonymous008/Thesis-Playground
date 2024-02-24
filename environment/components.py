@@ -126,3 +126,14 @@ class ConveyorBelt(FactoryComponent):
         if world.has_resource(self.position):
             rsrc : ResourceTile = world.get_resource(self.position)
             rsrc.shift(self.direction)
+
+class OutPort(FactoryComponent):
+    def __init__(self, world, position : Vector, resource : ResourceType):
+        super().__init__(position = position, 
+                         world = world,
+                         sprite = Sprite(AssetProfiles.OUTPORT, DEFAULT_RECT, 1),
+                         )
+        self.resource_type = resource 
+
+    def update(self, world):
+        pass

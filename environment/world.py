@@ -32,6 +32,8 @@ class World:
         self.factory.add_component(self, ComponentTypes.ASSEMBLER, Vector(3, 4), Direction.WEST)
 
         self.factory.add_component(self, ComponentTypes.SPAWNER, Vector(4, 5), ResourceType.RED)
+        self.factory.add_component(self, ComponentTypes.OUTPORT, Vector(1, 1), ResourceType.RED)
+
         self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(5, 5), Direction.EAST)
         self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(6, 5), Direction.EAST)
         self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(7, 5), Direction.NORTH)

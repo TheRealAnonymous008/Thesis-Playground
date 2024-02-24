@@ -19,7 +19,11 @@ class Factory:
                 self.components[position.x][position.y] = component 
             case cmp.ComponentTypes.SPAWNER: 
                 component = cmp.Spawner(world, position, arg)
-                self.components[position.x][position.y] = component 
+                self.components[position.x][position.y] = component
+            case cmp.ComponentTypes.OUTPORT:
+                component = cmp.OutPort(world, position, arg)
+                self.components[position.x][position.y] = component
+
 
 
         component.update_transform(world, position, arg)
