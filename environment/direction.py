@@ -23,6 +23,14 @@ def get_forward(dir : Direction):
         case Direction.WEST: return DirectionVectors.WEST
         case Direction.NONE: return DirectionVectors.NONE
 
+def get_rotation(dir : Direction):
+    match(dir):
+        case Direction.NORTH: return 90
+        case Direction.SOUTH: return -90
+        case Direction.EAST: return 0
+        case Direction.WEST: return 180
+        case Direction.NONE: return 0
+
 def get_reverse(dir : Direction) -> Direction: 
     match(dir):
         case Direction.NORTH: return Direction.SOUTH

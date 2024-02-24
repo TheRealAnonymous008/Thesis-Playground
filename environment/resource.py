@@ -8,33 +8,32 @@ from .direction import *
 from pygame.surface import Surface
 import pygame as pg
 
+class MotionDetails:
+    def __init__(self, velocity : Vector, ignore_same : bool, is_push : bool):
+        self.velocity : Vector = velocity
+        self.ignore_same : bool = ignore_same
+        self.is_push : bool = is_push 
+
 class ResourceTile(WorldTile):
     def __init__(self, world, position : Vector, sprite : Sprite = None ):
         super().__init__(world = world,
                          position=position,
                          sprite=sprite
                          )
-        self.is_passable = False
-        self.velocity = Vector(0, 0)
-        self.ignore_same = False 
-        self.has_moved = False 
+        self.is_passable = False 
+        self.motion : MotionDetails = None
 
         self.links = set()
         self.id = -1
 
-    def move_direction(self, world, direction : Direction):
-        # FIrst get all the resources in that 
-        if direction == Direction.NONE:
+    def _move_direction(self, world, direction : Direction):
+        offset = get_forward(direction)
+        self._move_offset(world, offset)
+
+    def _move_offset(self, world, offset):
+        if offset == ZERO_VECTOR:
             return 
         
-        offset = get_forward(direction)
-        self.move_offset(world, offset)
-
-    def move_offset(self, world, offset: Vector):
-        # Move this entire cluster 
-        if self.has_moved:
-            return
-
         if self.can_move(world, offset): 
             stack = [self]
             visited = set()
@@ -65,7 +64,7 @@ class ResourceTile(WorldTile):
 
             # Check if it can move. Ignore any resources that are part of this cluster 
             next_rsrc : ResourceTile = current.get_next_resource(world, offset)
-            if next_rsrc is not None and next_rsrc.id != current.id and not current.ignore_same :
+            if next_rsrc is not None and next_rsrc.id != current.id :
                 return False 
             
             for neighbor in current.links: 
@@ -97,25 +96,24 @@ class ResourceTile(WorldTile):
     def get_next_resource(self, world ,offset):
         return world.get_resource(self.position + offset)
 
-    def apply_velocity(self, direction : Direction, ignore_neighbors = False) :
-        self.velocity = get_forward(direction)
-        self.ignore_same = ignore_neighbors
-
     def update(self, world): 
-        self.move_offset(world, self.velocity)
+        if self.motion == None:
+            return
+        if not self.motion.is_push:
+            self._move_offset(world, self.motion.velocity)
+        else:
+            self._push(world, self.motion.velocity)
 
     def post_update(self, world):
-        component = world.factory.get_component(self.position)
-        if component is None: 
-            self.velocity = ZERO_VECTOR
- 
-        self.has_moved = False 
+        self.motion = None
     
-    def push(self, world, direction : Direction):
-        if direction == Direction.NONE:
-            return False 
-        
-        offset : Vector = get_forward(direction)
+    def push(self, direction : Direction):
+        self.motion = MotionDetails(get_forward(direction), True, True)
+
+    def shift(self, direction : Direction):
+        self.motion = MotionDetails(get_forward(direction), False, False)
+
+    def _push(self, world, offset):        
         if not self.can_push(world, offset):
             return False 
 
@@ -141,7 +139,8 @@ class ResourceTile(WorldTile):
         # Apply velocity to all nodes if no merging happened
         if not has_merged:
             for x in visited:
-                x.apply_velocity(direction, True)
+                x : ResourceTile = x 
+                x.move(world, offset)
         return True 
 
 

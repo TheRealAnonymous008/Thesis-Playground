@@ -8,13 +8,14 @@ from .resource import *
 from enum import Enum
 
 class FactoryComponent(WorldTile):
-    def __init__(self, world, position : Vector,  rotation : Direction = 0 , sprite : Sprite = None ):
+    def __init__(self, world, position : Vector,  direction : Direction = Direction.EAST , sprite : Sprite = None ):
         super().__init__(world=world,
                          position=position,
                          sprite=sprite
                          )
-        self.rotation : Direction = rotation
-        self.rotate(self.rotation)
+        self.direction = direction 
+        self.rotation = get_rotation(direction)
+        self.rotate(direction)
 
     def update_transform(self, world, position : Vector, rotation : Direction):
         self.place(world, position)
@@ -57,16 +58,16 @@ class AssemblerMode(Enum):
     PULL = 2
 
 class Assembler(FactoryComponent):
-    def __init__(self, world, position : Vector,  rotation = Direction.EAST ):
+    def __init__(self, world, position : Vector,  direction = Direction.EAST ):
         super().__init__(position = position,
                          world = world, 
-                         rotation = rotation, 
+                         direction = direction, 
                          sprite = Sprite(AssetProfiles.ASSEMBLER, DEFAULT_RECT, 1))
         
         self.mode = AssemblerMode.PUSH
         self.is_passable = False 
 
-    def move_direction(self, world, direction: Direction):
+    def _move_direction(self, world, direction: Direction):
         if self.mode == AssemblerMode.PUSH:
             self.push(world, direction)
         else: 
@@ -77,16 +78,16 @@ class Assembler(FactoryComponent):
 
         rsrc : ResourceTile = world.get_resource(self.position + offset)
         if rsrc is not None:
-            rsrc.push(world, direction)
+            rsrc.push(direction)
         else:
-            super().move_direction(world, direction)
+            super()._move_direction(world, direction)
 
     def pull(self, world, direction : Direction):
-        reverse_offset = get_forward(get_reverse(self.rotation))
+        reverse_offset = get_forward(get_reverse(self.direction))
         rsrc : ResourceTile = world.get_resource(self.position + reverse_offset)
-        super().move_direction(world, direction)
+        super()._move_direction(world, direction)
         if rsrc is not None:
-            rsrc.push(world, get_reverse(direction))
+            rsrc.push(direction)
 
     def switch_mode(self):
         if self.mode == AssemblerMode.PULL:
@@ -111,16 +112,16 @@ class Spawner(FactoryComponent):
         world.place_resource(self.resource_type, self.position)
 
 class ConveyorBelt(FactoryComponent):
-    def __init__(self, world, position : Vector,  rotation = Direction.EAST):
+    def __init__(self, world, position : Vector,  direction = Direction.EAST):
         super().__init__(position = position,
                          world = world, 
-                         rotation = rotation, 
+                         direction = direction, 
                          sprite = Sprite(AssetProfiles.CONVEYOR_BELT, DEFAULT_RECT, 1))
-        self.direction = rotation
+        self.direction = direction
         
     def update(self, world):
         # Check if the current tile is occupied by a resource. If it is move the resource in the direction 
         # of the flow
         if world.has_resource(self.position):
-            rsrc = world.get_resource(self.position)
-            rsrc.apply_velocity(self.direction)
+            rsrc : ResourceTile = world.get_resource(self.position)
+            rsrc.shift(self.direction)

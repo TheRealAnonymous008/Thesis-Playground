@@ -27,13 +27,13 @@ class FactorySimulation():
                     self.running = False 
                 if event.type == KEYDOWN: 
                     if event.key == K_w: 
-                        assembler.move_direction(self.world, Direction.NORTH)
+                        assembler._move_direction(self.world, Direction.NORTH)
                     if event.key == K_s: 
-                        assembler.move_direction(self.world, Direction.SOUTH)
+                        assembler._move_direction(self.world, Direction.SOUTH)
                     if event.key == K_d: 
-                        assembler.move_direction(self.world, Direction.EAST)
+                        assembler._move_direction(self.world, Direction.EAST)
                     if event.key == K_a:
-                        assembler.move_direction(self.world, Direction.WEST)
+                        assembler._move_direction(self.world, Direction.WEST)
                     if event.key == K_SPACE:
                         assembler.switch_mode()
                     self.update()
