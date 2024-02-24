@@ -34,12 +34,13 @@ class FactoryComponent(WorldTile):
                 rotation = -180
 
         self.rotation = rotation
+        self.direction = direction
 
     def rotate_cw(self):
-        self.rotate(self.rotation + 90)
+        self.rotate(rotate_dir_cw(self.direction))
     
     def rotate_ccw(self):
-        self.rotate(self.rotation -90)
+        self.rotate(rotate_dir_ccw(self.direction))
 
     def draw(self, surface):
         self.sprite.set_rotation(self.rotation)
@@ -67,7 +68,7 @@ class Assembler(FactoryComponent):
         self.mode = AssemblerMode.PUSH
         self.is_passable = False 
 
-    def _move_direction(self, world, direction: Direction):
+    def move_direction(self, world, direction: Direction):
         if self.mode == AssemblerMode.PUSH:
             self.push(world, direction)
         else: 
@@ -80,12 +81,12 @@ class Assembler(FactoryComponent):
         if rsrc is not None:
             rsrc.push(direction)
         else:
-            super()._move_direction(world, direction)
+            super().move_direction(world, direction)
 
     def pull(self, world, direction : Direction):
         reverse_offset = get_forward(get_reverse(self.direction))
         rsrc : ResourceTile = world.get_resource(self.position + reverse_offset)
-        super()._move_direction(world, direction)
+        super().move_direction(world, direction)
         if rsrc is not None:
             rsrc.push(direction)
 

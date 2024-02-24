@@ -3,8 +3,8 @@ from .vector import Vector
 
 class Direction(Enum):
     NORTH = 1
-    SOUTH = 2,
-    EAST = 3, 
+    EAST = 2, 
+    SOUTH = 3,
     WEST = 4,
     NONE = 5,
 
@@ -37,4 +37,20 @@ def get_reverse(dir : Direction) -> Direction:
         case Direction.SOUTH: return Direction.NORTH
         case Direction.EAST: return Direction.WEST
         case Direction.WEST: return Direction.EAST
+        case Direction.NONE: return Direction.NONE
+
+def rotate_dir_cw(dir : Direction) -> Direction: 
+    match(dir):
+        case Direction.NORTH: return Direction.EAST
+        case Direction.SOUTH: return Direction.WEST
+        case Direction.EAST: return Direction.SOUTH
+        case Direction.WEST: return Direction.NORTH
+        case Direction.NONE: return Direction.NONE
+
+def rotate_dir_ccw(dir : Direction) -> Direction: 
+    match(dir):
+        case Direction.NORTH: return Direction.WEST
+        case Direction.SOUTH: return Direction.EAST
+        case Direction.EAST: return Direction.NORTH 
+        case Direction.WEST: return Direction.SOUTH
         case Direction.NONE: return Direction.NONE

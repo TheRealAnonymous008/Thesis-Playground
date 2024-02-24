@@ -26,10 +26,6 @@ class ResourceTile(WorldTile):
         self.links = set()
         self.id = -1
 
-    def _move_direction(self, world, direction : Direction):
-        offset = get_forward(direction)
-        self._move_offset(world, offset)
-
     def _move_offset(self, world, offset):
         if offset == ZERO_VECTOR:
             return 

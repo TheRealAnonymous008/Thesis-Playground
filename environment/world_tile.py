@@ -33,7 +33,7 @@ class WorldTile:
         self.place(world, new_loc)
         return True 
         
-    def _move_direction(self, world, direction : Direction):
+    def move_direction(self, world, direction : Direction):
         match(direction):
             case Direction.NORTH:
                 offset = DirectionVectors.NORTH
