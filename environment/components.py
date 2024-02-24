@@ -82,14 +82,10 @@ class Assembler(FactoryComponent):
             super().move_direction(world, direction)
 
     def pull(self, world, direction : Direction):
-        if super().move_direction(world, direction): 
-            offset : Vector = get_forward(direction).mult(-1)
-            position = self.position.add(offset)
-
-            rsrc : ResourceTile = world.get_resource(position)
-            if rsrc != None:
-                rsrc.move_direction(world, direction)
-
+        rsrc : ResourceTile = world.get_resource(self.position)
+        super().move_direction(world, direction)
+        if rsrc is not None:
+            rsrc.pull(world, self, direction)
 
     def switch_mode(self):
         if self.mode == AssemblerMode.PULL:
