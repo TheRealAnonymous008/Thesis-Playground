@@ -136,4 +136,21 @@ class OutPort(FactoryComponent):
         self.resource_type = resource 
 
     def update(self, world):
-        pass
+        # Get all resources
+        if not world.has_resource(self.position):
+            return 
+        rsrc = world.get_resource(self.position)
+
+        stack = [rsrc]
+        visited = set()
+        while len(stack) > 0: 
+            current = stack.pop()
+            if current in visited:
+                continue 
+            visited.add(current)
+
+            for neighbor in current.links: 
+                stack.append(neighbor)
+
+        for rsrc in visited:
+            rsrc.destroy()

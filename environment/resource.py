@@ -22,6 +22,7 @@ class ResourceTile(WorldTile):
                          )
         self.is_passable = False 
         self.motion : MotionDetails = None
+        self.is_dead = False 
 
         self.links = set()
         self.id = -1
@@ -93,7 +94,7 @@ class ResourceTile(WorldTile):
         return world.get_resource(self.position + offset)
 
     def update(self, world): 
-        if self.motion == None:
+        if self.motion == None or self.is_dead:
             return
         if not self.motion.is_push:
             self._move_offset(world, self.motion.velocity)
@@ -108,6 +109,9 @@ class ResourceTile(WorldTile):
 
     def shift(self, direction : Direction):
         self.motion = MotionDetails(get_forward(direction), False, False)
+    
+    def destroy(self):
+        self.is_dead = True 
 
     def _push(self, world, offset):        
         if not self.can_push(world, offset):

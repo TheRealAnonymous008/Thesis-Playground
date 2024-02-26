@@ -37,7 +37,12 @@ class ResourceMap:
     def get_resource(self, position : Vector):
         if not self.has_resource(position):
             return None 
-        return self.resources[position.x][position.y]
+        return self.resources[position.x][position.y] 
+    
+    def destroy_resource(self, position: Vector):
+        if self.has_resource(position): 
+            del self.resources[position.x][position.y]
+            self.resources[position.x][position.y] = None
     
     def update(self, world):
         buffer = [[None for _ in range(self.bounds.y)] for _ in range(self.bounds.x)]
@@ -47,7 +52,7 @@ class ResourceMap:
                 if rsrc != None: 
                     rsrc.update(world)
 
-        # Perform updates that ar after
+        # Perform updates that are after. Also delete  resources as needed
         for row in self.resources:
             for rsrc in row:
                 if rsrc != None: 
@@ -57,7 +62,8 @@ class ResourceMap:
         for row in self.resources:
             for rsrc in row: 
                 if rsrc != None:
-                    buffer[rsrc.position.x][rsrc.position.y] = rsrc  
+                    if not rsrc.is_dead:
+                        buffer[rsrc.position.x][rsrc.position.y] = rsrc  
 
         self.resources = buffer
 
