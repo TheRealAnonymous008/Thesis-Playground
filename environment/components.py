@@ -154,3 +154,5 @@ class OutPort(FactoryComponent):
 
         for rsrc in visited:
             rsrc.destroy()
+
+        world.submit_resources(visited)

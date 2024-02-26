@@ -6,7 +6,7 @@ from .direction import Direction
 from .world_tile import *
 from .resource_manager import ResourceMap
 from .resource import ResourceType
-from .demand import DemandManager
+from .demand import * 
 
 class World:
     def __init__(self, width, height, block_size):
@@ -108,3 +108,11 @@ class World:
     
     def move_resource(self, position: Vector):
         self.resource_map.request_move(self, position)
+    
+    def submit_resources(self, rsrcs : list[ResourceTile]):
+        order  = Order()
+        for rsrc in rsrcs:
+            order.add_part(rsrc.type, rsrc.position)
+        order.finalize()
+
+        self.demand_manager.check_order(order)

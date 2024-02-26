@@ -8,6 +8,10 @@ from .direction import *
 from pygame.surface import Surface
 import pygame as pg
 
+class ResourceType(Enum):
+    RED = 1,
+    BLUE = 2,
+
 class MotionDetails:
     def __init__(self, velocity : Vector, ignore_same : bool, is_push : bool):
         self.velocity : Vector = velocity
@@ -15,11 +19,12 @@ class MotionDetails:
         self.is_push : bool = is_push 
 
 class ResourceTile(WorldTile):
-    def __init__(self, world, position : Vector, sprite : Sprite = None ):
+    def __init__(self, world, position : Vector, type : ResourceType, sprite : Sprite = None ):
         super().__init__(world = world,
                          position=position,
                          sprite=sprite
                          )
+        self.type : ResourceType = type
         self.is_passable = False 
         self.motion : MotionDetails = None
         self.is_dead = False 
@@ -156,15 +161,14 @@ class ResourceTile(WorldTile):
             neighbor : ResourceTile = neighbor 
             pg.draw.line(surface, (255, 255, 255), self.sprite.get_position(), neighbor.sprite.get_position(), 10)
 
-class ResourceType(Enum):
-    RED = 1,
-    BLUE = 2,
+
 
 
 class RedResource(ResourceTile):
     def __init__(self, world, position : Vector):
         super().__init__( world = world,
                          position=position,
+                         type=ResourceType.RED,
                          sprite = Sprite(AssetProfiles.RED_RESOURCE, DEFAULT_RECT, 2)
                          )        
         
@@ -172,5 +176,6 @@ class BlueResource(ResourceTile):
     def __init__(self, world, position : Vector):
         super().__init__( world = world,
                          position=position,
+                         type=ResourceType.BLUE,
                          sprite = Sprite(AssetProfiles.BLUE_RESOURCE, DEFAULT_RECT, 2)
                          )        

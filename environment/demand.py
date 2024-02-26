@@ -1,16 +1,17 @@
 from .resource import *
+from .constants import * 
 
 class Order:
     def __init__(self):
         self.parts : dict[Vector, ResourceType] = {}
-    
+
     def add_part(self, type : ResourceType, position : Vector):
         self.parts[position] = type 
         return self
     
     def finalize(self):
         finalized_parts : dict[Vector, ResourceType] = {}
-        min_vec : Vector = Vector(1000, 1000)
+        min_vec : Vector = Vector(BIG_NUMBER, BIG_NUMBER)
 
         for k in self.parts.keys():
             k :Vector = k 
