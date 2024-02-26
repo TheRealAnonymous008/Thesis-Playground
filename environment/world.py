@@ -6,6 +6,7 @@ from .direction import Direction
 from .world_tile import *
 from .resource_manager import ResourceMap
 from .resource import ResourceType
+from .demand import DemandManager
 
 class World:
     def __init__(self, width, height, block_size):
@@ -15,9 +16,11 @@ class World:
         self.tiles = [[None for _ in range(height)] for _ in range(width)]
         self.resource_map  : ResourceMap = ResourceMap(self.bounds)
 
+        self.demand_manager : DemandManager = DemandManager()
+
         self.init_tiles()
         self.init_factory()
-        self.init_resources()
+        self.init_demand()
 
         
     def init_tiles(self):
@@ -38,9 +41,12 @@ class World:
         self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(6, 5), Direction.EAST)
         self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(7, 5), Direction.NORTH)
 
-    def init_resources(self):
-        pass
-        # r1.merge(r2)
+    def init_demand(self):
+        self.demand_manager.generate_order()
+        self.demand_manager.generate_order()
+        self.demand_manager.generate_order()
+        self.demand_manager.generate_order()
+        self.demand_manager.generate_order()
 
     def place_resource(self, resource_type : ResourceType, position : Vector):
         return self.resource_map.place_resource(self, resource_type, position)
