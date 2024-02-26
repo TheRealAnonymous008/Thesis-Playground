@@ -15,6 +15,9 @@ class Vector:
     def __mul__(self, scalar):
         return Vector(self.x * scalar, self.y * scalar )
     
+    def __hash__(self):
+        return hash((self.x, self.y))
+    
 ZERO_VECTOR = Vector(0, 0)
 
 
