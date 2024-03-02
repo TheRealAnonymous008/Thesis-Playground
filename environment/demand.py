@@ -23,11 +23,20 @@ class Order:
 
         self.parts = finalized_parts
 
+def compare_orders(x: Order, y: Order) -> float:
+    xset = set(x.parts.items())
+    yset = set(y.parts.items())
+
+    union = len(xset.union(xset, yset))
+    intersection = len(xset.intersection(xset, yset))
+
+    return intersection / union
+            
+
 
 class DemandManager: 
     def __init__(self):
-        self.orders : Order = []
-        self.max_orders = 5
+        self.orders : list(Order) = []
     
     def generate_order(self):
         order : Order = Order() 
@@ -36,4 +45,15 @@ class DemandManager:
         self.orders.append(order)
 
     def check_order(self, order: Order):
-        pass
+        dist = 100000000000000000
+        order_to_remove = None 
+
+        for ord in self.orders:
+            distance = compare_orders(ord, order)
+            if distance < dist:
+                dist = distance 
+                order_to_remove = ord 
+
+        if order_to_remove != None: 
+            print(dist)
+            self.orders.remove(order_to_remove)
