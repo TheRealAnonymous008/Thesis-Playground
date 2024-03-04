@@ -55,5 +55,32 @@ class FactorySimulation():
         self.world.draw(pygame.display.get_surface())
         pygame.display.flip()
 
+
+from gym.factorygym import FactoryGym
+
 if __name__ == "__main__":
-    FactorySimulation().run()
+    env = FactoryGym()
+    
+    # Initialize the environment and get the initial state
+    state = env.reset()
+    max_iter = 10
+    
+    # Run the environment
+    for _ in range(0, max_iter):
+        # Take a random action
+        action = env.action_space.sample()
+        
+        # Execute the action in the environment
+        next_state, reward, done, info = env.step(action)
+        
+        # Render the environment
+        env.render()
+        
+        # Check if the episode is done
+        if done:
+            print("Episode finished.")
+            break
+
+    # Close the environment
+    env.close()
+
