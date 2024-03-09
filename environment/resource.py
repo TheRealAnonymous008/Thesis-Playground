@@ -9,8 +9,9 @@ from pygame.surface import Surface
 import pygame as pg
 
 class ResourceType(Enum):
-    RED = 1,
-    BLUE = 2,
+    RED = 1
+    BLUE = 2
+TOTAL_RESOURCE_TYPES = len(ResourceType)
 
 class MotionDetails:
     def __init__(self, velocity : Vector, ignore_same : bool, is_push : bool):

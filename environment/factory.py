@@ -1,6 +1,7 @@
 from . import components as cmp 
 from .vector import Vector
 from .direction import Direction
+import numpy as np 
 
 class Factory:
     def __init__(self, bounds):
@@ -8,20 +9,20 @@ class Factory:
         self.assemblers = [[None for _ in range(bounds.y)] for _ in range(bounds.x)]
         self.bounds : Vector = bounds
 
-    def add_component(self, world, type : cmp.ComponentTypes, position : Vector, arg):
+    def add_component(self, world, type : cmp.ComponentType, position : Vector, arg):
         component = None 
         match(type):
-            case cmp.ComponentTypes.ASSEMBLER: 
+            case cmp.ComponentType.ASSEMBLER: 
                 component = cmp.Assembler(world, position, arg)
                 self.assemblers[position.x][position.y] = component
-            case cmp.ComponentTypes.CONVEYOR:
+            case cmp.ComponentType.CONVEYOR:
                 component = cmp.ConveyorBelt(world, position ,arg)
                 self.components[position.x][position.y] = component 
-            case cmp.ComponentTypes.SPAWNER: 
+            case cmp.ComponentType.SPAWNER: 
                 component = cmp.Spawner(world, position, arg)
                 self.components[position.x][position.y] = component
-            case cmp.ComponentTypes.OUTPORT:
-                component = cmp.OutPort(world, position, arg)
+            case cmp.ComponentType.OUTPORT:
+                component = cmp.OutPort(world, position)
                 self.components[position.x][position.y] = component
 
 
@@ -93,3 +94,16 @@ class Factory:
             return component.is_passable 
         else:
             return assembler.is_passable
+    
+    def get_mask(self):
+        mask = np.ndarray((self.bounds.x, self.bounds.y))
+        for x in range(self.bounds.x):
+            for y in range(self.bounds.y): 
+                pos = Vector(x, y)
+                comp : cmp.FactoryComponent = self.get_component(pos)
+                if comp is None:
+                    mask[x][y] = 0
+                else: 
+                    mask[x][y] = comp.type.value
+
+        return mask

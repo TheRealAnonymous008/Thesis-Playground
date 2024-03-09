@@ -1,4 +1,3 @@
-import pygame
 from .components import * 
 from .factory import Factory
 from .vector import Vector, ZERO_VECTOR, is_in_bounds
@@ -7,6 +6,8 @@ from .world_tile import *
 from .resource_manager import ResourceMap
 from .resource import ResourceType
 from .demand import * 
+
+import numpy as np 
 
 class World:
     def __init__(self, width, height, block_size):
@@ -32,14 +33,14 @@ class World:
 
     def init_factory(self):
         self.factory = Factory(bounds= Vector(self.bounds.x, self.bounds.y))
-        self.factory.add_component(self, ComponentTypes.ASSEMBLER, Vector(3, 4), Direction.WEST)
+        self.factory.add_component(self, ComponentType.ASSEMBLER, Vector(3, 4), Direction.WEST)
 
-        self.factory.add_component(self, ComponentTypes.SPAWNER, Vector(4, 5), ResourceType.RED)
-        self.factory.add_component(self, ComponentTypes.OUTPORT, Vector(1, 1), ResourceType.RED)
+        self.factory.add_component(self, ComponentType.SPAWNER, Vector(4, 5), ResourceType.RED)
+        self.factory.add_component(self, ComponentType.OUTPORT, Vector(1, 1), ResourceType.RED)
 
-        self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(5, 5), Direction.EAST)
-        self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(6, 5), Direction.EAST)
-        self.factory.add_component(self, ComponentTypes.CONVEYOR, Vector(7, 5), Direction.NORTH)
+        self.factory.add_component(self, ComponentType.CONVEYOR, Vector(5, 5), Direction.EAST)
+        self.factory.add_component(self, ComponentType.CONVEYOR, Vector(6, 5), Direction.EAST)
+        self.factory.add_component(self, ComponentType.CONVEYOR, Vector(7, 5), Direction.NORTH)
 
     def init_demand(self):
         self.demand_manager.generate_order()
@@ -62,7 +63,6 @@ class World:
 
         # Draw the resources
         self.resource_map.draw(surface)
-            
 
     def update(self):
         self.factory.update(self)
@@ -116,3 +116,19 @@ class World:
         order.finalize()
 
         self.demand_manager.check_order(order)
+
+    def get_state(self):
+        state = {}
+        state["world_mask"] = self.get_mask()
+        state["resource_mask"] = self.resource_map.get_mask()
+        state["factory_mask"] = self.factory.get_mask()
+
+        return state 
+    
+    def get_mask(self):
+        mask = np.ndarray((self.bounds.x, self.bounds.y))
+        for x in range(self.bounds.x):
+            for y in range(self.bounds.y): 
+                mask[x][y] = 0 if type(self.tiles[x][y]) is EmptyTile else 1
+
+        return mask

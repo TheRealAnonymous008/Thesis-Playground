@@ -59,6 +59,9 @@ class FactorySimulation():
 from gym.factorygym import FactoryGym
 
 if __name__ == "__main__":
+    # sim = FactorySimulation()
+    # sim.run()
+
     env = FactoryGym()
     
     # Initialize the environment and get the initial state
@@ -73,6 +76,7 @@ if __name__ == "__main__":
         # Execute the action in the environment
         next_state, reward, done, info = env.step(action)
         
+        print(next_state)
         # Render the environment
         env.render()
         

@@ -7,12 +7,23 @@ from .world_tile import WorldTile
 from .resource import *
 from enum import Enum
 
+class ComponentType(Enum):
+    ASSEMBLER = 1
+    CONVEYOR = 2
+    SPAWNER = 3 
+    SPLITTER = 4
+    MERGER = 5
+    OUTPORT = 6
+
+TOTAL_COMPONENT_TYPES = len(ComponentType)
+
 class FactoryComponent(WorldTile):
-    def __init__(self, world, position : Vector,  direction : Direction = Direction.EAST , sprite : Sprite = None ):
+    def __init__(self, world,  type : ComponentType, position : Vector,  direction : Direction = Direction,  sprite : Sprite = None ):
         super().__init__(world=world,
                          position=position,
                          sprite=sprite
                          )
+        self.type : ComponentType = type
         self.direction = direction 
         self.rotation = get_rotation(direction)
         self.rotate(direction)
@@ -46,14 +57,6 @@ class FactoryComponent(WorldTile):
         self.sprite.set_rotation(self.rotation)
         super().draw(surface)
 
-class ComponentTypes(Enum):
-    ASSEMBLER = 1,
-    CONVEYOR = 2,
-    SPAWNER = 3, 
-    SPLITTER = 4,
-    MERGER = 5,
-    OUTPORT = 6
-
 class AssemblerMode(Enum):
     PUSH = 1,
     PULL = 2
@@ -63,6 +66,7 @@ class Assembler(FactoryComponent):
         super().__init__(position = position,
                          world = world, 
                          direction = direction, 
+                         type = ComponentType.ASSEMBLER,
                          sprite = Sprite(AssetProfiles.ASSEMBLER, DEFAULT_RECT, 1))
         
         self.mode = AssemblerMode.PUSH
@@ -102,6 +106,7 @@ class Spawner(FactoryComponent):
     def __init__(self, world, position : Vector, resource : ResourceType):
         super().__init__(position = position, 
                          world = world,
+                         type = ComponentType.SPAWNER,
                          sprite = Sprite(AssetProfiles.SPAWNER, DEFAULT_RECT, 1),
                          )
         self.resource_type = resource 
@@ -116,6 +121,7 @@ class ConveyorBelt(FactoryComponent):
     def __init__(self, world, position : Vector,  direction = Direction.EAST):
         super().__init__(position = position,
                          world = world, 
+                         type = ComponentType.CONVEYOR,
                          direction = direction, 
                          sprite = Sprite(AssetProfiles.CONVEYOR_BELT, DEFAULT_RECT, 1))
         self.direction = direction
@@ -128,12 +134,12 @@ class ConveyorBelt(FactoryComponent):
             rsrc.shift(self.direction)
 
 class OutPort(FactoryComponent):
-    def __init__(self, world, position : Vector, resource : ResourceType):
+    def __init__(self, world, position : Vector):
         super().__init__(position = position, 
                          world = world,
+                         type = ComponentType.OUTPORT,
                          sprite = Sprite(AssetProfiles.OUTPORT, DEFAULT_RECT, 1),
                          )
-        self.resource_type = resource 
 
     def update(self, world):
         # Get all resources

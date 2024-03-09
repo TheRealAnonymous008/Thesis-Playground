@@ -1,6 +1,8 @@
 from pygame.surface import Surface
 from .resource import *
 from .vector import Vector
+import numpy as np 
+
 
 class ResourceMap:
     current_id = 0
@@ -66,6 +68,20 @@ class ResourceMap:
                         buffer[rsrc.position.x][rsrc.position.y] = rsrc  
 
         self.resources = buffer
+
+    def get_mask(self):
+        # The mask should contain not 
+        mask = np.ndarray((self.bounds.x, self.bounds.y))
+        for x in range(self.bounds.x):
+            for y in range(self.bounds.y): 
+                pos = Vector(x, y)
+                rsrc : ResourceTile = self.get_resource(pos)
+                if rsrc is None:
+                    mask[x][y] = 0
+                else: 
+                    mask[x][y] = rsrc.type.value
+
+        return mask
 
     def reset():
         id = 1
