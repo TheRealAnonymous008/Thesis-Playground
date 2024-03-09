@@ -71,15 +71,19 @@ class ResourceMap:
 
     def get_mask(self):
         # The mask should contain not 
-        mask = np.ndarray((self.bounds.x, self.bounds.y))
+        mask = np.ndarray((self.bounds.x, self.bounds.y, 5), dtype = np.int8)
         for x in range(self.bounds.x):
             for y in range(self.bounds.y): 
                 pos = Vector(x, y)
                 rsrc : ResourceTile = self.get_resource(pos)
-                if rsrc is None:
-                    mask[x][y] = 0
-                else: 
-                    mask[x][y] = rsrc.type.value
+                data = np.array([0, 0, 0, 0, 0], dtype = np.int8)
+                data[0] = 0 if rsrc is None else rsrc.type.value
+                if rsrc != None: 
+                    link_mask = rsrc.get_link_mask()
+                    for i in range(1, 5): 
+                        data[i] = link_mask[i - 1]
+
+                mask[x][y] = data
 
         return mask
 

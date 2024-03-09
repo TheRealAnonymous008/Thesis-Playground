@@ -11,6 +11,7 @@ import pygame as pg
 class ResourceType(Enum):
     RED = 1
     BLUE = 2
+    
 TOTAL_RESOURCE_TYPES = len(ResourceType)
 
 class MotionDetails:
@@ -98,6 +99,23 @@ class ResourceTile(WorldTile):
 
     def get_next_resource(self, world ,offset):
         return world.get_resource(self.position + offset)
+    
+    def get_link_mask(self):
+        # Mask is sorted as N, E, W, S
+        mask = [0, 0, 0, 0]
+        for neighbor in self.links:
+            neighbor : ResourceTile = neighbor 
+            offset = neighbor.position - self.position
+            if offset == DirectionVectors.NORTH: 
+                mask[0] = 1
+            elif offset == DirectionVectors.EAST: 
+                mask[1] = 1
+            elif offset == DirectionVectors.WEST: 
+                mask[2] = 1
+            elif offset == DirectionVectors.SOUTH:
+                mask[3] = 1 
+            
+        return mask
 
     def update(self, world): 
         if self.motion == None or self.is_dead:

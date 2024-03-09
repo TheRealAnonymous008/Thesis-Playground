@@ -2,11 +2,11 @@ from enum import Enum
 from .vector import Vector
 
 class Direction(Enum):
+    NONE = 0
     NORTH = 1
-    EAST = 2, 
-    SOUTH = 3,
-    WEST = 4,
-    NONE = 5,
+    EAST = 2 
+    SOUTH = 3
+    WEST = 4
 
 class DirectionVectors:
     NORTH = Vector(0, -1)

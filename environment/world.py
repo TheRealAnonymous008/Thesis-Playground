@@ -20,6 +20,7 @@ class World:
         self.demand_manager : DemandManager = DemandManager()
 
         self.init_tiles()
+        self.init_resources()
         self.init_factory()
         self.init_demand()
 
@@ -30,6 +31,11 @@ class World:
                 self.tiles[x][y] = EmptyTile(self, Vector(x, y))
     
         self.tiles[3][7] =  WallTile(self, Vector(3, 7))
+
+    def init_resources(self):
+        r1 = self.place_resource(ResourceType.RED, Vector(0, 0))
+        r2 = self.place_resource(ResourceType.RED, Vector(0, 1))
+        r1.merge(r2)
 
     def init_factory(self):
         self.factory = Factory(bounds= Vector(self.bounds.x, self.bounds.y))

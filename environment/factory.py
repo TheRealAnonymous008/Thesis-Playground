@@ -1,4 +1,4 @@
-from . import components as cmp 
+from .components import *
 from .vector import Vector
 from .direction import Direction
 import numpy as np 
@@ -9,20 +9,20 @@ class Factory:
         self.assemblers = [[None for _ in range(bounds.y)] for _ in range(bounds.x)]
         self.bounds : Vector = bounds
 
-    def add_component(self, world, type : cmp.ComponentType, position : Vector, arg):
+    def add_component(self, world, type : ComponentType, position : Vector, arg):
         component = None 
         match(type):
-            case cmp.ComponentType.ASSEMBLER: 
-                component = cmp.Assembler(world, position, arg)
+            case ComponentType.ASSEMBLER: 
+                component = Assembler(world, position, arg)
                 self.assemblers[position.x][position.y] = component
-            case cmp.ComponentType.CONVEYOR:
-                component = cmp.ConveyorBelt(world, position ,arg)
+            case ComponentType.CONVEYOR:
+                component = ConveyorBelt(world, position ,arg)
                 self.components[position.x][position.y] = component 
-            case cmp.ComponentType.SPAWNER: 
-                component = cmp.Spawner(world, position, arg)
+            case ComponentType.SPAWNER:
+                component = Spawner(world, position, arg)
                 self.components[position.x][position.y] = component
-            case cmp.ComponentType.OUTPORT:
-                component = cmp.OutPort(world, position)
+            case ComponentType.OUTPORT:
+                component = OutPort(world, position)
                 self.components[position.x][position.y] = component
 
 
@@ -85,8 +85,8 @@ class Factory:
         return None
     
     def is_passable(self, position : Vector):
-        component : cmp.FactoryComponent= self.components[position.x][position.y]
-        assembler : cmp.Assembler = self.assemblers[position.x][position.y]
+        component : FactoryComponent= self.components[position.x][position.y]
+        assembler : Assembler = self.assemblers[position.x][position.y]
 
         if component is None and assembler is None:
             return True 
@@ -96,14 +96,22 @@ class Factory:
             return assembler.is_passable
     
     def get_mask(self):
-        mask = np.ndarray((self.bounds.x, self.bounds.y))
+        mask = np.ndarray((self.bounds.x, self.bounds.y, 3), dtype=np.int8)
         for x in range(self.bounds.x):
             for y in range(self.bounds.y): 
                 pos = Vector(x, y)
-                comp : cmp.FactoryComponent = self.get_component(pos)
-                if comp is None:
-                    mask[x][y] = 0
-                else: 
-                    mask[x][y] = comp.type.value
+                comp : FactoryComponent = self.get_component(pos)
+                data = [0, 0, 0]
+                data[0] = 0 if comp is None else comp.type.value
+                if comp != None:
+                    data[1] = comp.direction.value
+                    if comp.type == ComponentType.OUTPORT:
+                        data[1] = Direction.NONE.value
+                    if comp.type == ComponentType.SPAWNER:
+                        comp : Spawner = comp
+                        data[1] = Direction.NONE.value
+                        data[2] = comp.resource_type.value
+                    
+                mask[x][y] = data 
 
         return mask

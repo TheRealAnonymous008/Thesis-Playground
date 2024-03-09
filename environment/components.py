@@ -18,7 +18,7 @@ class ComponentType(Enum):
 TOTAL_COMPONENT_TYPES = len(ComponentType)
 
 class FactoryComponent(WorldTile):
-    def __init__(self, world,  type : ComponentType, position : Vector,  direction : Direction = Direction,  sprite : Sprite = None ):
+    def __init__(self, world,  type : ComponentType, position : Vector,  direction : Direction = Direction.NONE,  sprite : Sprite = None ):
         super().__init__(world=world,
                          position=position,
                          sprite=sprite
@@ -106,11 +106,12 @@ class Spawner(FactoryComponent):
     def __init__(self, world, position : Vector, resource : ResourceType):
         super().__init__(position = position, 
                          world = world,
+                         direction= Direction.NONE,
                          type = ComponentType.SPAWNER,
                          sprite = Sprite(AssetProfiles.SPAWNER, DEFAULT_RECT, 1),
                          )
         self.resource_type = resource 
-
+        
     def update(self, world):
         if world.has_resource(self.position):
             return 
