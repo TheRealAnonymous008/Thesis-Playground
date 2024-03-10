@@ -126,7 +126,7 @@ class World:
             order.add_part(rsrc.type, rsrc.position)
         order.finalize()
 
-        self.global_reward += self.demand_manager.check_order(order)
+        self.global_reward += self.demand_manager.check_order(order) * 100
 
     def get_state(self):
         state = {}

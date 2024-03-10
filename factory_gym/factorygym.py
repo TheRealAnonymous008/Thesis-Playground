@@ -67,7 +67,7 @@ class FactoryGym(gym.Env):
         The action space is specified as a discrete space
 
         """
-        self.action_space = spaces.Discrete(TOTAL_AGENT_ACTIONS)
+        self.action_space = spaces.Box(low = 0, high = TOTAL_AGENT_ACTIONS)
         
         self.running = True 
         
@@ -76,9 +76,8 @@ class FactoryGym(gym.Env):
         self.world = World(self.WORLD_WIDTH, self.WORLD_HEIGHT, BLOCK_SIZE)
 
         self.assembler = self.world.factory.assemblers[3][4]
-        self.reset()
 
-    def reset(self, seed = 0):
+    def reset(self, seed):
         # Reset the environment to its initial state
         self.world.init()
         self.state = self.world.get_state()
@@ -108,7 +107,7 @@ class FactoryGym(gym.Env):
                 self.assembler.switch_mode()  
 
         self.world.update()
-        reward = self.world.global_reward
+        reward = self.world.global_reward - 1
         self.state = self.world.get_state()
         done = False 
         info = {} 
