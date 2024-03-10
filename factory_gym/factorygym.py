@@ -67,7 +67,7 @@ class FactoryGym(gym.Env):
         The action space is specified as a discrete space
 
         """
-        self.action_space = spaces.Box(low = 0, high = TOTAL_AGENT_ACTIONS)
+        self.action_space = spaces.Box(low = 0, high = TOTAL_AGENT_ACTIONS, dtype= np.int8)
         
         self.running = True 
         
