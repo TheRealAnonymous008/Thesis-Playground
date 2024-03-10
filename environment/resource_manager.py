@@ -84,10 +84,7 @@ class ResourceMap:
                         data[i] = link_mask[i - 1]
 
                 mask[x][y] = data
-        return {
-            "type": mask[:, :, 0],
-            "link_mask": mask[:, :, 1:5]
-        }
+        return mask 
 
     def reset():
         id = 1

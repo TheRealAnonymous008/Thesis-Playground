@@ -52,22 +52,49 @@ class FactoryGym(gym.Env):
         4. Assembler Mask - determines information about assemmblers, their rotation and the current mode they are operating on (PUSH / PULL)
         x = 1 + 1 + 1 = 3
         """
-        self.observation_space = spaces.Dict({
-            "world_mask": spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT), dtype=np.int8),
-            "resource_mask_type":  spaces.Box(low = 0, high = TOTAL_RESOURCE_TYPES, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT), dtype = np.int8), 
-            "resource_link_mask": spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 4), dtype = np.int8),
-            "factory_mask_type": spaces.Box(low = 0, high = TOTAL_COMPONENT_TYPES, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT), dtype = np.int8), 
-            "factory_mask_direction": spaces.Box(low = 0, high = 4, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT), dtype = np.int8),
-            "factory_mask_resource_type": spaces.Box(low = 0, high = TOTAL_RESOURCE_TYPES, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT), dtype = np.int8),
-            "assembler_mask_is_present": spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT), dtype = np.int8), 
-            "assembler_mask_direction": spaces.Box(low = 0, high = 4, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT), dtype = np.int8),
-            "assembler_mask_mode": spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT), dtype = np.int8)
-        })
-        """
-        The action space is specified as a discrete space
+
+        low = np.array([
+            # World Mask
+            0, 
+            # Resource Mask 
+            0, 
+            0, 0, 0, 0, 
+            # Factory Mask 
+            0, 
+            0, 
+            0, 
+            # Assembler Mask 
+            0, 
+            0, 
+            0,
+        ], dtype = np.int8)
+        low = np.repeat(low.reshape(1, -1), self.WORLD_HEIGHT, axis=0)
+        low = np.repeat(low.reshape(1, self.WORLD_HEIGHT,  -1), self.WORLD_WIDTH, axis=0)
+
+        high = np.array([
+            # World Mask
+            1, 
+            # Resource Mask 
+            TOTAL_RESOURCE_TYPES, 
+            1, 1, 1, 1, 
+            # Factory Mask 
+            TOTAL_COMPONENT_TYPES, 
+            4, 
+            TOTAL_RESOURCE_TYPES, 
+            # Assembler Mask 
+            1, 
+            4, 
+            1,
+        ], dtype = np.int8)
+        high = np.repeat(high.reshape(1, -1), self.WORLD_HEIGHT, axis=0)
+        high = np.repeat(high.reshape(1, self.WORLD_HEIGHT,  -1), self.WORLD_WIDTH, axis=0)
+
+        self.observation_space = spaces.Box(low, high) 
 
         """
-        self.action_space = spaces.Box(low = 0, high = TOTAL_AGENT_ACTIONS, dtype= np.int8)
+        The action space is specified as a discrete space
+        """
+        self.action_space = spaces.Discrete(np.int8)
         
         self.running = True 
         
@@ -77,7 +104,7 @@ class FactoryGym(gym.Env):
 
         self.assembler = self.world.factory.assemblers[3][4]
 
-    def reset(self, seed):
+    def reset(self, seed = 0):
         # Reset the environment to its initial state
         self.world.init()
         self.state = self.world.get_state()

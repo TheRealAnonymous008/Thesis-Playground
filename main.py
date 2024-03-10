@@ -6,36 +6,6 @@ from stable_baselines3.common.env_checker import check_env
 
 if __name__ == "__main__":
     env = FactoryGym()
-    
-    # Initialize the environment and get the initial state
-    state = env.reset()
-    max_iter = 1000
-
-    # env = FactoryGym()
-    # # print(check_env(env))
-
-    # # Initialize the PPO model
-    # model = PPO("MultiInputPolicy", env, verbose=1)
-
-    # # Train the model
-    # model.learn(total_timesteps=10000)
-
-    # model.save("test.zip")
-    
-    model = PPO("MultiInputPolicy", env, verbose=1)
-    model.load("test.zip")
-    # Run the environment
-    state, info = env.reset()
-    for _ in range(0, max_iter):
-        env.render()
-        action, _states = model.predict(state, deterministic=True)
-        state, reward, done, truncated, info = env.step(action)
-
-        # Check if the episode is done
-        if done:
-            print("Episode finished.")
-            break
-
-    # Close the environment
+    print(check_env(env))
     env.close()
 
