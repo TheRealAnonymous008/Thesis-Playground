@@ -52,25 +52,36 @@ class FactoryGym(gym.Env):
         4. Assembler Mask - determines information about assemmblers, their rotation and the current mode they are operating on (PUSH / PULL)
         x = 1 + 1 + 1 = 3
         """
-        self.observation_space = spaces.Dict({
-            "world_mask": 
-                spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype=np.int8),
-            "resource_mask": spaces.Tuple([
-                spaces.Box(low = 0, high = TOTAL_RESOURCE_TYPES, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8), 
-                spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 4), dtype = np.int8)
-            ]),
-            "factory_mask": spaces.Tuple([
-                spaces.Box(low = 0, high = TOTAL_COMPONENT_TYPES, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8), 
-                spaces.Box(low = 0, high = 4, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8),
-                spaces.Box(low = 0, high = TOTAL_RESOURCE_TYPES, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8)
-            ]),
-            "assembler_mask": spaces.Tuple([
-                spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8), 
-                spaces.Box(low = 0, high = 4, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8),
-                spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8)
-            ]),
-        })
+        # self.observation_space = spaces.Dict({
+        #     "world_mask": 
+        #         spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype=np.int8),
+        #     "resource_mask": spaces.Tuple([
+        #         spaces.Box(low = 0, high = TOTAL_RESOURCE_TYPES, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8), 
+        #         spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 4), dtype = np.int8)
+        #     ]),
+        #     "factory_mask": spaces.Tuple([
+        #         spaces.Box(low = 0, high = TOTAL_COMPONENT_TYPES, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8), 
+        #         spaces.Box(low = 0, high = 4, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8),
+        #         spaces.Box(low = 0, high = TOTAL_RESOURCE_TYPES, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8)
+        #     ]),
+        #     "assembler_mask": spaces.Tuple([
+        #         spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8), 
+        #         spaces.Box(low = 0, high = 4, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8),
+        #         spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8)
+        #     ]),
+        # })
 
+        self.observation_space = spaces.Dict({
+            "world_mask": spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT), dtype=np.int8),
+            "resource_mask_type":  spaces.Box(low = 0, high = TOTAL_RESOURCE_TYPES, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT), dtype = np.int8), 
+            "resource_link_mask": spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 4), dtype = np.int8),
+            "factory_mask_type": spaces.Box(low = 0, high = TOTAL_COMPONENT_TYPES, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT), dtype = np.int8), 
+            "factory_mask_direction": spaces.Box(low = 0, high = 4, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT), dtype = np.int8),
+            "factory_mask_resource_type": spaces.Box(low = 0, high = TOTAL_RESOURCE_TYPES, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT), dtype = np.int8),
+            "assembler_mask_is_present": spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT), dtype = np.int8), 
+            "assembler_mask_direction": spaces.Box(low = 0, high = 4, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT), dtype = np.int8),
+            "assembler_mask_mode": spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT), dtype = np.int8)
+        })
         """
         The action space is specified as a discrete space
 
@@ -86,11 +97,14 @@ class FactoryGym(gym.Env):
         self.assembler = self.world.factory.assemblers[3][4]
         self.reset()
 
-    def reset(self):
+    def reset(self, seed = 0):
         # Reset the environment to its initial state
+        self.world.init()
         self.state = self.world.get_state()
-        
-        return self.state
+        self.assembler = self.world.factory.assemblers[3][4]
+
+        info = {}
+        return self.state, info
 
     def step(self, action : ActionEnum):
         # Each action is assumed (for now) to be a single agent's action
@@ -117,7 +131,7 @@ class FactoryGym(gym.Env):
         self.state = self.world.get_state()
         done = False 
         info = {} 
-        return self.state, reward, done, info
+        return self.state, reward, done, done, info
 
     def render(self, mode='human'):
         # Render the environment to the screen

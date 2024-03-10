@@ -114,7 +114,11 @@ class Factory:
                     
                 mask[x][y] = data 
 
-        return mask
+        return {
+            "type": mask[:, :, 0],
+            "direction": mask[:, :, 1],
+            "resource_type": mask[:, :, 2]
+        }
     
     def get_assembler_mask(self):
         mask = np.ndarray((self.bounds.x, self.bounds.y, 3), dtype=np.int8)
@@ -129,4 +133,8 @@ class Factory:
                     data[2] = assembler.mode.value
                 mask[x][y] = data 
 
-        return mask
+        return {
+            "is_present": mask[:, :, 0],
+            "direction": mask[:, :, 1],
+            "mode": mask[:, :, 2]
+        }

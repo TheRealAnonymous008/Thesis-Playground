@@ -135,10 +135,21 @@ class World:
         state["factory_mask"] = self.factory.get_component_mask()
         state["assembler_mask"] = self.factory.get_assembler_mask()
 
-        return state 
+        
+        return {
+            "world_mask": state["world_mask"],
+            "resource_mask_type":  state["resource_mask"]["type"], 
+            "resource_link_mask": state["resource_mask"]["link_mask"],
+            "factory_mask_type": state["factory_mask"]["type"],
+            "factory_mask_direction": state["factory_mask"]["direction"],
+            "factory_mask_resource_type": state["factory_mask"]["resource_type"],
+            "assembler_mask_is_present": state["assembler_mask"]["is_present"],
+            "assembler_mask_direction": state["assembler_mask"]["direction"],
+            "assembler_mask_mode": state["assembler_mask"]["mode"],
+        }
     
     def get_mask(self):
-        mask = np.ndarray((self.bounds.x, self.bounds.y))
+        mask = np.ndarray((self.bounds.x, self.bounds.y), dtype =np.int8)
         for x in range(self.bounds.x):
             for y in range(self.bounds.y): 
                 mask[x][y] = 0 if type(self.tiles[x][y]) is EmptyTile else 1

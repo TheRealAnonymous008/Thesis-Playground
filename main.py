@@ -1,62 +1,8 @@
-import pygame
-from pygame.locals import *
-from environment.constants import BLOCK_SIZE, BOUNDS
-from environment.world import World
-from environment.factory import Factory
-from environment.components import *
-
-class FactorySimulation():
-    def __init__(self):
-        super().__init__()
-        self.DISPLAY_WIDTH = 800
-        self.DISPLAY_HEIGHT = 600
-        
-        self.running = True 
-        
-        pygame.init()
-        pygame.display.set_mode((self.DISPLAY_WIDTH, self.DISPLAY_HEIGHT))
-
-        self.world = World(BOUNDS.x, BOUNDS.y, BLOCK_SIZE)
-
-    def run(self):
-        assembler : Assembler  = self.world.factory.assemblers[3][4]
-
-        while self.running:
-            for event in pygame.event.get():
-                if event.type == QUIT:
-                    self.running = False 
-                if event.type == KEYDOWN: 
-                    if event.key == K_w: 
-                        assembler.move_direction(self.world, Direction.NORTH)
-                    if event.key == K_s: 
-                        assembler.move_direction(self.world, Direction.SOUTH)
-                    if event.key == K_d: 
-                        assembler.move_direction(self.world, Direction.EAST)
-                    if event.key == K_a:
-                        assembler.move_direction(self.world, Direction.WEST)
-                    if event.key == K_q:
-                        assembler.rotate_ccw()
-                    if event.key == K_e:
-                        assembler.rotate_cw()
-                    if event.key == K_SPACE:
-                        assembler.switch_mode()
-                    self.update()
-                        
-            self.draw()
-        
-        pygame.quit()
-
-
-    def update(self):
-        pygame.display.update()
-        self.world.update()
-
-    def draw(self):
-        self.world.draw(pygame.display.get_surface())
-        pygame.display.flip()
-
-
 from gym.factorygym import FactoryGym
+from gym.factorysim import FactorySimulation
+from stable_baselines3 import PPO
+from stable_baselines3.common.env_checker import check_env
+
 
 if __name__ == "__main__":
     env = FactoryGym()
@@ -65,17 +11,28 @@ if __name__ == "__main__":
     state = env.reset()
     max_iter = 100
 
+    env = FactoryGym()
+    print(check_env(env))
+
+    # Initialize the PPO model
+    model = PPO("MultiInputPolicy", env, verbose=1)
+
+    # Train the model
+    model.learn(total_timesteps=10000)
+
+    # Save the trained model
+    model.save("ppo_factory_gym")
+
+    # Load the trained model
+    model = PPO.load("ppo_factory_gym")
     
     # Run the environment
+    state = env.reset()
     for _ in range(0, max_iter):
-        # Take a random action
-        action = env.action_space.sample()
-        
-        # Execute the action in the environment
-        next_state, reward, done, info = env.step(action)
-        # Render the environment
+        action, _states = model.predict(state, deterministic=True)
+        state, reward, done, info = env.step(action)
         env.render()
-        
+
         # Check if the episode is done
         if done:
             print("Episode finished.")
