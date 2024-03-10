@@ -9,10 +9,10 @@ if __name__ == "__main__":
     
     # Initialize the environment and get the initial state
     state = env.reset()
-    max_iter = 100
+    max_iter = 1000
 
     env = FactoryGym()
-    print(check_env(env))
+    # print(check_env(env))
 
     # Initialize the PPO model
     model = PPO("MultiInputPolicy", env, verbose=1)
@@ -25,9 +25,9 @@ if __name__ == "__main__":
     # Run the environment
     state, info = env.reset()
     for _ in range(0, max_iter):
-        action, _states = model.predict(state, deterministic=True)
-        state, reward, done, info = env.step(action)
         env.render()
+        action, _states = model.predict(state, deterministic=True)
+        state, reward, done, truncated, info = env.step(action)
 
         # Check if the episode is done
         if done:
