@@ -112,12 +112,10 @@ class FactoryGym(gym.Env):
             case ActionEnum.SWITCH_MODE.value: 
                 self.assembler.switch_mode()  
 
-        self.state = self.world.get_state()
-        reward = 0 
-        done = False 
-
         self.world.update()
-
+        reward = self.world.global_reward
+        self.state = self.world.get_state()
+        done = False 
         info = {} 
         return self.state, reward, done, info
 

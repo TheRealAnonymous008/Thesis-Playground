@@ -18,13 +18,17 @@ class World:
         self.resource_map  : ResourceMap = ResourceMap(self.bounds)
 
         self.demand_manager : DemandManager = DemandManager()
+        self.global_reward = 0
 
+        self.init()
+
+    def init(self):
         self.init_tiles()
         self.init_resources()
         self.init_factory()
         self.init_demand()
+        self.global_reward = 0
 
-        
     def init_tiles(self):
         for x in range(self.bounds.x):
             for y in range(self.bounds.y):
@@ -70,7 +74,8 @@ class World:
         # Draw the resources
         self.resource_map.draw(surface)
 
-    def update(self):
+    def update(self): 
+        self.global_reward = 0
         self.factory.update(self)
         self.resource_map.update(self)
 
@@ -121,7 +126,7 @@ class World:
             order.add_part(rsrc.type, rsrc.position)
         order.finalize()
 
-        self.demand_manager.check_order(order)
+        self.global_reward += self.demand_manager.check_order(order)
 
     def get_state(self):
         state = {}
