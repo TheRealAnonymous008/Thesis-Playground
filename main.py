@@ -17,17 +17,13 @@ if __name__ == "__main__":
     # Initialize the PPO model
     model = PPO("MultiInputPolicy", env, verbose=1)
 
+    # TODO: Save the model :) 
+
     # Train the model
     model.learn(total_timesteps=10000)
-
-    # Save the trained model
-    model.save("ppo_factory_gym")
-
-    # Load the trained model
-    model = PPO.load("ppo_factory_gym")
     
     # Run the environment
-    state = env.reset()
+    state, info = env.reset()
     for _ in range(0, max_iter):
         action, _states = model.predict(state, deterministic=True)
         state, reward, done, info = env.step(action)
