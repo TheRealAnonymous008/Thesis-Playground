@@ -94,7 +94,7 @@ class FactoryGym(gym.Env):
         """
         The action space is specified as a discrete space
         """
-        self.action_space = spaces.Discrete(np.int8)
+        self.action_space = spaces.Discrete(TOTAL_AGENT_ACTIONS)
         
         self.running = True 
         
