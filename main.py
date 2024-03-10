@@ -11,19 +11,19 @@ if __name__ == "__main__":
     state = env.reset()
     max_iter = 1000
 
-    env = FactoryGym()
-    # print(check_env(env))
+    # env = FactoryGym()
+    # # print(check_env(env))
 
-    # Initialize the PPO model
-    model = PPO("MultiInputPolicy", env, verbose=1)
+    # # Initialize the PPO model
+    # model = PPO("MultiInputPolicy", env, verbose=1)
 
-    # TODO: Save the model :) 
+    # # Train the model
+    # model.learn(total_timesteps=10000)
 
-    # Train the model
-    model.learn(total_timesteps=10000)
-
-    model.save("test.zip")
+    # model.save("test.zip")
     
+    model = PPO("MultiInputPolicy", env, verbose=1)
+    model.load("test.zip")
     # Run the environment
     state, info = env.reset()
     for _ in range(0, max_iter):
