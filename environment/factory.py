@@ -95,7 +95,7 @@ class Factory:
         else:
             return assembler.is_passable
     
-    def get_mask(self):
+    def get_component_mask(self):
         mask = np.ndarray((self.bounds.x, self.bounds.y, 3), dtype=np.int8)
         for x in range(self.bounds.x):
             for y in range(self.bounds.y): 
@@ -112,6 +112,21 @@ class Factory:
                         data[1] = Direction.NONE.value
                         data[2] = comp.resource_type.value
                     
+                mask[x][y] = data 
+
+        return mask
+    
+    def get_assembler_mask(self):
+        mask = np.ndarray((self.bounds.x, self.bounds.y, 3), dtype=np.int8)
+        for x in range(self.bounds.x):
+            for y in range(self.bounds.y): 
+                assembler : Assembler = self.assemblers[x][y]
+                data = [0, 0, 0]
+                data[0] = 0 if assembler == None else 1
+
+                if assembler != None: 
+                    data[1] = assembler.direction.value
+                    data[2] = assembler.mode.value
                 mask[x][y] = data 
 
         return mask

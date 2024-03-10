@@ -127,7 +127,8 @@ class World:
         state = {}
         state["world_mask"] = self.get_mask()
         state["resource_mask"] = self.resource_map.get_mask()
-        state["factory_mask"] = self.factory.get_mask()
+        state["factory_mask"] = self.factory.get_component_mask()
+        state["assembler_mask"] = self.factory.get_assembler_mask()
 
         return state 
     

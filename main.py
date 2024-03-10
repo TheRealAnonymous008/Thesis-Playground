@@ -73,7 +73,7 @@ if __name__ == "__main__":
         # Execute the action in the environment
         next_state, reward, done, info = env.step(action)
         
-        print(next_state["factory_mask"])
+        print(next_state["assembler_mask"])
         # Render the environment
         env.render()
         

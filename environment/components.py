@@ -58,8 +58,8 @@ class FactoryComponent(WorldTile):
         super().draw(surface)
 
 class AssemblerMode(Enum):
-    PUSH = 1,
-    PULL = 2
+    PUSH = 0
+    PULL = 1
 
 class Assembler(FactoryComponent):
     def __init__(self, world, position : Vector,  direction = Direction.EAST ):
@@ -111,7 +111,7 @@ class Spawner(FactoryComponent):
                          sprite = Sprite(AssetProfiles.SPAWNER, DEFAULT_RECT, 1),
                          )
         self.resource_type = resource 
-        
+
     def update(self, world):
         if world.has_resource(self.position):
             return 
