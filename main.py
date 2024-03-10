@@ -63,7 +63,8 @@ if __name__ == "__main__":
     
     # Initialize the environment and get the initial state
     state = env.reset()
-    max_iter = 1
+    max_iter = 100
+
     
     # Run the environment
     for _ in range(0, max_iter):
@@ -72,8 +73,6 @@ if __name__ == "__main__":
         
         # Execute the action in the environment
         next_state, reward, done, info = env.step(action)
-        
-        print(next_state["assembler_mask"])
         # Render the environment
         env.render()
         

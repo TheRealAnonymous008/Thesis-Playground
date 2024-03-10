@@ -2,12 +2,27 @@ import gymnasium as gym
 import gymnasium.spaces as spaces
 import numpy as np
 import pygame
+from enum import Enum
 
 from environment.world import World
 from environment.constants import BOUNDS, BLOCK_SIZE
 
 from environment.resource import TOTAL_RESOURCE_TYPES
 from environment.components import TOTAL_COMPONENT_TYPES
+from environment.direction import Direction
+
+class ActionEnum(Enum):
+    IDLE = 0 
+    MOVE_NORTH = 1
+    MOVE_SOUTH = 2 
+    MOVE_EAST = 3 
+    MOVE_WEST = 4
+    ROTATE_CW = 5
+    ROTATE_CCW = 6 
+    SWITCH_MODE = 7 
+
+TOTAL_AGENT_ACTIONS = len(ActionEnum) + 1
+
 
 class FactoryGym(gym.Env):
     def __init__(self):
@@ -56,8 +71,11 @@ class FactoryGym(gym.Env):
             ]),
         })
 
+        """
+        The action space is specified as a discrete space
 
-        self.action_space = spaces.Discrete(6)
+        """
+        self.action_space = spaces.Discrete(TOTAL_AGENT_ACTIONS)
         
         self.running = True 
         
@@ -65,15 +83,35 @@ class FactoryGym(gym.Env):
         pygame.display.set_mode((self.DISPLAY_WIDTH, self.DISPLAY_HEIGHT))
         self.world = World(self.WORLD_WIDTH, self.WORLD_HEIGHT, BLOCK_SIZE)
 
+        self.assembler = self.world.factory.assemblers[3][4]
         self.reset()
 
     def reset(self):
         # Reset the environment to its initial state
         self.state = self.world.get_state()
+        
         return self.state
 
-    def step(self, action):
-        # TODO: Process the action here
+    def step(self, action : ActionEnum):
+        # Each action is assumed (for now) to be a single agent's action
+        match(action):
+            case ActionEnum.IDLE.value: 
+                pass 
+            case ActionEnum.MOVE_NORTH.value:
+                self.assembler.move_direction(self.world, Direction.NORTH)
+            case ActionEnum.MOVE_SOUTH.value:
+                self.assembler.move_direction(self.world, Direction.SOUTH)
+            case ActionEnum.MOVE_EAST.value:
+                self.assembler.move_direction(self.world, Direction.EAST)
+            case ActionEnum.MOVE_WEST.value:
+                self.assembler.move_direction(self.world, Direction.WEST)
+            case ActionEnum.ROTATE_CW.value:
+                self.assembler.rotate_cw()  
+            case ActionEnum.ROTATE_CCW.value: 
+                self.assembler.rotate_ccw() 
+            case ActionEnum.SWITCH_MODE.value: 
+                self.assembler.switch_mode()  
+
         self.state = self.world.get_state()
         reward = 0 
         done = False 
