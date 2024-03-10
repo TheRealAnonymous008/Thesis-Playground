@@ -52,25 +52,6 @@ class FactoryGym(gym.Env):
         4. Assembler Mask - determines information about assemmblers, their rotation and the current mode they are operating on (PUSH / PULL)
         x = 1 + 1 + 1 = 3
         """
-        # self.observation_space = spaces.Dict({
-        #     "world_mask": 
-        #         spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype=np.int8),
-        #     "resource_mask": spaces.Tuple([
-        #         spaces.Box(low = 0, high = TOTAL_RESOURCE_TYPES, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8), 
-        #         spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 4), dtype = np.int8)
-        #     ]),
-        #     "factory_mask": spaces.Tuple([
-        #         spaces.Box(low = 0, high = TOTAL_COMPONENT_TYPES, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8), 
-        #         spaces.Box(low = 0, high = 4, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8),
-        #         spaces.Box(low = 0, high = TOTAL_RESOURCE_TYPES, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8)
-        #     ]),
-        #     "assembler_mask": spaces.Tuple([
-        #         spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8), 
-        #         spaces.Box(low = 0, high = 4, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8),
-        #         spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT, 1), dtype = np.int8)
-        #     ]),
-        # })
-
         self.observation_space = spaces.Dict({
             "world_mask": spaces.Box(low = 0, high = 1, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT), dtype=np.int8),
             "resource_mask_type":  spaces.Box(low = 0, high = TOTAL_RESOURCE_TYPES, shape = (self.WORLD_WIDTH, self.WORLD_HEIGHT), dtype = np.int8), 
