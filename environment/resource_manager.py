@@ -9,7 +9,8 @@ class ResourceMap:
 
     def __init__(self, bounds : Vector): 
         self.bounds = bounds 
-        self.resources = [[None for _ in range(self.bounds.y)] for _ in range(self.bounds.x)]
+        self.resources = None
+        self.reset()
 
     def place_resource(self, world, type : ResourceType, position : Vector ) -> ResourceTile:
         resource: ResourceTile = None
@@ -86,5 +87,8 @@ class ResourceMap:
                 mask[x][y] = data
         return mask 
 
-    def reset():
+    def reset(self):
         id = 1
+        if self.resources != None:
+            del self.resources
+        self.resources = [[None for _ in range(self.bounds.y)] for _ in range(self.bounds.x)]

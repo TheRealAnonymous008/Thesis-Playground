@@ -38,6 +38,9 @@ class DemandManager:
     def __init__(self):
         self.orders : list(Order) = []
     
+    def reset(self):
+        self.orders = []
+
     def generate_order(self):
         order : Order = Order() 
         order.add_part(ResourceType.RED, Vector(0, 0)).finalize()
@@ -56,5 +59,6 @@ class DemandManager:
 
         if order_to_remove != None: 
             self.orders.remove(order_to_remove)
+            return dist
         
-        return dist
+        return 0

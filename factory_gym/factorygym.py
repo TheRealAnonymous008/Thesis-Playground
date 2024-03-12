@@ -22,7 +22,7 @@ class ActionEnum(Enum):
     SWITCH_MODE = 7 
 
 TOTAL_AGENT_ACTIONS = len(ActionEnum) + 1
-
+MAX_ITERS = 320
 
 class FactoryGym(gym.Env):
     def __init__(self):
@@ -89,7 +89,7 @@ class FactoryGym(gym.Env):
         high = np.repeat(high.reshape(1, -1), self.WORLD_HEIGHT, axis=0)
         high = np.repeat(high.reshape(1, self.WORLD_HEIGHT,  -1), self.WORLD_WIDTH, axis=0)
 
-        self.observation_space = spaces.Box(low, high) 
+        self.observation_space = spaces.Box(low, high, dtype = np.int8) 
 
         """
         The action space is specified as a discrete space
@@ -102,22 +102,26 @@ class FactoryGym(gym.Env):
         pygame.display.set_mode((self.DISPLAY_WIDTH, self.DISPLAY_HEIGHT))
         self.world = World(self.WORLD_WIDTH, self.WORLD_HEIGHT, BLOCK_SIZE)
 
-        self.assembler = self.world.factory.assemblers[3][4]
+        self.iters = 0
 
     def reset(self, seed = 0):
         # Reset the environment to its initial state
         self.world.init()
         self.state = self.world.get_state()
-        self.assembler = self.world.factory.assemblers[3][4]
+        self.assembler = self.world.factory.assembler_list[0]
+        self.iters = 0
 
         info = {}
         return self.state, info
 
     def step(self, action : ActionEnum):
         # Each action is assumed (for now) to be a single agent's action
+        self.iters += 1
+        reward = 0
+
         match(action):
             case ActionEnum.IDLE.value: 
-                pass 
+                reward -= 1
             case ActionEnum.MOVE_NORTH.value:
                 self.assembler.move_direction(self.world, Direction.NORTH)
             case ActionEnum.MOVE_SOUTH.value:
@@ -134,9 +138,9 @@ class FactoryGym(gym.Env):
                 self.assembler.switch_mode()  
 
         self.world.update()
-        reward = self.world.global_reward - 1
+        reward += self.world.global_reward 
         self.state = self.world.get_state()
-        done = False 
+        done = True if self.iters >= MAX_ITERS else False 
         info = {} 
         return self.state, reward, done, done, info
 
@@ -150,3 +154,4 @@ class FactoryGym(gym.Env):
     def close(self):
         # Clean up the environment
         pygame.quit()
+

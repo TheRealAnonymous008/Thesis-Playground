@@ -5,9 +5,25 @@ import numpy as np
 
 class Factory:
     def __init__(self, bounds):
-        self.components = [[None for _ in range(bounds.y)] for _ in range(bounds.x)]
-        self.assemblers = [[None for _ in range(bounds.y)] for _ in range(bounds.x)]
+        self.components = None 
+        self.assemblers = None 
+        self.assembler_list = None
+
         self.bounds : Vector = bounds
+        self.reset()
+
+    def reset(self):
+        if self.components != None: 
+            del self.components
+        if self.assemblers != None: 
+            del self.assemblers 
+        if self.assembler_list != None:
+            del self.assembler_list 
+
+        self.components = [[None for _ in range(self.bounds.y)] for _ in range(self.bounds.x)]
+        self.assemblers = [[None for _ in range(self.bounds.y)] for _ in range(self.bounds.x)]
+        self.assembler_list = []
+
 
     def add_component(self, world, type : ComponentType, position : Vector, arg):
         component = None 
@@ -15,6 +31,7 @@ class Factory:
             case ComponentType.ASSEMBLER: 
                 component = Assembler(world, position, arg)
                 self.assemblers[position.x][position.y] = component
+                self.assembler_list.append(component)
             case ComponentType.CONVEYOR:
                 component = ConveyorBelt(world, position ,arg)
                 self.components[position.x][position.y] = component 
@@ -24,7 +41,6 @@ class Factory:
             case ComponentType.OUTPORT:
                 component = OutPort(world, position)
                 self.components[position.x][position.y] = component
-
 
 
         component.update_transform(world, position, arg)

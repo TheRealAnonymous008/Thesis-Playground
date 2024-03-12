@@ -16,6 +16,7 @@ class World:
 
         self.tiles = [[None for _ in range(height)] for _ in range(width)]
         self.resource_map  : ResourceMap = ResourceMap(self.bounds)
+        self.factory = Factory(bounds= Vector(self.bounds.x, self.bounds.y))
 
         self.demand_manager : DemandManager = DemandManager()
         self.global_reward = 0
@@ -37,22 +38,18 @@ class World:
         self.tiles[3][7] =  WallTile(self, Vector(3, 7))
 
     def init_resources(self):
-        r1 = self.place_resource(ResourceType.RED, Vector(0, 0))
-        r2 = self.place_resource(ResourceType.RED, Vector(0, 1))
-        r1.merge(r2)
+        self.resource_map.reset()
 
     def init_factory(self):
-        self.factory = Factory(bounds= Vector(self.bounds.x, self.bounds.y))
-        self.factory.add_component(self, ComponentType.ASSEMBLER, Vector(3, 4), Direction.WEST)
+        self.factory.reset()
+        self.factory.add_component(self, ComponentType.ASSEMBLER, Vector(4, 4), Direction.WEST)
 
         self.factory.add_component(self, ComponentType.SPAWNER, Vector(4, 5), ResourceType.RED)
+        self.factory.add_component(self, ComponentType.SPAWNER, Vector(1, 5), ResourceType.RED)
         self.factory.add_component(self, ComponentType.OUTPORT, Vector(1, 1), ResourceType.RED)
 
-        self.factory.add_component(self, ComponentType.CONVEYOR, Vector(5, 5), Direction.EAST)
-        self.factory.add_component(self, ComponentType.CONVEYOR, Vector(6, 5), Direction.EAST)
-        self.factory.add_component(self, ComponentType.CONVEYOR, Vector(7, 5), Direction.NORTH)
-
     def init_demand(self):
+        self.demand_manager.reset()
         self.demand_manager.generate_order()
         self.demand_manager.generate_order()
         self.demand_manager.generate_order()

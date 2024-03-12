@@ -19,7 +19,7 @@ class FactorySimulation():
         self.world = World(BOUNDS.x, BOUNDS.y, BLOCK_SIZE)
 
     def run(self):
-        assembler : Assembler  = self.world.factory.assemblers[3][4]
+        assembler : Assembler  = self.world.factory.assembler_list[0]
 
         while self.running:
             for event in pygame.event.get():
@@ -50,6 +50,7 @@ class FactorySimulation():
     def update(self):
         pygame.display.update()
         self.world.update()
+        print(self.world.global_reward)
 
     def draw(self):
         self.world.draw(pygame.display.get_surface())
