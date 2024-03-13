@@ -121,7 +121,7 @@ class FactoryGym(gym.Env):
 
         match(action):
             case ActionEnum.IDLE.value: 
-                reward -= 1
+                pass
             case ActionEnum.MOVE_NORTH.value:
                 self.assembler.move_direction(self.world, Direction.NORTH)
             case ActionEnum.MOVE_SOUTH.value:
