@@ -34,6 +34,8 @@ class FactoryGym(gym.Env):
         self.WORLD_WIDTH = BOUNDS.x 
         self.WORLD_HEIGHT = BOUNDS.y
 
+        self.n_agents = 1
+
         """
         The state space is specified as consisting of the foollowing:
         All masks have a shape of (width, height, x) where x varies depending on the mask type
@@ -52,7 +54,7 @@ class FactoryGym(gym.Env):
         4. Assembler Mask - determines information about assemmblers, their rotation and the current mode they are operating on (PUSH / PULL)
         x = 1 + 1 + 1 = 3
         """
-
+        self.world = World(self.WORLD_WIDTH, self.WORLD_HEIGHT, BLOCK_SIZE)
         low = np.array([
             # World Mask
             0, 
@@ -92,15 +94,15 @@ class FactoryGym(gym.Env):
         self.observation_space = spaces.Box(low, high, dtype = np.int8) 
 
         """
-        The action space is specified as a discrete space
+        The action space is specified as a tuple of discrete spaces per agent 
         """
-        self.action_space = spaces.Discrete(TOTAL_AGENT_ACTIONS)
+        self.n_agents = len(self.world.factory.assembler_list)
+        self.action_space = spaces.Tuple([spaces.Discrete(TOTAL_AGENT_ACTIONS) for _ in range(0, self.n_agents)])
         
         self.running = True 
         
         pygame.init()
         pygame.display.set_mode((self.DISPLAY_WIDTH, self.DISPLAY_HEIGHT))
-        self.world = World(self.WORLD_WIDTH, self.WORLD_HEIGHT, BLOCK_SIZE)
 
         self.iters = 0
 
@@ -108,34 +110,37 @@ class FactoryGym(gym.Env):
         # Reset the environment to its initial state
         self.world.init()
         self.state = self.world.get_state()
-        self.assembler = self.world.factory.assembler_list[0]
         self.iters = 0
 
         info = {}
         return self.state, info
 
-    def step(self, action : ActionEnum):
+    def step(self, actions : ActionEnum):
         # Each action is assumed (for now) to be a single agent's action
         self.iters += 1
         reward = 0
 
-        match(action):
-            case ActionEnum.IDLE.value: 
-                pass
-            case ActionEnum.MOVE_NORTH.value:
-                self.assembler.move_direction(self.world, Direction.NORTH)
-            case ActionEnum.MOVE_SOUTH.value:
-                self.assembler.move_direction(self.world, Direction.SOUTH)
-            case ActionEnum.MOVE_EAST.value:
-                self.assembler.move_direction(self.world, Direction.EAST)
-            case ActionEnum.MOVE_WEST.value:
-                self.assembler.move_direction(self.world, Direction.WEST)
-            case ActionEnum.ROTATE_CW.value:
-                self.assembler.rotate_cw()  
-            case ActionEnum.ROTATE_CCW.value: 
-                self.assembler.rotate_ccw() 
-            case ActionEnum.SWITCH_MODE.value: 
-                self.assembler.switch_mode()  
+        for idx in range(0, self.n_agents): 
+            action = actions[idx]
+            assembler = self.world.factory.assembler_list[idx]
+
+            match(action):
+                case ActionEnum.IDLE.value: 
+                    pass
+                case ActionEnum.MOVE_NORTH.value:
+                    assembler.move_direction(self.world, Direction.NORTH)
+                case ActionEnum.MOVE_SOUTH.value:
+                    assembler.move_direction(self.world, Direction.SOUTH)
+                case ActionEnum.MOVE_EAST.value:
+                    assembler.move_direction(self.world, Direction.EAST)
+                case ActionEnum.MOVE_WEST.value:
+                    assembler.move_direction(self.world, Direction.WEST)
+                case ActionEnum.ROTATE_CW.value:
+                    assembler.rotate_cw()  
+                case ActionEnum.ROTATE_CCW.value: 
+                    assembler.rotate_ccw() 
+                case ActionEnum.SWITCH_MODE.value: 
+                    assembler.switch_mode()  
 
         self.world.update()
         reward += self.world.global_reward 

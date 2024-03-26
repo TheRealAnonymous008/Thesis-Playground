@@ -43,6 +43,7 @@ class World:
     def init_factory(self):
         self.factory.reset()
         self.factory.add_component(self, ComponentType.ASSEMBLER, Vector(4, 4), Direction.WEST)
+        self.factory.add_component(self, ComponentType.ASSEMBLER, Vector(5, 4), Direction.WEST)
 
         self.factory.add_component(self, ComponentType.SPAWNER, Vector(4, 5), ResourceType.RED)
         self.factory.add_component(self, ComponentType.SPAWNER, Vector(1, 5), ResourceType.RED)

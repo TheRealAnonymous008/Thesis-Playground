@@ -9,7 +9,7 @@ if __name__ == "__main__":
     # Run the environment
     state, info = env.reset(42)
     total_reward = 0
-    iters = 100
+    iters = 1000
     for _ in range(iters):
         action = env.action_space.sample()
 
