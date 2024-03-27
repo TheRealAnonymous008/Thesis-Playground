@@ -51,11 +51,6 @@ class World:
 
     def init_demand(self):
         self.demand_manager.reset()
-        self.demand_manager.generate_order()
-        self.demand_manager.generate_order()
-        self.demand_manager.generate_order()
-        self.demand_manager.generate_order()
-        self.demand_manager.generate_order()
 
     def place_resource(self, resource_type : ResourceType, position : Vector):
         return self.resource_map.place_resource(self, resource_type, position)

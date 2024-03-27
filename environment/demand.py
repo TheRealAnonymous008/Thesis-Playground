@@ -1,27 +1,6 @@
 from .resource import *
 from .constants import * 
-
-class Order:
-    def __init__(self):
-        self.parts : dict[Vector, ResourceType] = {}
-
-    def add_part(self, type : ResourceType, position : Vector):
-        self.parts[position] = type 
-        return self
-    
-    def finalize(self):
-        finalized_parts : dict[Vector, ResourceType] = {}
-        min_vec : Vector = Vector(BIG_NUMBER, BIG_NUMBER)
-
-        for k in self.parts.keys():
-            k :Vector = k 
-            min_vec.x = min(min_vec.x, k.x)
-            min_vec.y = min(min_vec.y, k.y)
-
-        for k in self.parts.keys():
-            finalized_parts[k - min_vec] = self.parts[k]
-
-        self.parts = finalized_parts
+from .order import *
 
 def compare_orders(x: Order, y: Order) -> float:
     xset = set(x.parts.items())
@@ -36,16 +15,12 @@ def compare_orders(x: Order, y: Order) -> float:
 
 class DemandManager: 
     def __init__(self):
-        self.orders : list(Order) = []
-    
+        self.products : ProductListing = ProductListing()
+        self.orders : list(Order) = [] 
+
     def reset(self):
         self.orders = []
-
-    def generate_order(self):
-        order : Order = Order() 
-        order.add_part(ResourceType.RED, Vector(0, 0)).finalize()
-
-        self.orders.append(order)
+        self.orders.append(self.products.get_product(0))
 
     def check_order(self, order: Order):
         dist = BIG_NUMBER
@@ -58,7 +33,6 @@ class DemandManager:
                 order_to_remove = ord 
 
         if order_to_remove != None: 
-            self.orders.remove(order_to_remove)
             return dist
         
         return 0
