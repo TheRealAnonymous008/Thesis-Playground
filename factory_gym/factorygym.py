@@ -97,7 +97,7 @@ class FactoryGym(gym.Env):
         The action space is specified as a tuple of discrete spaces per agent 
         """
         self.n_agents = len(self.world.factory.assembler_list)
-        self.action_space = spaces.Tuple([spaces.Discrete(TOTAL_AGENT_ACTIONS) for _ in range(0, self.n_agents)])
+        self.action_space = spaces.MultiDiscrete([TOTAL_AGENT_ACTIONS for _ in range(0, self.n_agents)])
         
         self.running = True 
         
