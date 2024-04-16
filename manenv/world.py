@@ -1,14 +1,19 @@
 import numpy as np 
-import pygame as pg 
-from typing import Tuple, Iterable
+from typing import Tuple
 
 class WorldCell: 
     """
-    The basic unit within the factory. 
+    The basic unit within the factory. The world cell may contain:
+    - a factory component
+    - a product
+    - a robot 
     """
-    def __init__(self):
-        pass 
 
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        pass 
 
 class World: 
     """
@@ -27,6 +32,15 @@ class World:
     def _height(self):
         return self.shape[1]
     
-    def get_cell(self, x : int, y : int) -> WorldCell:
+    def reset(self):
+        for M in self.map: 
+            for r in M: 
+                r.reset()
+    
+    def get_cell(self, x : int, y : int) -> WorldCell | None: 
+        if x < 0 or y < 0 or x >= self.shape[0] or y >= self.shape[1]:
+            return None 
+        
         return self.map[x][y]
 
+    

@@ -33,20 +33,33 @@ class RenderWrapper:
                 if event.type == pg.KEYDOWN: 
                     pass 
             
-            surface.fill(pg.Color(255, 255, 255))
             # Draw cell bgs
             for i in range(0, self._visible_cells[0]):
                 for j in range(0, self._visible_cells[1]):
-                    pg.draw.rect(
-                        surface=surface, 
-                        color= pg.Color(0, 0, 0), 
-                        rect = pg.Rect(
-                            i * self.cell_dims[0], 
-                            j * self.cell_dims[1], 
-                            self.cell_dims[0] * 0.95, 
-                            self.cell_dims[1] * 0.95
+                    if self.world.get_cell(i, j) != None:
+                        # Cell border
+                        pg.draw.rect(
+                            surface=surface, 
+                            color= pg.Color(255, 255, 255), 
+                            rect = pg.Rect(
+                                i * self.cell_dims[0], 
+                                j * self.cell_dims[1], 
+                                self.cell_dims[0], 
+                                self.cell_dims[1]
+                            )
                         )
-                    )
+                        # Cell fill
+                        pg.draw.rect(
+                            surface=surface, 
+                            color= pg.Color(0, 0, 0), 
+                            rect = pg.Rect(
+                                i * self.cell_dims[0], 
+                                j * self.cell_dims[1], 
+                                self.cell_dims[0] * 0.95, 
+                                self.cell_dims[1] * 0.95
+                            )
+                        )
+
 
             pg.display.flip()
 
