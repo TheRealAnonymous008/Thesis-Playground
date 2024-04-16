@@ -84,6 +84,7 @@ class World:
         return self._map[v[0]][v[1]]
     
     def place_component(self, pos: Vector, cmp : FactoryComponent):
+        cmp.bind(self)
         self.get_cell(pos).place_component(cmp)
         
     def place_product(self, pos: Vector, product : Product):

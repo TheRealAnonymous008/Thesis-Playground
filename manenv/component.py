@@ -13,17 +13,21 @@ class FactoryComponent(ABC):
     """
     Abstract class for factory components
     """
-    def __init__(self, world : World, asset : str = ""):
+    def __init__(self, asset : str = ""):
         """
         `world` - the world instance that holds this factory component 
 
         `asset` - a path to the image associated with this asset. If empty, defaults to no asset. 
         """
         self._cell : WorldCell | None = None 
-        self._world : World = world
+        self._world : World = None
         self._asset : str = asset
 
+    def bind(self, world):
+        self._world = world 
+
     def place(self, cell: WorldCell):
+        self._check_is_bound()
         if self._cell == cell:
             return 
         
@@ -35,11 +39,19 @@ class FactoryComponent(ABC):
 
     @abstractmethod
     def update(self):
+        self._check_is_bound()
         pass 
 
+    def _check_is_bound(self):
+        if self._world == None: 
+            raise Exception("World is not initialized for this component ")
+
 class Spawner(FactoryComponent):
-    def __init__(self, world : World):
-        super().__init__(world, AssetPath.SPAWNER)
+    """
+    Spawns product objects based on a provided template product  
+    """
+    def __init__(self):
+        super().__init__(AssetPath.SPAWNER)
     
     def update(self):
         pass
