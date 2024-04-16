@@ -23,7 +23,7 @@ class RenderWrapper:
 
     def render(self):
         pg.init()
-        surface = pg.display.set_mode(self.display_dims)
+        screen = pg.display.set_mode(self.display_dims)
 
         self.running = True 
         while self.running :
@@ -36,29 +36,31 @@ class RenderWrapper:
             # Draw cell bgs
             for i in range(0, self._visible_cells[0]):
                 for j in range(0, self._visible_cells[1]):
-                    if self.world.get_cell(i, j) != None:
+                    cell = self.world.get_cell(i, j)
+                    r_left, r_top = i * self.cell_dims[0], j * self.cell_dims[1]
+
+                    if cell != None:
                         # Cell border
                         pg.draw.rect(
-                            surface=surface, 
+                            surface=screen, 
                             color= pg.Color(255, 255, 255), 
-                            rect = pg.Rect(
-                                i * self.cell_dims[0], 
-                                j * self.cell_dims[1], 
-                                self.cell_dims[0], 
-                                self.cell_dims[1]
-                            )
+                            rect = pg.Rect( r_left, r_top, self.cell_dims[0], self.cell_dims[1])
                         )
                         # Cell fill
                         pg.draw.rect(
-                            surface=surface, 
+                            surface=screen, 
                             color= pg.Color(0, 0, 0), 
-                            rect = pg.Rect(
-                                i * self.cell_dims[0], 
-                                j * self.cell_dims[1], 
-                                self.cell_dims[0] * 0.95, 
-                                self.cell_dims[1] * 0.95
-                            )
+                            rect = pg.Rect(r_left, r_top, self.cell_dims[0] * 0.95, self.cell_dims[1] * 0.95)
                         )
+
+                        # Cell contents
+                        if cell._factory_component != None:       
+                            img = pg.image.load(cell._factory_component._asset)
+                            img = pg.transform.scale(img, (self.cell_dims[0], self.cell_dims[1]))
+                            img.convert()
+                            rect = img.get_rect()
+                            rect.center = r_left + self.cell_dims[0] / 2, r_top + self.cell_dims[1] / 2
+                            screen.blit(img, rect)
 
 
             pg.display.flip()

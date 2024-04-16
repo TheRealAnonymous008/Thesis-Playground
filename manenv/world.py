@@ -1,5 +1,12 @@
+from __future__ import annotations
 import numpy as np 
 from typing import Tuple
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING: 
+    from .component import *
+
+from .vector import * 
 
 class WorldCell: 
     """
@@ -9,11 +16,20 @@ class WorldCell:
     - a robot 
     """
 
-    def __init__(self):
+    def __init__(self, position : Vector):
+        self._factory_component : FactoryComponent | None = None 
+        self._position : Vector = position
         self.reset()
 
     def reset(self):
+        self._factory_component = None 
         pass 
+
+    def place_component(self, cmp : FactoryComponent):
+        if self._factory_component == cmp: 
+            return
+        self._factory_component = cmp
+        cmp.place(self)
 
 class World: 
     """
@@ -24,7 +40,7 @@ class World:
         shape - the dimensions of the environment in (width, height) format 
         """
         self.shape : Tuple = shape 
-        self.map : list[list[WorldCell]] = [[WorldCell() for _ in range(shape[1])] for _ in range(shape[0])]
+        self.map : list[list[WorldCell]] = [[WorldCell(position=make_vector(x, y)) for y in range(shape[1])] for x in range(shape[0])]
 
     def _width(self):
         return self.shape[0]
