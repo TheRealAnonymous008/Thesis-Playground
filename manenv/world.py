@@ -5,6 +5,7 @@ from typing import Tuple
 from typing import TYPE_CHECKING
 if TYPE_CHECKING: 
     from .component import *
+    from .product import *
 
 from .vector import * 
 
@@ -20,8 +21,9 @@ class WorldCell:
         """
         `position` - the position associated with this cell
         """
-        
+
         self._factory_component : FactoryComponent | None = None 
+        self._products : list[Product] = [] 
         self._position : Vector = position
         self.reset()
 
@@ -34,6 +36,18 @@ class WorldCell:
             return
         self._factory_component = cmp
         cmp.place(self)
+
+    def place_product(self, product: FactoryComponent):
+        self._products.append(product)
+    
+    def remove_product(self, id : int):
+        """
+        Remove product with specified `id` from the products on this cell
+        """
+        for product in self._products:
+            if product._id == id:
+                self._products.remove(product)
+                break
 
 class World: 
     """
@@ -72,5 +86,6 @@ class World:
     def place_component(self, pos: Vector, cmp : FactoryComponent):
         self.get_cell(pos).place_component(cmp)
         
-
+    def place_product(self, pos: Vector, product : Product):
+        self.get_cell(pos).place_product(product)
     

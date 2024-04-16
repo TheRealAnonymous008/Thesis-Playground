@@ -1,5 +1,6 @@
 import numpy as np 
 import pygame as pg 
+from pgu.gui import *
 from typing import Tuple
 
 from .world import World
@@ -55,6 +56,7 @@ class RenderWrapper:
                         )
 
                         # Cell contents
+                        # Factory Component
                         if cell._factory_component != None:       
                             img = pg.image.load(cell._factory_component._asset)
                             img = pg.transform.scale(img, (self.cell_dims[0], self.cell_dims[1]))
