@@ -2,7 +2,8 @@ import numpy as np
 import pygame as pg 
 from typing import Tuple
 
-from manenv.world import World
+from .world import World
+from .vector import make_vector
 
 class RenderWrapper: 
     """
@@ -10,11 +11,11 @@ class RenderWrapper:
     """
     def __init__(self, world : World, display_dims : Tuple = (1000, 600), cell_dims : Tuple = (100, 100)): 
         """
-        world - the world object to be rendered
+        `world` - the world object to be rendered
 
-        display_dims - the display width and height of the screen
+        `display_dims` - the display width and height of the screen
 
-        visible cells - the number of visible cells on each axis. 
+        `visible cells` - the number of visible cells on each axis. 
         """
         self.world : World = world 
         self.display_dims : Tuple = display_dims
@@ -36,7 +37,7 @@ class RenderWrapper:
             # Draw cell bgs
             for i in range(0, self._visible_cells[0]):
                 for j in range(0, self._visible_cells[1]):
-                    cell = self.world.get_cell(i, j)
+                    cell = self.world.get_cell(make_vector(i, j))
                     r_left, r_top = i * self.cell_dims[0], j * self.cell_dims[1]
 
                     if cell != None:

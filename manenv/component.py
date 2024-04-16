@@ -15,9 +15,9 @@ class FactoryComponent(ABC):
     """
     def __init__(self, world : World, asset : str = ""):
         """
-        world - the world instance that holds this factory component 
+        `world` - the world instance that holds this factory component 
 
-        asset - a path to the image associated with this asset. If empty, defaults to no asset. 
+        `asset` - a path to the image associated with this asset. If empty, defaults to no asset. 
         """
         self._cell : WorldCell | None = None 
         self._world : World = world
