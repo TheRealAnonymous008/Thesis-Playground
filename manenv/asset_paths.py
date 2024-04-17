@@ -7,8 +7,8 @@ class AssetPath:
     SPAWNER = "assets\Spawner.png"
     PRODUCT_ASSETS = [
         "",
-        "assets\Red_Resource.png",
-        "assets\Blue_Resource.png"
+        "assets\\Red_Resource.png",
+        "assets\\Blue_Resource.png"
     ]
 
     def get_product_asset(id : int) -> str:
