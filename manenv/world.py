@@ -59,6 +59,7 @@ class World:
         """
         self._shape : Tuple = shape 
         self._map : list[list[WorldCell]] = [[WorldCell(position=make_vector(x, y)) for y in range(shape[1])] for x in range(shape[0])]
+        self._time_step = 0 
 
     def _width(self):
         return self._shape[0]
@@ -67,12 +68,15 @@ class World:
         return self._shape[1]
     
     def reset(self):
+        self._time_step = 0
+
         for M in self._map: 
             for r in M: 
                 r.reset()
 
     def update(self): 
         # Update all components
+        self._time_step += 1
         for x in range(self._shape[0]):
             for y in range(self._shape[1]):
                 if self._map[x][y]._factory_component != None: 

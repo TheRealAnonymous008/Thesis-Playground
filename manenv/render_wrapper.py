@@ -9,12 +9,14 @@ from .product import Product
 from .vector import make_vector
 from .asset_paths import AssetPath
 
+UI_WIDTH = 300 
+
 class ProductDisplayWindow(gui.elements.UIPanel):
     """
     Popup window for rendering product
     """
     def __init__(self, display_dims : Tuple, manager : gui.UIManager):
-        self._window_size : Tuple = (300, 300)
+        self._window_size : Tuple = (UI_WIDTH, UI_WIDTH)
         self._product_surface = pg.Surface(self._window_size)
 
         super().__init__(
@@ -79,9 +81,12 @@ class RenderWrapper:
         background = pg.Surface(self.display_dims)
         background.fill(pg.Color('#000000'))
 
-        ui_manager = gui.UIManager(self.display_dims)
+        ui_manager = gui.UIManager(self.display_dims, "theme.json")
         clock = pg.time.Clock()
+
+        # UI elements
         product_window = ProductDisplayWindow(self.display_dims, ui_manager)
+        time_step_label = gui.elements.UILabel(pg.Rect(self.display_dims[0] - UI_WIDTH, self.display_dims[1] - 200, UI_WIDTH, 200), "Timestep = 0")
 
         self.is_running = True 
         while self.is_running :
@@ -101,6 +106,7 @@ class RenderWrapper:
             
                 ui_manager.process_events(event)
 
+            time_step_label.text = "Timestep :" + str(self.world._time_step)
             ui_manager.update(time_delta)
             
             screen.blit(background, (0, 0))
