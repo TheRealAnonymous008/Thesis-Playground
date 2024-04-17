@@ -81,12 +81,11 @@ class RenderWrapper:
         background = pg.Surface(self.display_dims)
         background.fill(pg.Color('#000000'))
 
-        ui_manager = gui.UIManager(self.display_dims, "theme.json")
+        ui_manager = gui.UIManager(self.display_dims)
         clock = pg.time.Clock()
 
         # UI elements
         product_window = ProductDisplayWindow(self.display_dims, ui_manager)
-        time_step_label = gui.elements.UILabel(pg.Rect(self.display_dims[0] - UI_WIDTH, self.display_dims[1] - 200, UI_WIDTH, 200), "Timestep = 0")
 
         self.is_running = True 
         while self.is_running :
@@ -106,7 +105,6 @@ class RenderWrapper:
             
                 ui_manager.process_events(event)
 
-            time_step_label.text = "Timestep :" + str(self.world._time_step)
             ui_manager.update(time_delta)
             
             screen.blit(background, (0, 0))
