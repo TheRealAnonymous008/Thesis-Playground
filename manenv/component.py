@@ -7,6 +7,7 @@ import numpy as np
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING: 
+    from .product import Product
     from .world import World, WorldCell
 
 class FactoryComponent(ABC): 
@@ -50,8 +51,13 @@ class Spawner(FactoryComponent):
     """
     Spawns product objects based on a provided template product  
     """
-    def __init__(self):
+    def __init__(self, product : Product):
+        """
+        product: The product that this spawner will spawn 
+        """
         super().__init__(AssetPath.SPAWNER)
+        self._product = product
     
     def update(self):
-        pass
+        if (len(self._cell._products)) == 0:
+            self._cell.place_product(self._product.copy())

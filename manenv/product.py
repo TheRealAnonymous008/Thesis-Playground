@@ -29,6 +29,9 @@ class Product:
 
     def delete(self):
         Product._IDs.remove(self._id)
+
+    def copy(self):
+        return Product(structure=self._structure)
     
     def __str__(self):
         return "id: " + str(self._id) + "\n" +  str(self._structure)

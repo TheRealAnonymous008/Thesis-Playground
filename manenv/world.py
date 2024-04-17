@@ -75,7 +75,8 @@ class World:
         # Update all components
         for x in range(self._shape[0]):
             for y in range(self._shape[1]):
-                self._map[x][y]._factory_component.update(self)
+                if self._map[x][y]._factory_component != None: 
+                    self._map[x][y]._factory_component.update()
     
     def get_cell(self, v : Vector) -> WorldCell | None: 
         if v[0] < 0 or v[1] < 0 or v[0] >= self._shape[0] or v[1] >= self._shape[1]:
