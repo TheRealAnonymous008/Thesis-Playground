@@ -107,9 +107,12 @@ class Conveyor(FactoryComponent):
             for x in range(0, 3):
                 idx = 3 * y + x
                 offset = make_vector(x - 1, y - 1)
-                if (self._weights[x][y] < 0 and self._world.get_cell(offset + self._cell._position) != None):
+                if self._world.get_cell(offset + self._cell._position) == None:
+                    continue 
+
+                if self._weights[x][y] < 0:
                     self._inports.append(idx)
-                elif (self._weights[x][y] > 0 and self._world.get_cell(offset + self._cell._position) != None):
+                elif self._weights[x][y] > 0:
                     self._outports.append(idx)
 
         np.random.shuffle(self._inports)
