@@ -38,6 +38,11 @@ class FactoryComponent(ABC):
         self._cell = cell 
         self._cell.place_component(self)
 
+        self._on_place()
+
+    def _on_place(self):
+        pass 
+
     @abstractmethod
     def update(self):
         self._check_is_bound()
@@ -88,6 +93,8 @@ class Conveyor(FactoryComponent):
         """
 
         super().__init__("")
+
+    def _on_place(self):
         self._initialize_in_out_ports()
 
     def _initialize_in_out_ports(self):
@@ -99,9 +106,10 @@ class Conveyor(FactoryComponent):
         for y in range(0, 3):
             for x in range(0, 3):
                 idx = 3 * y + x
-                if (self._weights[x][y] < 0):
+                offset = make_vector(x - 1, y - 1)
+                if (self._weights[x][y] < 0 and self._world.get_cell(offset + self._cell._position) != None):
                     self._inports.append(idx)
-                elif (self._weights[x][y] > 0):
+                elif (self._weights[x][y] > 0 and self._world.get_cell(offset + self._cell._position) != None):
                     self._outports.append(idx)
 
         np.random.shuffle(self._inports)
