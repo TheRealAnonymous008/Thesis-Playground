@@ -8,6 +8,7 @@ from .world import World, WorldCell
 from .product import Product
 from .vector import make_vector
 from .asset_paths import AssetPath
+from .component import * 
 
 UI_WIDTH = 300 
 
@@ -75,7 +76,7 @@ class RenderWrapper:
         self._visible_cells : Tuple = (int(self.display_dims[0] / self.cell_dims[0]), int(self.display_dims[1] / self.cell_dims[1]))
 
 
-    def render(self):
+    def render(self, update_mode = False ):
         pg.init()
         screen = pg.display.set_mode(self.display_dims)
         background = pg.Surface(self.display_dims)
@@ -105,6 +106,9 @@ class RenderWrapper:
             
                 ui_manager.process_events(event)
 
+            if update_mode:
+                self.world.update()
+
             ui_manager.update(time_delta)
             
             screen.blit(background, (0, 0))
@@ -130,13 +134,17 @@ class RenderWrapper:
 
                         # Cell contents
                         # Factory Component
-                        if cell._factory_component != None:       
-                            img = pg.image.load(cell._factory_component._asset)
-                            img = pg.transform.scale(img, (self.cell_dims[0], self.cell_dims[1]))
-                            img.convert()
-                            rect = img.get_rect()
-                            rect.center = r_left + self.cell_dims[0] / 2, r_top + self.cell_dims[1] / 2
-                            screen.blit(img, rect)
+                        if cell._factory_component != None: 
+                            if type(cell._factory_component) != Conveyor:       
+                                img = pg.image.load(cell._factory_component._asset)
+                                img = pg.transform.scale(img, (self.cell_dims[0], self.cell_dims[1]))
+                                img.convert()
+                                rect = img.get_rect()
+                                rect.center = r_left + self.cell_dims[0] / 2, r_top + self.cell_dims[1] / 2
+                                screen.blit(img, rect)
+                            else: 
+                                self._render_conveyor(cell, screen)
+                                
 
             ui_manager.draw_ui(screen)
             pg.display.flip()
@@ -148,3 +156,6 @@ class RenderWrapper:
         mouse_x, mouse_y = mouse_pos
         x, y = int(mouse_x / self.cell_dims[0]), int(mouse_y / self.cell_dims[1])
         return self.world.get_cell(make_vector(x, y))
+    
+    def _render_conveyor(self, cell : WorldCell, surface : pg.Surface):
+        pass

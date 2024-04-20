@@ -24,6 +24,10 @@ class WorldCell:
 
         self._factory_component : FactoryComponent | None = None 
         self._products : list[Product] = [] 
+        # is_placed stores a series of booleans corresponding to whether or not a product is at the edge
+        # of this cell or not 
+
+        self._dirty_set : set[int] = set()
         self._position : Vector = position
         self.reset()
 
@@ -37,17 +41,28 @@ class WorldCell:
         self._factory_component = cmp
         cmp.place(self)
 
-    def place_product(self, product: FactoryComponent):
+    def place_product(self, product: Product, position : Vector = ZERO_VECTOR):
         self._products.append(product)
+        if position[0] != 0 or position[1] != 0:
+            self._dirty_set.add(product._id)
+
+    def is_product_placed(self, product : Product) -> bool:
+        return not (product._id in self._dirty_set)
     
-    def remove_product(self, id : int):
+    def update_place_status(self, product : Product):
+        if product._id in self._dirty_set: 
+            self._dirty_set.remove(product._id) 
+
+    def remove_product(self, product : Product):
         """
         Remove product with specified `id` from the products on this cell
         """
-        for product in self._products:
-            if product._id == id:
-                self._products.remove(product)
+        idx = 0
+        for _product in self._products:
+            if _product._id == product._id and self.is_product_placed(product):
+                self._products.remove(_product)
                 break
+            idx += 1
 
 class World: 
     """
@@ -75,8 +90,16 @@ class World:
                 r.reset()
 
     def update(self): 
-        # Update all components
         self._time_step += 1
+        # All dirty components are pushed to the cell's center
+        for x in range(self._shape[0]):
+            for y in range(self._shape[1]):
+                cell = self._map[x][y]
+                for prod in cell._products:
+                    if not cell.is_product_placed(prod):
+                        cell.update_place_status(prod)
+
+        # Update all components
         for x in range(self._shape[0]):
             for y in range(self._shape[1]):
                 if self._map[x][y]._factory_component != None: 
