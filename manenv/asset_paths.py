@@ -1,15 +1,20 @@
+import os 
+
 class AssetPath:
     """
     Helper class. Contains no logic, only paths to various assets
     
     
     """
-    SPAWNER = "assets\Spawner.png"
+    SPAWNER = os.path.join(os.curdir, "assets\\Spawner.png")
+    ASSEMBLER = os.path.join(os.curdir, "assets\\Assembler.png")
     PRODUCT_ASSETS = [
         "",
-        "assets\\Red_Resource.png",
-        "assets\\Blue_Resource.png"
+        os.path.join(os.curdir, "assets\\Red_Resource.png"),
+        os.path.join(os.curdir, "assets\\Blue_Resource.png")
     ]
+
+    GRABBER = os.path.join(os.curdir, "assets\\Arm.png")
 
     def get_product_asset(id : int) -> str:
         if (id < 0 or id >= len(AssetPath.PRODUCT_ASSETS)):

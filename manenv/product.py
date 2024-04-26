@@ -7,7 +7,7 @@ import random
 
 from .vector import *
 from .asset_paths import AssetPath
-from .utils import trim_structure_array
+from .product_utils import trim_structure_array
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING: 

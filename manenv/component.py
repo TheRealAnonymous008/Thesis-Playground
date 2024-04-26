@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Tuple
 
 from abc import abstractmethod, ABC
 from .vector import *
@@ -9,6 +10,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING: 
     from .product import Product
     from .world import World, WorldCell
+    from .effector import Effector
 
 class FactoryComponent(ABC): 
     """
@@ -123,7 +125,7 @@ class Conveyor(FactoryComponent):
         if len(self._inports) > 0: 
             self._curr_in = (self._curr_in + 1) % len(self._inports)
             idx = self._inports[self._curr_in]
-            input_offset = make_vector(idx // 3 - 1, idx % 3 - 1)
+            input_offset = make_vector(idx % 3 - 1, idx // 3 - 1)
             input_vec = self._cell._position + input_offset
             src_cell = self._world.get_cell(input_vec)
 
@@ -136,7 +138,7 @@ class Conveyor(FactoryComponent):
         if len(self._outports) > 0:
             self._curr_out = (self._curr_out + 1) % len(self._outports)
             idx = self._outports[self._curr_out]
-            output_offset = make_vector(idx // 3 - 1, idx % 3 - 1)
+            output_offset = make_vector(idx % 3 - 1, idx // 3 - 1)
             output_vec = self._cell._position + output_offset
             dest_cell = self._world.get_cell(output_vec)
             
@@ -148,6 +150,23 @@ class Conveyor(FactoryComponent):
                         self._cell.remove_product(product)
                         dest_cell.place_product(product, -output_offset)
 
+class Assembler(FactoryComponent):
+    """
+    Component for converting the provided input products into an output product
 
+    `workspace_size`: the size of the workspace supported by this product
 
+    `effectors`: the list of effectors that can be used by this assembler unit. 
+    """
+    def __init__(self, workspace_size : Tuple, effectors : list[Effector] = []):
+        super().__init__(AssetPath.ASSEMBLER)
+        
+        self._workspace_size = workspace_size
+        self._workspace = np.zeros(self._workspace_size)
+        self._effectors = effectors
 
+        for e in effectors:
+            e.bind(self)
+    
+    def update(self):
+        pass

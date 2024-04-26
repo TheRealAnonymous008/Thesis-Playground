@@ -41,7 +41,7 @@ class WorldCell:
         self._factory_component = cmp
         cmp.place(self)
 
-    def place_product(self, product: Product, position : Vector = ZERO_VECTOR):
+    def place_product(self, product: Product, position : Vector = VectorBuiltin.ZERO_VECTOR):
         self._products.append(product)
         if position[0] != 0 or position[1] != 0:
             self._dirty_set.add(product._id)
