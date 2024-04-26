@@ -102,7 +102,7 @@ class AssemblerDisplayWindow(gui.elements.UIPanel):
             img = pg.image.load(asset) 
             img = pg.transform.scale(img, cell_size)
             lx, ly = x * self._window_size[0] / px, y * self._window_size[1] / py
-            self._assembler_surface.blit(img, pg.Rect(ly, lx, self._window_size[0], self._window_size[1]))
+            self._assembler_surface.blit(img, pg.Rect(lx, ly, self._window_size[0], self._window_size[1]))
 
 
 

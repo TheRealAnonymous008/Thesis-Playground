@@ -27,11 +27,13 @@ class Effector(ABC):
         """
         self._assembler = None 
         self._action_space = action_space
+
         self._position = position
         self._asset = asset
     
     def bind(self, assembler : Assembler):
         self._assembler = assembler
+        self._workspace_size = [assembler._workspace_size[0] - 1, assembler._workspace_size[1] - 1]
 
     def is_bound(self):
         return self._assembler != None
@@ -63,19 +65,19 @@ class Grabber(Effector):
 
             case GrabberActions.MOVE_LEFT:
                 self._position += VectorBuiltin.LEFT
-                self._position = np.clip(self._position, VectorBuiltin.ZERO_VECTOR, self._assembler._workspace_size)
-
+                self._position = np.clip(self._position, (0, 0), self._workspace_size)
+            
             case GrabberActions.MOVE_RIGHT:
                 self._position += VectorBuiltin.RIGHT
-                self._position = np.clip(self._position, VectorBuiltin.ZERO_VECTOR, self._assembler._workspace_size)
+                self._position = np.clip(self._position, (0, 0), self._workspace_size)
 
             case GrabberActions.MOVE_BACKWARD:
                 self._position += VectorBuiltin.BACKWARD
-                self._position = np.clip(self._position, VectorBuiltin.ZERO_VECTOR, self._assembler._workspace_size)
+                self._position = np.clip(self._position, (0, 0), self._workspace_size)
 
             case GrabberActions.MOVE_FORWARD:
-                self._position += VectorBuiltin.RIGHT
-                self._position = np.clip(self._position, VectorBuiltin.ZERO_VECTOR, self._assembler._workspace_size)
+                self._position += VectorBuiltin.FORWARD
+                self._position = np.clip(self._position, (0, 0), self._workspace_size)
 
             case GrabberActions.GRAB:
                 pass 
