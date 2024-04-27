@@ -53,6 +53,8 @@ class GrabberActions(Enum):
     RELEASE = 6 
     GRAB_INVENTORY = 7
     DISCARD = 8
+    ROTATE_CW = 9
+    ROTATE_CCW = 10
 
 class Grabber(Effector):
     def __init__(self):
@@ -96,5 +98,13 @@ class Grabber(Effector):
             case GrabberActions.DISCARD:
                 self._grabbed_product = None 
 
+            case GrabberActions.ROTATE_CW:
+                if self._grabbed_product != None:
+                    self._grabbed_product.rotate(1)
+                
+            case GrabberActions.ROTATE_CCW:
+                if self._grabbed_product != None:
+                    self._grabbed_product.rotate(-1)
+                    
             case _: 
                 pass 

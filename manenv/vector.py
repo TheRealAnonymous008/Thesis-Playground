@@ -7,7 +7,7 @@ def make_vector(x : int | float, y : int | float, dtype = int) -> Vector:
 
 class VectorBuiltin:
     ZERO_VECTOR = make_vector(0, 0)
-    FORWARD = make_vector(0, 1)
-    BACKWARD = make_vector(0, -1)
-    LEFT = make_vector(-1, 0)
-    RIGHT = make_vector(1, 0)
+    FORWARD = make_vector(1, 0)
+    BACKWARD = make_vector(-1, 0)
+    LEFT = make_vector(0, -1)
+    RIGHT = make_vector(0, 1)

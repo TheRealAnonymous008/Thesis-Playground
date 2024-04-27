@@ -7,7 +7,7 @@ import random
 
 from .vector import *
 from .asset_paths import AssetPath
-from .product_utils import trim_structure_array
+from .product_utils import *
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING: 
@@ -35,6 +35,9 @@ class Product:
 
     def copy(self):
         return Product(structure=self._structure)
+    
+    def rotate(self, k):
+        self._structure =  rotate_structure(self._structure, k)
     
     def __str__(self):
         return "id: " + str(self._id) + "\n" +  str(self._structure)

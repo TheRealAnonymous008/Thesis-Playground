@@ -83,7 +83,7 @@ class AssemblerDisplayWindow(gui.elements.UIPanel):
     def _render_assembler(self, assembler : Assembler):
         px, py = assembler._workspace_size[0] - 1, assembler._workspace_size[1] - 1
         cell_size = self._window_size[0] / px, self._window_size[1] / py
-
+        
         for x in range(px):
             for y in range(py):
                 asset = AssetPath.get_product_asset(assembler._workspace[x][y])
@@ -94,7 +94,7 @@ class AssemblerDisplayWindow(gui.elements.UIPanel):
                 img = pg.transform.scale(img, cell_size)
                 img.fill((255, 255, 255, 128), None, pg.BLEND_RGBA_MULT)
                 lx, ly = x * self._window_size[0] / px, y * self._window_size[1] / py
-                self._assembler_surface.blit(img, pg.Rect(lx, ly, self._window_size[0], self._window_size[1]))
+                self._assembler_surface.blit(img, pg.Rect(ly, lx, self._window_size[0], self._window_size[1]))
 
         for effector in assembler._effectors:
             asset = effector._asset
@@ -102,7 +102,7 @@ class AssemblerDisplayWindow(gui.elements.UIPanel):
             img = pg.image.load(asset) 
             img = pg.transform.scale(img, cell_size)
             lx, ly = x * self._window_size[0] / px, y * self._window_size[1] / py
-            self._assembler_surface.blit(img, pg.Rect(lx, ly, self._window_size[0], self._window_size[1]))
+            self._assembler_surface.blit(img, pg.Rect(ly, lx, self._window_size[0], self._window_size[1]))
 
 
 
@@ -177,7 +177,6 @@ class RenderWrapper:
                 for j in range(0, self._visible_cells[1]):
                     cell = self.world.get_cell(make_vector(i, j))
                     r_left, r_top = i * self.cell_dims[0], j * self.cell_dims[1]
-                    c_x, c_y = r_left + self.cell_dims[0] / 2, r_top + self.cell_dims[1] / 2
 
                     if cell != None:
                         # Cell border

@@ -52,8 +52,14 @@ def place_structure(obj: np.ndarray, target: np.ndarray, pos: np.ndarray) -> np.
     
     return target
 
+def rotate_structure(obj : np.ndarray, rots: int) -> np.ndarray: 
+    """
+    Rotate the input `obj` array by the specified `rots` amount (90 degree clockwise rotations)
+    """
+    return np.rot90(obj, -rots, axes=(0,1))
+            
 
-def check_bounds(array1, array2) -> bool:
+def check_bounds(array1 : np.ndarray, array2 : np.ndarray) -> bool:
     """
     Returns true if array1 is in bound with array2
     """
