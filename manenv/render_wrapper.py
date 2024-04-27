@@ -39,17 +39,21 @@ class ProductDisplayWindow(gui.elements.UIPanel):
 
     def set_curr_product(self, product : Product):
         px, py = product._structure.shape 
-        cell_size = self._window_size[0] / px, self._window_size[1] / py
+        s = max(px, py)
+        cell_size = self._window_size[0] / s, self._window_size[1] / s
 
-        for x in range(px):
-            for y in range(py):
+        for x in range(s):
+            for y in range(s):
+                if not (x < px and y < py):
+                    continue 
+
                 asset = AssetPath.get_product_asset(product._structure[x][y])
                 if asset == "":
                     continue 
                 
                 img = pg.image.load(asset) 
                 img = pg.transform.scale(img, cell_size)
-                lx, ly = x * self._window_size[0] / px, y * self._window_size[1] / py
+                lx, ly = x * self._window_size[0] / s, y * self._window_size[1] / s
                 self._product_surface.blit(img, pg.Rect(ly, lx, self._window_size[1], self._window_size[0]))
 
         self.set_image(self._product_surface)
