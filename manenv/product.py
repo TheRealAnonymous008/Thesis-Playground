@@ -30,6 +30,16 @@ class Product:
         else: 
             self._id = id
 
+
+        # Indicates the product is locked in position and cannot be moved
+        self._is_frozen = False 
+
+    def freeze(self):
+        self._is_frozen = True 
+
+    def unfreeze(self):
+        self._is_frozen = False
+
     def delete(self):
         Product._IDs.remove(self._id)
 

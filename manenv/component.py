@@ -183,7 +183,9 @@ class Assembler(FactoryComponent):
     def place_in_workspace(self, product: Product, position : Vector):
         if not check_bounds(position, self._workspace_size - product._structure.shape):
             return 
-
+        if not is_region_zeros(product._structure, self._workspace, position):
+            return 
+        
         new_workspace = place_structure(product._structure, self._workspace.copy(), position)
         mask = ((new_workspace - self._workspace) != 0).astype(int) 
         self._product_mask = (self._product_mask + mask * product._id).astype(int)

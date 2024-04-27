@@ -52,6 +52,32 @@ def place_structure(obj: np.ndarray, target: np.ndarray, pos: np.ndarray) -> np.
     
     return target
 
+def is_region_zeros(mask: np.ndarray, obj: np.ndarray, pos: np.ndarray) -> bool:
+    """
+    Checks if the region in `obj` is all zeros based on a provided `mask` whose top left corner is placed in `pos`
+    """
+    # Determine the dimensions of the mask and object
+    mask_height, mask_width = mask.shape
+    obj_height, obj_width = obj.shape
+    
+    # Calculate the maximum valid region based on position
+    start_row, end_row = max(0, pos[0]), min(obj_height, pos[0] + mask_height)
+    start_col, end_col = max(0, pos[1]), min(obj_width, pos[1] + mask_width)
+    
+    # Adjust the mask and object arrays accordingly
+    mask_adjusted = mask[
+        max(0, -pos[0]):max(0, -pos[0] + end_row - start_row),
+        max(0, -pos[1]):max(0, -pos[1] + end_col - start_col)
+    ]
+    
+    obj_adjusted = obj[
+        start_row:min(obj_height, end_row),
+        start_col:min(obj_width, end_col)
+    ]
+    
+    # Check if the region in the object covered by the mask is all zeros
+    return np.all(obj_adjusted[mask_adjusted == 1] == 0)
+
 def rotate_structure(obj : np.ndarray, rots: int) -> np.ndarray: 
     """
     Rotate the input `obj` array by the specified `rots` amount (90 degree clockwise rotations)
