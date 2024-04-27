@@ -81,12 +81,12 @@ class AssemblerDisplayWindow(gui.elements.UIPanel):
         super().update(time_delta)
 
     def _render_assembler(self, assembler : Assembler):
-        px, py = assembler._workspace_size
+        px, py = assembler._workspace_size[0] - 1, assembler._workspace_size[1] - 1
         cell_size = self._window_size[0] / px, self._window_size[1] / py
 
         for x in range(px):
             for y in range(py):
-                asset = AssetPath.get_product_asset(1)
+                asset = AssetPath.get_product_asset(assembler._workspace[x][y])
                 if asset == "":
                     continue 
                 

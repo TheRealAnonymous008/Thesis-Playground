@@ -7,8 +7,9 @@ from .asset_paths import AssetPath
 import numpy as np
 
 from typing import TYPE_CHECKING
+from .product_utils import * 
+from .product import Product
 if TYPE_CHECKING: 
-    from .product import Product
     from .world import World, WorldCell
     from .effector import Effector
 
@@ -158,15 +159,52 @@ class Assembler(FactoryComponent):
 
     `effectors`: the list of effectors that can be used by this assembler unit. 
     """
-    def __init__(self, workspace_size : Tuple, effectors : list[Effector] = []):
+    def __init__(self, workspace_size : Vector, effectors : list[Effector] = []):
         super().__init__(AssetPath.ASSEMBLER)
         
         self._workspace_size = workspace_size
-        self._workspace = np.zeros(self._workspace_size)
+        self._workspace = np.zeros(self._workspace_size, dtype=int)
         self._effectors = effectors
+
+        self._product_mask = np.zeros(self._workspace_size, dtype = int)
 
         for e in effectors:
             e.bind(self)
     
     def update(self):
         pass
+
+    def get_product_inventory(self) -> list[Product]:
+        return self._cell._products
+    
+    def place_in_inventory(self, product : Product):
+        self._cell._products.append(product)
+
+    def place_in_workspace(self, product: Product, position : Vector):
+        if not check_bounds(position, self._workspace_size - product._structure.shape):
+            return 
+
+        new_workspace = place_structure(product._structure, self._workspace.copy(), position)
+        mask = ((new_workspace - self._workspace) != 0).astype(int) 
+        self._product_mask = (self._product_mask + mask * product._id).astype(int)
+
+        self._workspace = new_workspace
+
+    def get_product_in_workspace(self, position: Vector, remove = True ) -> Product:
+        if not check_bounds(position, self._workspace_size):
+            raise Exception("Not in bounds")
+        
+        id = self._product_mask[position[0]][position[1]]
+        if id == 0:
+            return None 
+        
+        mask = (self._product_mask == id).astype(int)
+        product = Product((self._workspace.copy() * mask), id = id)
+
+        if remove: 
+            self._workspace = (1 - mask) * self._workspace
+
+        return product
+
+
+        

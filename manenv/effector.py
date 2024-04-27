@@ -33,7 +33,7 @@ class Effector(ABC):
     
     def bind(self, assembler : Assembler):
         self._assembler = assembler
-        self._workspace_size = [assembler._workspace_size[0] - 1, assembler._workspace_size[1] - 1]
+        self._workspace_size = self._assembler._workspace_size - make_vector(1, 1)
 
     def is_bound(self):
         return self._assembler != None
@@ -52,6 +52,7 @@ class GrabberActions(Enum):
     GRAB = 5
     RELEASE = 6 
     GRAB_INVENTORY = 7
+    DISCARD = 8
 
 class Grabber(Effector):
     def __init__(self):
@@ -80,13 +81,20 @@ class Grabber(Effector):
                 self._position = np.clip(self._position, (0, 0), self._workspace_size)
 
             case GrabberActions.GRAB:
-                pass 
+                self._grabbed_product = self._assembler.get_product_in_workspace(self._position)
 
             case GrabberActions.RELEASE:
-                pass 
+                if self._grabbed_product != None:
+                    self._assembler.place_in_workspace(self._grabbed_product, self._position)
+                    self._grabbed_product = None 
             
             case GrabberActions.GRAB_INVENTORY:
-                pass 
+                inventory = self._assembler.get_product_inventory()
+                if len(inventory) > 0:
+                    self._grabbed_product = inventory.pop(0)
+
+            case GrabberActions.DISCARD:
+                self._grabbed_product = None 
 
             case _: 
                 pass 

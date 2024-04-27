@@ -51,3 +51,17 @@ def place_structure(obj: np.ndarray, target: np.ndarray, pos: np.ndarray) -> np.
     target[pos_row:pos_row+obj_height, pos_col:pos_col+obj_width] = obj
     
     return target
+
+
+def check_bounds(array1, array2) -> bool:
+    """
+    Returns true if array1 is in bound with array2
+    """
+    if len(array1) != len(array2):
+        return False
+    
+    for i in range(len(array1)):
+        if array1[i] < 0 or array1[i] >= array2[i]:
+            return False
+        
+    return True

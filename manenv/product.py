@@ -19,13 +19,16 @@ class Product:
     """
     _IDs : set = set()
 
-    def __init__(self, structure : np.ndarray):
+    def __init__(self, structure : np.ndarray, id = -1):
         """
         `structure` - an array that represents the product's structure. The array must be of datatype int. 
         """
         self._structure : np.ndarray = trim_structure_array(structure)
-        self._id = random.getrandbits(64)
-        Product._IDs.add(self._id)
+        if id < 0:
+            self._id = random.getrandbits(64)
+            Product._IDs.add(self._id)
+        else: 
+            self._id = id
 
     def delete(self):
         Product._IDs.remove(self._id)
