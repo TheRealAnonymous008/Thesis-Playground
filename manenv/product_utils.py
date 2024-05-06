@@ -56,6 +56,7 @@ def is_region_zeros(mask: np.ndarray, obj: np.ndarray, pos: np.ndarray) -> bool:
     """
     Checks if the region in `obj` is all zeros based on a provided `mask` whose top left corner is placed in `pos`
     """
+
     # Determine the dimensions of the mask and object
     mask_height, mask_width = mask.shape
     obj_height, obj_width = obj.shape

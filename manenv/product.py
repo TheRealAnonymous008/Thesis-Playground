@@ -30,15 +30,20 @@ class Product:
         else: 
             self._id = id
 
+        self._transform_vel = make_vector(0, 0)
+        self._transform_ang_vel = 0
 
-        # Indicates the product is locked in position and cannot be moved
-        self._is_frozen = False 
+    def add_vel(self, vel : Vector):
+        self._transform_vel += vel 
 
-    def freeze(self):
-        self._is_frozen = True 
+    def reset_vel(self):
+        self._transform_vel *= 0
 
-    def unfreeze(self):
-        self._is_frozen = False
+    def add_ang_vel(self, rot : int):
+        self._transform_ang_vel += rot
+
+    def reset_ang_vel(self):
+        self._transform_ang_vel = 0
 
     def delete(self):
         Product._IDs.remove(self._id)

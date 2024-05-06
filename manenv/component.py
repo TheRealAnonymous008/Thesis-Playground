@@ -172,7 +172,14 @@ class Assembler(FactoryComponent):
             e.bind(self)
     
     def update(self):
-        pass
+        for eff in self._effectors:
+            eff._preupdate()
+
+        for eff in self._effectors:
+            eff._update()
+
+        for eff in self._effectors:
+            eff._postupdate()
 
     def get_product_inventory(self) -> list[Product]:
         return self._cell._products
