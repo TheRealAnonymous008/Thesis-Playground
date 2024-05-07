@@ -4,6 +4,8 @@ import pygame_gui as gui
 
 from typing import Tuple
 
+from manenv.components import *
+
 from .world import World, WorldCell
 from .product import Product
 from .effector import Effector
