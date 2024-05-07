@@ -182,6 +182,8 @@ class Assembler(FactoryComponent):
         for eff in self._effectors:
             eff._postupdate()
 
+        self.update_masks()
+
     def get_product_inventory(self) -> list[Product]:
         return self._cell._products
     
@@ -193,16 +195,24 @@ class Assembler(FactoryComponent):
             return 
         if not is_region_zeros(product._structure, self._workspace, position):
             return 
-        
-        new_workspace = place_structure(product._structure, self._workspace.copy(), position)
-        mask = ((new_workspace - self._workspace) != 0).astype(int) 
 
-        self._product_mask = (self._product_mask + mask * product._id).astype(int)
-
-        self._workspace = new_workspace
         self._product_list[product._id] = product
 
-    def get_product_in_workspace(self, position: Vector, remove = True ) -> Product:
+    def update_masks(self):
+        # Flush the workspace and the product mask 
+        self._workspace *= 0 
+        self._product_mask *= 0
+
+        for product in self._product_list.values():
+            cpy = self._workspace.copy()
+            new_workspace = place_structure(product._structure, cpy, product._transform_pos)
+            mask = ((new_workspace - self._workspace) != 0).astype(int) 
+            self._product_mask = (self._product_mask + mask * product._id).astype(int)
+            self._workspace = new_workspace
+
+            del cpy
+
+    def get_product_in_workspace(self, position: Vector) -> Product:
         if not check_bounds(position, self._workspace_size):
             raise Exception("Not in bounds")
         
@@ -210,12 +220,19 @@ class Assembler(FactoryComponent):
         if id == 0:
             return None 
         
-        mask = (self._product_mask == id).astype(int)
         product = self._product_list[id]
-
-        if remove: 
-            self._workspace = (1 - mask) * self._workspace
-            self._product_mask = (1 - mask) * self._product_mask
+        return product
+    
+    def remove_product_in_workspace(self, position: Vector) -> Product:
+        if not check_bounds(position, self._workspace_size):
+            raise Exception("Not in bounds")
+        
+        id = self._product_mask[position[0]][position[1]]
+        if id == 0:
+            return None 
+        
+        product = self._product_list[id]
+        self._product_list.pop(id)
 
         return product
 
