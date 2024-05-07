@@ -142,13 +142,14 @@ class Grabber(Effector):
 
             case GrabberActions.RELEASE:
                 if self._grabbed_product != None:
-                    self._assembler.place_in_workspace(self._grabbed_product, self._position)
+                    self._assembler.place_in_workspace(self._grabbed_product, self._grabbed_product._transform_pos)
                     self._grabbed_product = None 
             
             case GrabberActions.GRAB_INVENTORY:
                 inventory = self._assembler.get_product_inventory()
                 if len(inventory) > 0:
                     self._grabbed_product = inventory.pop(0)
+                    self._grabbed_product._transform_pos = self._position.copy()
 
             case GrabberActions.DISCARD:
                 self._grabbed_product = None 
@@ -166,8 +167,11 @@ class Grabber(Effector):
 
     def _postupdate(self):
         if self._grabbed_product != None:
+            if np.linalg.norm(self._grabbed_product._transform_vel) <= 1:
+                self._grabbed_product.update()
             self._grabbed_product.reset_vel()
             self._grabbed_product.reset_ang_vel()
 
         super()._postupdate()
+
     

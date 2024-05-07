@@ -167,6 +167,7 @@ class Assembler(FactoryComponent):
         self._effectors = effectors
 
         self._product_mask = np.zeros(self._workspace_size, dtype = int)
+        self._product_list : dict[int, Product] = {}
 
         for e in effectors:
             e.bind(self)
@@ -195,9 +196,11 @@ class Assembler(FactoryComponent):
         
         new_workspace = place_structure(product._structure, self._workspace.copy(), position)
         mask = ((new_workspace - self._workspace) != 0).astype(int) 
+
         self._product_mask = (self._product_mask + mask * product._id).astype(int)
 
         self._workspace = new_workspace
+        self._product_list[product._id] = product
 
     def get_product_in_workspace(self, position: Vector, remove = True ) -> Product:
         if not check_bounds(position, self._workspace_size):
@@ -208,10 +211,11 @@ class Assembler(FactoryComponent):
             return None 
         
         mask = (self._product_mask == id).astype(int)
-        product = Product((self._workspace.copy() * mask), id = id)
+        product = self._product_list[id]
 
         if remove: 
             self._workspace = (1 - mask) * self._workspace
+            self._product_mask = (1 - mask) * self._product_mask
 
         return product
 

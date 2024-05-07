@@ -19,17 +19,15 @@ class Product:
     """
     _IDs : set = set()
 
-    def __init__(self, structure : np.ndarray, id = -1):
+    def __init__(self, structure : np.ndarray):
         """
         `structure` - an array that represents the product's structure. The array must be of datatype int. 
         """
         self._structure : np.ndarray = trim_structure_array(structure)
-        if id < 0:
-            self._id = random.getrandbits(64)
-            Product._IDs.add(self._id)
-        else: 
-            self._id = id
+        self._id = random.getrandbits(31)
+        Product._IDs.add(self._id)
 
+        self._transform_pos = make_vector(0, 0)
         self._transform_vel = make_vector(0, 0)
         self._transform_ang_vel = 0
 
@@ -44,6 +42,9 @@ class Product:
 
     def reset_ang_vel(self):
         self._transform_ang_vel = 0
+
+    def update(self):
+        self._transform_pos += self._transform_vel
 
     def delete(self):
         Product._IDs.remove(self._id)
