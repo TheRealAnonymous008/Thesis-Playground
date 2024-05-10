@@ -67,8 +67,8 @@ class Welder(Effector):
                 if p1 == None or p2 == None:
                     return 
 
-                self._assembler.remove_product_in_workspace(p1)
-                self._assembler.remove_product_in_workspace(p2)
+                self._assembler.delete_product_in_workspace(p1)
+                self._assembler.delete_product_in_workspace(p2)
 
             case _: 
                 pass 

@@ -20,7 +20,7 @@ class Discard(Effector):
     def _update(self):
         match(self._current_action):
             case _: 
-                self._assembler.remove_product_in_workspace(self._position)
+                self._assembler.delete_product_in_workspace(self._position)
 
     def _postupdate(self):
         super()._postupdate()
