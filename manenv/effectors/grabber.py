@@ -3,8 +3,8 @@ from enum import Enum
 
 from manenv.asset_paths import AssetPath
 from manenv.effector import Effector
+from manenv.product import Product
 from manenv.vector import *
-
 
 class GrabberActions(Enum):
     IDLE = 0
@@ -15,18 +15,20 @@ class GrabberActions(Enum):
     GRAB = 5
     RELEASE = 6 
     GRAB_INVENTORY = 7
-    DISCARD = 8
     ROTATE_CW = 9
     ROTATE_CCW = 10
 
 class Grabber(Effector):
     def __init__(self, position : Vector = None):
         super().__init__(GrabberActions, AssetPath.GRABBER, position)
-        self._grabbed_product = None
+        self._grabbed_product : Product = None
 
     def _preupdate(self):
         super()._preupdate()
 
+        if self._grabbed_product != None and self._grabbed_product._is_dirty:
+            self._grabbed_product = None
+        
         match(self._current_action):
             case GrabberActions.IDLE:
                 pass 
@@ -100,9 +102,6 @@ class Grabber(Effector):
                 if len(inventory) > 0:
                     self._grabbed_product = inventory.pop(0)
                     self._grabbed_product._transform_pos = self._position.copy()
-
-            case GrabberActions.DISCARD:
-                self._grabbed_product = None 
 
             case GrabberActions.ROTATE_CW:
                 if self._grabbed_product != None and self._grabbed_product._transform_ang_vel > 0:

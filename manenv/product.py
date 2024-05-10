@@ -31,6 +31,8 @@ class Product:
         self._transform_vel = make_vector(0, 0)
         self._transform_ang_vel = 0
 
+        self._is_dirty = False 
+        
     def add_vel(self, vel : Vector):
         self._transform_vel += vel 
 
@@ -48,6 +50,7 @@ class Product:
 
     def delete(self):
         Product._IDs.remove(self._id)
+        self._is_dirty = True
 
     def copy(self):
         return Product(structure=self._structure)
@@ -57,3 +60,4 @@ class Product:
     
     def __str__(self):
         return "id: " + str(self._id) + "\n" +  str(self._structure)
+    

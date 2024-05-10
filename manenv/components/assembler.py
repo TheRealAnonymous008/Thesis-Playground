@@ -78,7 +78,7 @@ class Assembler(FactoryComponent):
         product = self._product_list[id]
         return product
     
-    def remove_product_in_workspace(self, position: Vector) -> Product:
+    def remove_product_in_workspace(self, position: Vector, delete = True) -> Product:
         if not check_bounds(position, self._workspace_size):
             raise Exception("Not in bounds")
         
@@ -89,4 +89,7 @@ class Assembler(FactoryComponent):
         product = self._product_list[id]
         self._product_list.pop(id)
 
-        return product
+        if delete:
+            product.delete()
+        else: 
+            return product

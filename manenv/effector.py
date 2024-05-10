@@ -9,7 +9,7 @@ from .asset_paths import AssetPath
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING: 
-    from .component import Assembler
+    from .components import Assembler
     from .product import Product
 
 class Effector(ABC):
@@ -25,10 +25,10 @@ class Effector(ABC):
         `position` - the location of the effector head
         
         """
-        self._assembler = None 
+        self._assembler : Assembler = None 
         self._action_space = action_space
 
-        self._position = position
+        self._position : Vector = position
         self._asset = asset
 
         self._current_action = None 
