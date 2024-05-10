@@ -24,6 +24,8 @@ class Assembler(FactoryComponent):
         self._product_mask = np.zeros(self._workspace_size, dtype = int)
         self._product_list : dict[int, Product] = {}
 
+        self._product_outputs = []
+
         for e in effectors:
             e.bind(self)
     
@@ -90,4 +92,19 @@ class Assembler(FactoryComponent):
         self._product_list.pop(id)
 
         product.delete()
+        return product
+    
+    def release_product_in_workspace(self, position: Vector) -> Product:
+        if not check_bounds(position, self._workspace_size):
+            raise Exception("Not in bounds")
+        
+        id = self._product_mask[position[0]][position[1]]
+        if id == 0:
+            return None 
+        
+        product = self._product_list[id]
+        self._product_list.pop(id)
+
+        product._is_dirty = True 
+        self._product_outputs.append(product)
         return product
