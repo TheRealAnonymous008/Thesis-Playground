@@ -17,3 +17,6 @@ class VectorBuiltin:
 
 def is_equal(x : Vector, y : Vector) -> bool:
     return np.all(x == y)
+
+def get_min(x : Vector, y : Vector) -> Vector:
+    return make_vector(min(x[0], y[0]), min(x[1], y[1]))

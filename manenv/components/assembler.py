@@ -54,6 +54,7 @@ class Assembler(FactoryComponent):
             return 
 
         self._product_list[product._id] = product
+        product._transform_pos = position
 
     def update_masks(self):
         # Flush the workspace and the product mask 
@@ -80,7 +81,7 @@ class Assembler(FactoryComponent):
         product = self._product_list[id]
         return product
     
-    def delete_product_in_workspace(self, position: Vector) -> Product:
+    def _pop_from_workspace(self, position: Vector) -> Product:
         if not check_bounds(position, self._workspace_size):
             raise Exception("Not in bounds")
         
@@ -90,21 +91,23 @@ class Assembler(FactoryComponent):
         
         product = self._product_list[id]
         self._product_list.pop(id)
+        
+        return product
 
+
+    def delete_product_in_workspace(self, position: Vector) -> Product:
+        product = self._pop_from_workspace(position)
+        if product == None: 
+            return 
+        
         product.delete()
         return product
     
     def release_product_in_workspace(self, position: Vector) -> Product:
-        if not check_bounds(position, self._workspace_size):
-            raise Exception("Not in bounds")
+        product = self._pop_from_workspace(position)
+        if product == None: 
+            return 
         
-        id = self._product_mask[position[0]][position[1]]
-        if id == 0:
-            return None 
-        
-        product = self._product_list[id]
-        self._product_list.pop(id)
-
         product._is_dirty = True 
         self._product_outputs.append(product)
         return product
