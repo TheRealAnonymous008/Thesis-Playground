@@ -17,5 +17,5 @@ class Outport(FactoryComponent):
             self._world._inventory.add_product(prod)
         self._cell._products.clear()
 
-        
-
+    def reset(self):
+        pass 

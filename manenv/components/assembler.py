@@ -18,13 +18,9 @@ class Assembler(FactoryComponent):
         super().__init__(AssetPath.ASSEMBLER)
         
         self._workspace_size = workspace_size
-        self._workspace = np.zeros(self._workspace_size, dtype=int)
         self._effectors = effectors
 
-        self._product_mask = np.zeros(self._workspace_size, dtype = int)
-        self._product_list : dict[int, Product] = {}
-
-        self._product_outputs = []
+        self.reset()
 
         for e in effectors:
             e.bind(self)
@@ -40,6 +36,12 @@ class Assembler(FactoryComponent):
             eff._postupdate()
 
         self.update_masks()
+
+    def reset(self):
+        self._workspace = np.zeros(self._workspace_size, dtype=int)
+        self._product_mask = np.zeros(self._workspace_size, dtype = int)
+        self._product_list : dict[int, Product] = {}
+        self._product_outputs = []
 
     def get_product_inventory(self) -> list[Product]:
         return self._cell._products

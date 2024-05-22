@@ -86,3 +86,6 @@ class Conveyor(FactoryComponent):
                     if self._cell.is_product_placed(product):
                         self._cell.remove_product(product)
                         dest_cell.place_product(product, -output_offset)
+
+    def reset(self):
+        pass 

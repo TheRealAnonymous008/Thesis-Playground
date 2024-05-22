@@ -35,8 +35,11 @@ class WorldCell:
         self.reset()
 
     def reset(self):
-        self._factory_component = None 
-        pass 
+        if self._factory_component != None: 
+            self._factory_component.reset()
+        
+        self._products.clear()
+        self._dirty_set.clear()
 
     def place_component(self, cmp : FactoryComponent):
         if self._factory_component == cmp: 

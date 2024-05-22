@@ -19,3 +19,6 @@ class Spawner(FactoryComponent):
         super().update()
         if len(self._cell._products) == 0:
             self._cell.place_product(self._product.copy())
+
+    def reset(self):
+        pass 

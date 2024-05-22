@@ -51,6 +51,10 @@ class FactoryComponent(ABC):
         self._check_is_bound()
         pass 
 
+    @abstractmethod
+    def reset(self):
+        pass 
+
     def _check_is_bound(self):
         if self._world == None: 
             raise Exception("World is not initialized for this component ")
