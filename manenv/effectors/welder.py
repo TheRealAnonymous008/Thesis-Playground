@@ -59,17 +59,20 @@ class Welder(Effector):
                 self._position = np.clip(self._position, (0, 0), self._workspace_size)
 
             case WelderActions.WELD_NORTH:
-                pass 
+                job_details = self._weld_at_offset(self._position + VectorBuiltin.FORWARD)
+                self._weld_job_details = job_details
 
             case WelderActions.WELD_SOUTH:
-                pass 
+                job_details = self._weld_at_offset(self._position + VectorBuiltin.BACKWARD)
+                self._weld_job_details = job_details
 
             case WelderActions.WELD_EAST:
-                product, position = self._weld_at_offset(self._position + VectorBuiltin.RIGHT)
-                self._weld_job_details = product, position
+                job_details = self._weld_at_offset(self._position + VectorBuiltin.RIGHT)
+                self._weld_job_details = job_details
                 
             case WelderActions.WELD_WEST:
-                pass
+                job_details = self._weld_at_offset(self._position + VectorBuiltin.LEFT)
+                self._weld_job_details = job_details
 
             case _: 
                 pass 
@@ -79,7 +82,7 @@ class Welder(Effector):
             p2 : Product = self._assembler.get_product_in_workspace(offset)
 
             if p1 == None or p2 == None:
-                return 
+                return None
 
             self._assembler.delete_product_in_workspace(self._position)
             self._assembler.delete_product_in_workspace(offset)

@@ -217,7 +217,6 @@ class RenderWrapper:
                 for j in range(0, self._visible_cells[1]):
                     cell = self.world.get_cell(make_vector(i, j))
                     r_left, r_top = i * self.cell_dims[0], j * self.cell_dims[1]
-
                     if cell != None:
                         if type(cell._factory_component) == Conveyor:
                             self._render_conveyor(cell, screen)
@@ -244,6 +243,7 @@ class RenderWrapper:
                 if neighbor_cell == None: 
                     continue 
                 
+                print(cell._position, neighbor_cell._position, conveyor._weights[x + 1][y + 1])
                 nv = self._get_cell_world_position(neighbor_cell)
                 
                 if conveyor._weights[x + 1][y + 1] > 0: 
