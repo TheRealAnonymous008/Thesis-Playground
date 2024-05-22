@@ -13,4 +13,9 @@ class Outport(FactoryComponent):
     
     def update(self):
         super().update()
+        for prod in self._cell._products:
+            self._world._inventory.add_product(prod)
+        self._cell._products.clear()
+
+        
 
