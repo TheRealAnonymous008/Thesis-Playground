@@ -1,6 +1,6 @@
 import numpy as np
-from manenv.component import FactoryComponent
-from manenv.vector import *
+from manenv.core.component import FactoryComponent
+from manenv.utils.vector import *
 
 
 class Conveyor(FactoryComponent): 

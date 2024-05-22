@@ -18,6 +18,7 @@ class AssetPath:
     WELDER = os.path.join(os.curdir, "assets\\Welder.png")
     DISCARD = os.path.join(os.curdir, "assets\\Discard.png")
     ACCEPTOR = os.path.join(os.curdir, "assets\\Acceptor.png")
+    OUTPORT = os.path.join(os.curdir, "assets\\Outport.png")
 
     def get_product_asset(id : int) -> str:
         if (id < 0 or id >= len(AssetPath.PRODUCT_ASSETS)):

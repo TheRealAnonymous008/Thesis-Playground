@@ -2,12 +2,12 @@ from __future__ import annotations
 from typing import Tuple
 
 from abc import abstractmethod, ABC
-from .vector import *
-from .asset_paths import AssetPath
+from ..utils.vector import *
+from ..asset_paths import AssetPath
 import numpy as np
 
 from typing import TYPE_CHECKING
-from .product_utils import * 
+from ..utils.product_utils import * 
 from .product import Product
 if TYPE_CHECKING: 
     from .world import World, WorldCell

@@ -1,7 +1,7 @@
 
 from manenv.asset_paths import AssetPath
-from manenv.component import FactoryComponent
-from manenv.product import Product
+from manenv.core.component import FactoryComponent
+from manenv.core.product import Product
 
 
 class Spawner(FactoryComponent):

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from abc import abstractmethod, ABC
-from .vector import *
+from ..utils.vector import *
 
-from .product_utils import * 
+from ..utils.product_utils import * 
 from .product import Product
 
 class Order:

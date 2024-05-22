@@ -1,12 +1,11 @@
 # TODOs (Wednesday 5/22)
 
 Phase 1
-* 2h - Factory Layout System
 * 1h- Power System
+* 1h- Delivery System
 
 Phase II
 * 1h - Failure Module 
-* 1h - Predictive Maintenance
 * 2h - Inventory Management System 
 * 1h - Scheduling Module (includes a module for setting due dates and allocating which jobs assemblers should do)
 

@@ -1,9 +1,9 @@
 from manenv.asset_paths import AssetPath
-from manenv.component import FactoryComponent
-from manenv.effector import Effector
-from manenv.product import Product
-from manenv.product_utils import *
-from manenv.vector import *
+from manenv.core.component import FactoryComponent
+from manenv.core.effector import Effector
+from manenv.core.product import Product
+from manenv.utils.product_utils import *
+from manenv.utils.vector import *
 
 
 class Assembler(FactoryComponent):

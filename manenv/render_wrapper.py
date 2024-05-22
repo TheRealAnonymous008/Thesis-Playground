@@ -6,12 +6,12 @@ from typing import Tuple
 
 from manenv.components import *
 
-from .world import World, WorldCell
-from .product import Product
-from .effector import Effector
-from .vector import make_vector
+from .core.world import World, WorldCell
+from .core.product import Product
+from .core.effector import Effector
+from .utils.vector import make_vector
 from .asset_paths import AssetPath
-from .component import * 
+from .core.component import * 
 
 UI_WIDTH = 300 
 

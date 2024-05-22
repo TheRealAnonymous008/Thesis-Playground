@@ -3,13 +3,13 @@ from typing import Tuple
 from enum import Enum
 
 from abc import abstractmethod, ABC
-from .vector import *
+from ..utils.vector import *
 import numpy as np
-from .asset_paths import AssetPath
+from ..asset_paths import AssetPath
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING: 
-    from .components import Assembler
+    from ..components import Assembler
     from .product import Product
 
 class Effector(ABC):

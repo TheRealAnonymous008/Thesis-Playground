@@ -5,9 +5,9 @@ import numpy as np
 import random
 
 
-from .vector import *
-from .asset_paths import AssetPath
-from .product_utils import *
+from ..utils.vector import *
+from ..asset_paths import AssetPath
+from ..utils.product_utils import *
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING: 

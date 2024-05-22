@@ -2,9 +2,9 @@
 from enum import Enum
 
 from manenv.asset_paths import AssetPath
-from manenv.effector import Effector
-from manenv.product import Product
-from manenv.vector import *
+from manenv.core.effector import Effector
+from manenv.core.product import Product
+from manenv.utils.vector import *
 
 class AcceptorActions(Enum):
     ACCEPT = 1

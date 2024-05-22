@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from .component import *
     from .product import *
 
-from .vector import * 
+from ..utils.vector import * 
 
 class WorldCell: 
     """
