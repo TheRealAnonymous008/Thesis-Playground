@@ -143,7 +143,7 @@ class World:
         print("====================")
 
         print("====== Inventoy ===== ")
-        print("Total Cost: ", self._inventory._cost)
+        print("Total Cost: ", self._inventory.compute_storage_cost())
         print("Total Items: ", len(self._inventory._product_inventory))
 
         if verbose: 
