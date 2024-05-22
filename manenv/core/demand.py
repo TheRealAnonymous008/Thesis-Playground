@@ -5,8 +5,11 @@ from ..utils.vector import *
 
 from ..utils.product_utils import * 
 from .product import Product
+import random
+
 
 class Order:
+    _IDs : set = set()
     def __init__(self, product, due_date = -1):
         """
         An order consists of a `product` and an expected `due date`. If the due date is -1, we 
@@ -14,6 +17,12 @@ class Order:
         """
         self._product : Product = product
         self.due_date = due_date
+
+        self._id = random.getrandbits(31)
+        Order._IDs.add(self._id)
+
+    def satisfy(self):
+        Order._IDs.remove(self._id)
 
     def __str__(self):
         return "Product: " + str(self._product)
@@ -25,7 +34,7 @@ class DemandSimulator(ABC):
         """
         max_orders defines the maximum number of orders in queue (-1 implies unbounded queue)
         """
-        self._orders : list[Order] = []
+        self._orders : dict[int, Order] = {}
         self._max_orders = max_orders
 
     def update(self):
@@ -36,18 +45,20 @@ class DemandSimulator(ABC):
         if p == None:
             return 
         
-        self._orders.append(p)
+        order = Order(p)
+        self._orders[order._id] = order
 
-    def resolve_order(self, product : Product, time: int, idx : int) -> float:
+    def resolve_order(self, product : Product, order : Order, time: int) -> float:
         """
         returns a float representing the level of customer satisfaction
         """
-        if idx < 0 or idx >= len(self._orders):
-            return 0
+        if not order._id in self._orders:
+            return 0 
 
-        order = self._orders.pop(idx)
+        order = self._orders.pop(order._id)
         lateness = np.max(0, time - order.due_date)
-        
+        order.satisfy()
+
         return 0
         
     def reset(self):

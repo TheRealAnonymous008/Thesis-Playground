@@ -3,6 +3,7 @@ import numpy as np
 from typing import Tuple
 
 from typing import TYPE_CHECKING
+from .service import *
 from .demand import * 
 from .inventory import * 
 
@@ -74,18 +75,25 @@ class World:
     """
     Contains information about the smart factory environment 
     """
-    def __init__(self, shape : Tuple, 
+    def __init__(self,
+                shape : Tuple, 
                  demand: DemandSimulator = DefaultDemandSimulator(), 
-                 inventory : Inventory = DefaultInventorySystem()
+                 inventory : Inventory = DefaultInventorySystem(),
+                 service: ServiceModule = DefaultServiceModule(),
         ): 
         """
         `shape` - the dimensions of the environment in (width, height) format 
         `demand` - the simulator for demand
+        `inventory` - the inventory module
+        `service` - the service module
         """
         self._shape : Tuple = shape 
         self._map : list[list[WorldCell]] = [[WorldCell(position=make_vector(x, y)) for x in range(shape[0])] for y in range(shape[0])]
         self._demand : DemandSimulator = demand
         self._inventory : Inventory = inventory
+        self._service_module : ServiceModule = service
+        self._service_module.bind(self)
+
         self._time_step : int  = 0 
 
     def _width(self):
@@ -108,6 +116,7 @@ class World:
         self._time_step += 1
         # Update the current demand system
         self._demand.update()
+        self._service_module.update()
 
         # All dirty components are pushed to the cell's center
         for x in range(self._shape[0]):

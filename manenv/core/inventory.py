@@ -23,9 +23,9 @@ class Inventory(ABC):
         
         self._product_inventory[product._id] = product
 
-    def remove_product(self, id : int) -> Product | None:
-        if id in self._product_inventory:
-            p = self._product_inventory.pop(id)
+    def remove_product(self, product : Product) -> Product | None:
+        if product._id in self._product_inventory:
+            p = self._product_inventory.pop(product._id)
             return p 
         
         return None             

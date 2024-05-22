@@ -6,12 +6,7 @@ import random
 
 
 from ..utils.vector import *
-from ..asset_paths import AssetPath
 from ..utils.product_utils import *
-
-from typing import TYPE_CHECKING
-if TYPE_CHECKING: 
-    from .world import World, WorldCell
 
 class Product:
     """
