@@ -2,6 +2,7 @@ import numpy as np
 from manenv.core.component import FactoryComponent
 from manenv.utils.vector import *
 
+from manenv.components import Assembler
 
 class Conveyor(FactoryComponent): 
     """
@@ -43,7 +44,6 @@ class Conveyor(FactoryComponent):
                 offset = make_vector(x - 1, y - 1)
                 if self._world.get_cell(offset + self._cell._position) == None:
                     continue 
-
                 if self._weights[x][y] < 0:
                     self._inports.append(idx)
                 elif self._weights[x][y] > 0:
@@ -62,10 +62,15 @@ class Conveyor(FactoryComponent):
             src_cell = self._world.get_cell(input_vec)
 
             if src_cell != None:
-                for product in src_cell._products:
-                    if self._cell.is_product_placed(product):
+                if type(src_cell._factory_component) == Assembler:
+                    for product in src_cell._factory_component._product_outputs:
                         src_cell.remove_product(product)
-                        self._cell.place_product(product, input_offset)
+                        self._cell.place_product(product)
+                else: 
+                    for product in src_cell._products:
+                        if self._cell.is_product_placed(product):
+                            src_cell.remove_product(product)
+                            self._cell.place_product(product, input_offset)
 
         if len(self._outports) > 0:
             self._curr_out = (self._curr_out + 1) % len(self._outports)

@@ -120,11 +120,12 @@ class World:
                 if self._map[x][y]._factory_component != None: 
                     self._map[x][y]._factory_component.update()
     
-    def get_cell(self, v : Vector) -> WorldCell | None: 
+    def get_cell(self, v : Vector) -> WorldCell | None:
+        # Vector written as (x, y) 
         if v[0] < 0 or v[1] < 0 or v[0] >= self._shape[0] or v[1] >= self._shape[1]:
             return None 
         
-        return self._map[v[0]][v[1]]
+        return self._map[v[1]][v[0]]
     
     def place_component(self, pos: Vector, cmp : FactoryComponent):
         cmp.bind(self)

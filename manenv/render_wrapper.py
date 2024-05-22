@@ -243,7 +243,6 @@ class RenderWrapper:
                 if neighbor_cell == None: 
                     continue 
                 
-                print(cell._position, neighbor_cell._position, conveyor._weights[x + 1][y + 1])
                 nv = self._get_cell_world_position(neighbor_cell)
                 
                 if conveyor._weights[x + 1][y + 1] > 0: 
