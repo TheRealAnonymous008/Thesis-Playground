@@ -83,7 +83,7 @@ class World:
         `demand` - the simulator for demand
         """
         self._shape : Tuple = shape 
-        self._map : list[list[WorldCell]] = [[WorldCell(position=make_vector(x, y)) for y in range(shape[1])] for x in range(shape[0])]
+        self._map : list[list[WorldCell]] = [[WorldCell(position=make_vector(x, y)) for x in range(shape[0])] for y in range(shape[0])]
         self._demand : DemandSimulator = demand
         self._inventory : Inventory = inventory
         self._time_step : int  = 0 

@@ -216,7 +216,6 @@ class RenderWrapper:
             for i in range(0, self._visible_cells[0]):
                 for j in range(0, self._visible_cells[1]):
                     cell = self.world.get_cell(make_vector(i, j))
-                    r_left, r_top = i * self.cell_dims[0], j * self.cell_dims[1]
                     if cell != None:
                         if type(cell._factory_component) == Conveyor:
                             self._render_conveyor(cell, screen)
@@ -236,10 +235,9 @@ class RenderWrapper:
     def _render_conveyor(self, cell : WorldCell, surface : pg.Surface):
         cv = self._get_cell_world_position(cell)
         conveyor : Conveyor = cell._factory_component
-
         for y in range(-1, 2):
             for x in range(-1, 2):
-                neighbor_cell = self.world.get_cell(cell._position + make_vector(y, x))
+                neighbor_cell = self.world.get_cell(cell._position + make_vector(x, y))
                 if neighbor_cell == None: 
                     continue 
                 
@@ -251,8 +249,7 @@ class RenderWrapper:
                     pg.draw.line(surface, pg.Color(255, 0, 0), cv, nv, 5)
 
     def _get_cell_world_position(self, cell : WorldCell) -> Vector:
-        i, j = cell._position[0], cell._position[1]
-        r_left, r_top = i * self.cell_dims[0], j * self.cell_dims[1]
-        c_x, c_y = r_left + self.cell_dims[0] / 2, r_top + self.cell_dims[1] / 2
-
+        i, j = cell._position[1], cell._position[0]
+        r_left, r_top = i * self.cell_dims[1], j * self.cell_dims[0]
+        c_x, c_y = r_left + self.cell_dims[1] / 2, r_top + self.cell_dims[0] / 2
         return make_vector(c_x, c_y)
