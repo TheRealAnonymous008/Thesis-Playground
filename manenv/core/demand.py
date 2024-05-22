@@ -7,8 +7,13 @@ from ..utils.product_utils import *
 from .product import Product
 
 class Order:
-    def __init__(self, product):
+    def __init__(self, product, due_date = -1):
+        """
+        An order consists of a `product` and an expected `due date`. If the due date is -1, we 
+        ignore it when computing the lateness of the job
+        """
         self._product : Product = product
+        self.due_date = due_date
 
     def __str__(self):
         return "Product: " + str(self._product)
@@ -32,6 +37,18 @@ class DemandSimulator(ABC):
             return 
         
         self._orders.append(p)
+
+    def resolve_order(self, product : Product, time: int, idx : int) -> float:
+        """
+        returns a float representing the level of customer satisfaction
+        """
+        if idx < 0 or idx >= len(self._orders):
+            return 0
+
+        order = self._orders.pop(idx)
+        lateness = np.max(0, time - order.due_date)
+        
+        return 0
         
     def reset(self):
         self._orders.clear()
