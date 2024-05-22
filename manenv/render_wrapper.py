@@ -160,7 +160,7 @@ class RenderWrapper:
                     self.is_running = False 
                 elif event.type == pg.KEYDOWN: 
                     if event.key == pg.K_TAB:
-                        self.log_world_status()
+                        self.world.log_world_status()
                 elif event.type == pg.MOUSEBUTTONDOWN:
                     if event.button == 1:  # Left mouse button
                         mouse_pos = pg.mouse.get_pos()
@@ -227,12 +227,6 @@ class RenderWrapper:
         
         pg.quit()
 
-    def log_world_status(self):
-        print("====== Demand ======")
-        for order in self.world._demand._orders:
-            print(order)
-
-        print("====================")
 
 
     def get_clicked_cell(self, mouse_pos) -> WorldCell:

@@ -33,7 +33,9 @@ class DemandSimulator(ABC):
         
         self._orders.append(p)
         
-    
+    def reset(self):
+        self._orders.clear()
+        
     @abstractmethod
     def sample(self) -> Order | None:
         pass 

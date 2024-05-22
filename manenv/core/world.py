@@ -4,6 +4,7 @@ from typing import Tuple
 
 from typing import TYPE_CHECKING
 from .demand import * 
+from .inventory import * 
 
 if TYPE_CHECKING: 
     from .component import *
@@ -71,14 +72,17 @@ class World:
     Contains information about the smart factory environment 
     """
     def __init__(self, shape : Tuple, 
-                 demand: DemandSimulator = DefaultDemandSimulator()): 
+                 demand: DemandSimulator = DefaultDemandSimulator(), 
+                 inventory : Inventory = DefaultInventorySystem()
+        ): 
         """
         `shape` - the dimensions of the environment in (width, height) format 
         `demand` - the simulator for demand
         """
         self._shape : Tuple = shape 
         self._map : list[list[WorldCell]] = [[WorldCell(position=make_vector(x, y)) for y in range(shape[1])] for x in range(shape[0])]
-        self._demand = demand
+        self._demand : DemandSimulator = demand
+        self._inventory : Inventory = inventory
         self._time_step : int  = 0 
 
     def _width(self):
@@ -93,6 +97,9 @@ class World:
         for M in self._map: 
             for r in M: 
                 r.reset()
+        
+        self._demand.reset()
+        self._inventory.reset()
 
     def update(self): 
         self._time_step += 1
@@ -126,3 +133,19 @@ class World:
     def place_product(self, pos: Vector, product : Product):
         self.get_cell(pos).place_product(product)
     
+    def log_world_status(self, verbose = False):
+        print("====== Demand ======")
+        print("Total Orders: ", len(self._demand._orders))
+        if verbose:
+            for order in self.world._demand._orders:
+                print(order)
+
+        print("====================")
+
+        print("====== Inventoy ===== ")
+        print("Total Cost: ", self._inventory._cost)
+        print("Total Items: ", len(self._inventory._product_inventory))
+
+        if verbose: 
+            for prod in self._inventory._product_inventory:
+                print(prod)
