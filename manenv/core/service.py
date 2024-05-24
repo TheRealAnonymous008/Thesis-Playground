@@ -55,8 +55,7 @@ class ServiceModule(ABC):
         return 0
     
 class DefaultServiceModule(ServiceModule):
-    def __init__(matching_tolerance = 0.9):
-        print("This ran")
+    def __init__(self, matching_tolerance : int = 0.9):
         super().__init__(matching_tolerance)
 
     def get_matching_rating(self, order: Order, product: Product) -> float:
