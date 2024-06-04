@@ -212,7 +212,7 @@ class RenderWrapper:
                                 screen.blit(img, rect)
                                 
             # Draw conveyors
-                        # Draw cell bgs
+            # Draw cell bgs
             for i in range(0, self._visible_cells[0]):
                 for j in range(0, self._visible_cells[1]):
                     cell = self.world.get_cell(make_vector(i, j))
