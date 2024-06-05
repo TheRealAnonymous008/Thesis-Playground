@@ -2,6 +2,7 @@ from typing import Any, SupportsFloat
 import gymnasium as gym
 from gymnasium.spaces import Dict,Discrete
 
+from manenv.core.actor import Actor
 from manenv.core.effector import Effector
 
 from .core.world import World
@@ -19,7 +20,7 @@ class MARLFactoryEnvironment(gym.Env):
 
     def build_action_space(self): 
         # All effectors contribute to the action set of the gym wrapper. 
-        actor_space : dict = {}
+        actor_space : dict[int, Actor] = {}
         action_space : dict = {}
         effectors : list[Effector] = self._world.get_all_effectors()
         for i, eff in enumerate(effectors):
@@ -32,9 +33,16 @@ class MARLFactoryEnvironment(gym.Env):
         pass 
 
 
-    def step(self, action: Any) -> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:
+    def step(self, actions: dict[int, int]) -> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:
+        """
+        Actions are expected to align with the actor_space specified
+        """
+        for (actor, action) in actions.items():
+            self.actor_space[actor].set_action(action)
+
         self._world.update()
-        return super().step(action)
+
+        return (1)
     
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None) -> tuple[Any, dict[str, Any]]:
         return super().reset(seed=seed, options=options)

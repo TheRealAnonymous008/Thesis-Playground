@@ -3,6 +3,8 @@ from typing import Tuple
 from enum import Enum
 
 from abc import abstractmethod, ABC
+
+from manenv.core.actor import Actor
 from ..utils.vector import *
 import numpy as np
 from ..asset_paths import AssetPath
@@ -12,7 +14,7 @@ if TYPE_CHECKING:
     from ..components import Assembler
     from .product import Product
 
-class Effector(ABC):
+class Effector(Actor):
     """
     An effector models the actions possible by a robot assembly agent .
     """
