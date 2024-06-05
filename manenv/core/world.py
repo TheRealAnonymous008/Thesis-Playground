@@ -3,6 +3,8 @@ import numpy as np
 from typing import Tuple
 
 from typing import TYPE_CHECKING
+
+from manenv.components.assembler import Assembler
 from .service import *
 from .demand import * 
 from .inventory import * 
@@ -138,6 +140,17 @@ class World:
             return None 
         
         return self._map[v[1]][v[0]]
+    
+    def get_all_effectors(self): 
+        effectors : list[Effector] = []
+        for x in range(self._shape[0]):
+            for y in range(self._shape[1]):
+                cell = self._map[x][y] 
+                if isinstance(cell._factory_component, Assembler):
+                    assembler : Assembler = cell._factory_component
+                    effectors.extend(assembler._effectors)
+
+        return effectors
     
     def place_component(self, pos: Vector, cmp : FactoryComponent):
         cmp.bind(self)

@@ -26,7 +26,7 @@ class Effector(ABC):
         
         """
         self._assembler : Assembler = None 
-        self._action_space = action_space
+        self._action_space = action_space 
 
         self._position : Vector = position
         self._asset = asset

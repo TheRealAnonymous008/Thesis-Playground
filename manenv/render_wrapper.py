@@ -249,7 +249,7 @@ class RenderWrapper:
                     pg.draw.line(surface, pg.Color(255, 0, 0), cv, nv, 5)
 
     def _get_cell_world_position(self, cell : WorldCell) -> Vector:
-        i, j = cell._position[1], cell._position[0]
+        i, j = cell._position[1], cell._position[0] 
         r_left, r_top = i * self.cell_dims[1], j * self.cell_dims[0]
         c_x, c_y = r_left + self.cell_dims[1] / 2, r_top + self.cell_dims[0] / 2
         return make_vector(c_x, c_y)
