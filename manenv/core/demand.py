@@ -17,12 +17,14 @@ class Order:
         """
         self._product : Product = product
         self.due_date = due_date
+        self._is_satisfied : bool = False
 
         self._id = random.getrandbits(31)
         Order._IDs.add(self._id)
 
     def satisfy(self):
         Order._IDs.remove(self._id)
+        self._is_satisfied = True 
 
     def __str__(self):
         return "Product: " + str(self._product)
@@ -38,6 +40,15 @@ class DemandSimulator(ABC):
         self._max_orders = max_orders
 
     def update(self):
+        # Remove any resolved orders
+        ids = []
+        for order in self._orders.values():
+            if order._is_satisfied:
+                ids.append(order._id)
+
+        for id in ids: 
+            self._orders.pop(id)
+
         if self._max_orders > 0 and len(self._orders) >= self._max_orders:
             return 
         
@@ -55,8 +66,7 @@ class DemandSimulator(ABC):
         if not order._id in self._orders:
             return 0 
 
-        order = self._orders.pop(order._id)
-        lateness = np.max(0, time - order.due_date)
+        # lateness = np.max(0, time - order.due_date)
         order.satisfy()
 
         return 0

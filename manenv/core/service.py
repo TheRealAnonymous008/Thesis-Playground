@@ -33,7 +33,7 @@ class ServiceModule(ABC):
     def update(self):
         time = self._world._time_step
 
-        for order in self._world._demand._orders:
+        for order in self._world._demand._orders.values():
             best_product = None
             best_rating = -1
             for product in self._world._inventory._product_inventory.values():
