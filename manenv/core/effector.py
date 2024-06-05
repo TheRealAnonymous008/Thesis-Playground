@@ -45,6 +45,13 @@ class Effector(Actor):
     def set_action(self, action_code: int):
         self._current_action = action_code
 
+    def get_observation(self):
+        return {
+            "position": self._position,
+            "r_mask": self._assembler._workspace,
+            "p_mask": self._assembler._product_mask,
+        }
+
     @abstractmethod
     def _preupdate(self):
         pass 

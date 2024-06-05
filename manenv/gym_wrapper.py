@@ -15,7 +15,7 @@ class MARLFactoryEnvironment(gym.Env):
 
         In particular, it takes in a configured `World` instance and sets it up to be usable in RL training.
         """
-        self._world = world 
+        self._world : World = world 
         self.action_space, self.actor_space = self.build_action_space()
 
     def build_action_space(self): 
@@ -42,10 +42,17 @@ class MARLFactoryEnvironment(gym.Env):
 
         self._world.update()
 
-        return (1)
+        """
+        Observations are obtained per actor
+        """
+        observations = {}
+        for (key, actor) in self.actor_space.items():
+            observations[key] = actor.get_observation()
+
+        return observations
     
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None) -> tuple[Any, dict[str, Any]]:
-        return super().reset(seed=seed, options=options)
+        self._world.reset()
     
     def render(self):
         return None
