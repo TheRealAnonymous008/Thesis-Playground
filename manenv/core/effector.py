@@ -18,6 +18,7 @@ class Effector(Actor):
     """
     An effector models the actions possible by a robot assembly agent .
     """
+
     def __init__(self, action_space : Enum, asset = "", position = make_vector(0, 0)):
         """
         `action_space` - defines the list of actions this Effector type can perform

@@ -7,12 +7,12 @@ from abc import abstractmethod, ABC
 @dataclass
 class FactoryMetrics:
     throughput : float
-    utilization: float
-    inventory: float
-    cycle_time: int  
-    lead_time: int
-    customer_service : float
-    quality : float
+    # utilization: float
+    # inventory: float
+    # cycle_time: int  
+    # lead_time: int
+    # customer_service : float
+    # quality : float
 
 
 
@@ -37,5 +37,11 @@ class FactoryMonitor(ABC):
 class DefaultFactoryMonitor(FactoryMonitor):
     def observe(self) -> FactoryMetrics:
         super().observe()
+        pass 
 
-        pass
+    def _calculate_throughput(self): 
+        """
+        Throughput is defined as the number of outputs per time unit.
+        """
+
+        
