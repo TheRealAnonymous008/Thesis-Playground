@@ -1,6 +1,7 @@
 import numpy as np 
+from typing import TypeAlias
 
-type Vector = type[np.ndarray] 
+Vector : TypeAlias = type[np.ndarray] 
 
 def make_vector(x : int | float, y : int | float, dtype = int) -> Vector: 
     return np.array([x, y], dtype=dtype)

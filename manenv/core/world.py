@@ -12,6 +12,7 @@ from .inventory import *
 if TYPE_CHECKING: 
     from .component import *
     from .product import *
+    from .monitor import * 
 
 from ..utils.vector import * 
 
@@ -82,19 +83,25 @@ class World:
                  demand: DemandSimulator = DefaultDemandSimulator(), 
                  inventory : Inventory = DefaultInventorySystem(),
                  service: ServiceModule = DefaultServiceModule(),
+                 monitor : FactoryMonitor = DefaultFactoryMonitor()
         ): 
         """
         `shape` - the dimensions of the environment in (width, height) format 
         `demand` - the simulator for demand
         `inventory` - the inventory module
         `service` - the service module
+        `monitor` - factory monitor that measures performance metrics per time step 
         """
         self._shape : Tuple = shape 
         self._map : list[list[WorldCell]] = [[WorldCell(position=make_vector(x, y)) for x in range(shape[0])] for y in range(shape[0])]
         self._demand : DemandSimulator = demand
         self._inventory : Inventory = inventory
+
         self._service_module : ServiceModule = service
         self._service_module.bind(self)
+
+        self._monitor: FactoryMonitor = monitor 
+        self._monitor.bind(self)
 
         self._time_step : int  = 0 
 
