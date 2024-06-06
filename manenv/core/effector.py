@@ -28,6 +28,7 @@ class Effector(Actor):
         `position` - the location of the effector head
         
         """
+        super().__init__()
         self._assembler : Assembler = None 
         self._action_space = action_space 
 

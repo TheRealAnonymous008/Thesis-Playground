@@ -4,6 +4,8 @@ from abc import abstractmethod, ABC
 import numpy as np
 import random
 
+from manenv.core.idpool import IDPool
+
 
 from ..utils.vector import *
 from ..utils.product_utils import *
@@ -12,15 +14,12 @@ class Product:
     """
     A product produced and consumed by the smart factory. To simplify things, a product is specified using a matrix
     """
-    _IDs : set = set()
-
     def __init__(self, structure : np.ndarray):
         """
         `structure` - an array that represents the product's structure. The array must be of datatype int. 
         """
         self._structure : np.ndarray = trim_structure_array(structure)
-        self._id = random.getrandbits(31)
-        Product._IDs.add(self._id)
+        self._id = IDPool.get()
 
         self._transform_pos = make_vector(0, 0)
         self._transform_vel = make_vector(0, 0)
@@ -44,7 +43,7 @@ class Product:
         self._transform_pos += self._transform_vel
 
     def delete(self):
-        Product._IDs.remove(self._id)
+        IDPool.pop(self._id)
         self._is_dirty = True
 
     def copy(self):

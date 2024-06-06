@@ -8,6 +8,7 @@ from manenv.components.assembler import Assembler
 from .service import *
 from .demand import * 
 from .inventory import * 
+from .monitor import *
 
 if TYPE_CHECKING: 
     from .component import *

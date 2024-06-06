@@ -1,8 +1,11 @@
-from world import World
+
+from __future__ import annotations
 from dataclasses import dataclass
 
-
 from abc import abstractmethod, ABC
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from world import World
 
 @dataclass
 class FactoryMetrics:
@@ -35,6 +38,9 @@ class FactoryMonitor(ABC):
 
 
 class DefaultFactoryMonitor(FactoryMonitor):
+    def __init__(self):
+        super().__init__()
+
     def observe(self) -> FactoryMetrics:
         super().observe()
         pass 

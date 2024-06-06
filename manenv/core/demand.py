@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from abc import abstractmethod, ABC
+
+from manenv.core.idpool import IDPool
 from ..utils.vector import *
 
 from ..utils.product_utils import * 
@@ -9,7 +11,6 @@ import random
 
 
 class Order:
-    _IDs : set = set()
     def __init__(self, product, due_date = -1):
         """
         An order consists of a `product` and an expected `due date`. If the due date is -1, we 
@@ -19,11 +20,10 @@ class Order:
         self.due_date = due_date
         self._is_satisfied : bool = False
 
-        self._id = random.getrandbits(31)
-        Order._IDs.add(self._id)
+        self._id = IDPool.get()
 
     def satisfy(self):
-        Order._IDs.remove(self._id)
+        IDPool.pop(self._id)
         self._is_satisfied = True 
 
     def __str__(self):

@@ -23,9 +23,9 @@ class MARLFactoryEnvironment(gym.Env):
         actor_space : dict[int, Actor] = {}
         action_space : dict = {}
         effectors : list[Effector] = self._world.get_all_effectors()
-        for i, eff in enumerate(effectors):
-            actor_space[i] = eff
-            action_space[i] = Discrete(len(eff._action_space))
+        for eff in effectors:
+            actor_space[eff._id] = eff
+            action_space[eff._id] = Discrete(len(eff._action_space))
 
         return Dict(action_space), actor_space
     
