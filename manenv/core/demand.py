@@ -11,20 +11,31 @@ import random
 
 
 class Order:
-    def __init__(self, product, due_date = -1):
+    def __init__(self, issued, product, due_date = -1):
         """
         An order consists of a `product` and an expected `due date`. If the due date is -1, we 
         ignore it when computing the lateness of the job
         """
         self._product : Product = product
-        self.due_date = due_date
-        self._is_satisfied : bool = False
+        self._due_date = due_date
+        self._issue_date = issued
+
+        self._satisfied_time : int = -1
 
         self._id = IDPool.get()
 
-    def satisfy(self):
+    def satisfy(self, time):
         IDPool.pop(self._id)
-        self._is_satisfied = True 
+        self._satisfied_time = time 
+
+    def get_cycle_time(self):
+        if self.is_satisfied():
+            return self._satisfied_time - self._issue_date
+
+        return 0 
+    
+    def is_satisfied(self):
+        return self._satisfied_time > 0
 
     def __str__(self):
         return "Product: " + str(self._product)
@@ -43,7 +54,7 @@ class DemandSimulator(ABC):
         # Remove any resolved orders
         ids = []
         for order in self._orders.values():
-            if order._is_satisfied:
+            if order.is_satisfied():
                 ids.append(order._id)
 
         for id in ids: 
@@ -56,10 +67,11 @@ class DemandSimulator(ABC):
         if p == None:
             return 
         
-        order = Order(p)
+        order = Order(self._current_time, p)
         self._orders[order._id] = order
+        self._current_time += 1
 
-    def resolve_order(self, product : Product, order : Order, time: int) -> float:
+    def resolve_order(self, product : Product, order : Order) -> float:
         """
         returns a float representing the level of customer satisfaction
         """
@@ -67,12 +79,13 @@ class DemandSimulator(ABC):
             return 0 
 
         # lateness = np.max(0, time - order.due_date)
-        order.satisfy()
+        order.satisfy(self._current_time)
 
         return 0
         
     def reset(self):
         self._orders.clear()
+        self._current_time = 0
         
     @abstractmethod
     def sample(self) -> Order | None:
@@ -113,6 +126,6 @@ class DefaultDemandSimulator(DemandSimulator):
             return None 
         
         prod : Product = np.random.choice(self._products_list)
-        return Order(prod.copy())
+        return Order(self._current_time, prod.copy())
     
     

@@ -25,6 +25,7 @@ class Assembler(FactoryComponent):
         self._workspace_size = workspace_size
         self._effectors = effectors
         self._staging_size = staging_size
+        self._completed_order_buffer : list[Order] = []
 
         self.reset()
 
@@ -32,6 +33,8 @@ class Assembler(FactoryComponent):
             e.bind(self)
     
     def update(self):
+        self._completed_order_buffer = []
+
         for eff in self._effectors:
             eff._preupdate()
 
@@ -144,8 +147,10 @@ class Assembler(FactoryComponent):
             if idx < 0:
                 continue 
             
-            self._job_queue.pop(idx)
+            order = self._job_queue.pop(idx)
+            self._completed_order_buffer.append(order)
             self._staging_area.pop(i)
+            
 
     def _assess_product_with_queue(self, product : Product) -> int:
         # TODO: Implement this 

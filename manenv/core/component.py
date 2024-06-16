@@ -2,6 +2,8 @@ from __future__ import annotations
 from typing import Tuple
 
 from abc import abstractmethod, ABC
+
+from manenv.core.actor import Actor
 from ..utils.vector import *
 from ..asset_paths import AssetPath
 import numpy as np
@@ -13,7 +15,7 @@ if TYPE_CHECKING:
     from .world import World, WorldCell
     from .effector import Effector
 
-class FactoryComponent(ABC): 
+class FactoryComponent(Actor, ABC): 
     """
     Abstract class for factory components
     """
@@ -23,6 +25,7 @@ class FactoryComponent(ABC):
 
         `asset` - a path to the image associated with this asset. If empty, defaults to no asset. 
         """
+        super().__init__()
         self._cell : WorldCell | None = None 
         self._world : World = None
         self._asset : str = asset
@@ -53,6 +56,12 @@ class FactoryComponent(ABC):
 
     @abstractmethod
     def reset(self):
+        pass 
+
+    def set_action(self, action_code : int):
+        pass
+
+    def get_observation(self):
         pass 
 
     def _check_is_bound(self):

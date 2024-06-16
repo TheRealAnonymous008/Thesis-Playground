@@ -43,7 +43,7 @@ class ServiceModule(ABC):
                     best_product = product
             
             if best_rating > self._matching_tolerance and best_product != None:
-                self._world._demand.resolve_order(best_product, order, time)
+                self._world._demand.resolve_order(best_product, order)
                 self._world._inventory.remove_product(best_product)
 
 

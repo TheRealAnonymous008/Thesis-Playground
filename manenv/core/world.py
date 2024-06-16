@@ -149,7 +149,7 @@ class World:
         
         return self._map[v[1]][v[0]]
     
-    def get_all_effectors(self): 
+    def get_all_effectors(self) -> list[Effector]: 
         effectors : list[Effector] = []
         for x in range(self._shape[0]):
             for y in range(self._shape[1]):
@@ -159,6 +159,17 @@ class World:
                     effectors.extend(assembler._effectors)
 
         return effectors
+    
+    def get_all_assemblers(self) -> list[Assembler]:
+        assemblers : list[Assembler] = []
+        for x in range(self._shape[0]):
+            for y in range(self._shape[1]):
+                cell = self._map[x][y]
+                if isinstance(cell._factory_component, Assembler):
+                    assembler : Assembler = cell._factory_component
+                    assemblers.append(assembler)
+
+        return assemblers
     
     def place_component(self, pos: Vector, cmp : FactoryComponent):
         cmp.bind(self)
