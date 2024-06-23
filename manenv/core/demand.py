@@ -20,12 +20,14 @@ class Order:
         self._due_date = due_date
         self._issue_date = issued
 
+        self._satisfied_product : Product = None
         self._satisfied_time : int = -1
 
         self._id = IDPool.get()
 
-    def satisfy(self, time):
+    def satisfy(self, product : Product, time):
         IDPool.pop(self._id)
+        self._satisfied_product = product
         self._satisfied_time = time 
 
     def get_cycle_time(self):
@@ -35,7 +37,7 @@ class Order:
         return 0 
     
     def is_satisfied(self):
-        return self._satisfied_time > 0
+        return self._satisfied_product != None
 
     def __str__(self):
         return "Product: " + str(self._product)
@@ -71,18 +73,12 @@ class DemandSimulator(ABC):
         self._orders[order._id] = order
         self._current_time += 1
 
-    def resolve_order(self, product : Product, order : Order) -> float:
-        """
-        returns a float representing the level of customer satisfaction
-        """
+    def resolve_order(self, product : Product, order : Order) :
         if not order._id in self._orders:
-            return 0 
+            return
 
-        # lateness = np.max(0, time - order.due_date)
-        order.satisfy(self._current_time)
+        order.satisfy(product, self._current_time)
 
-        return 0
-        
     def reset(self):
         self._orders.clear()
         self._current_time = 0

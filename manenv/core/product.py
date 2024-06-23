@@ -55,3 +55,6 @@ class Product:
     def __str__(self):
         return "id: " + str(self._id) + "\n" +  str(self._structure)
     
+    @staticmethod
+    def compare(p1 : Product, p2 : Product) -> float :
+        return compare_structures(p1._structure, p2._structure)

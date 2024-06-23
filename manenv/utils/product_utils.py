@@ -92,3 +92,36 @@ def check_bounds(array1 : np.ndarray, array2 : np.ndarray) -> bool:
             return False
         
     return True
+
+def compare_structures(X : np.ndarray, Y : np.ndarray) -> float:
+    """
+    Returns the distance between two specified structures X and Y
+    """
+    if X.shape < Y.shape:
+        X, Y = Y, X
+
+    X_rows, X_cols = X.shape
+    Y_rows, Y_cols = Y.shape
+    
+    # If the shapes are the same, compute similarity directly
+    if X.shape == Y.shape:
+        matches = np.sum(X == Y)
+        total_entries = X.size
+        similarity = matches / total_entries
+        return similarity
+    
+    max_matches = 0
+    
+    # Slide Y over X and check for the best match
+    for i in range(X_rows - Y_rows + 1):
+        for j in range(X_cols - Y_cols + 1):
+            sub_X = X[i:i+Y_rows, j:j+Y_cols]
+            matches = np.sum(sub_X == Y)
+            if matches > max_matches:
+                max_matches = matches
+
+    # Compute the similarity based on the best matching subarray
+    total_entries = Y.size
+    similarity = max_matches / total_entries
+    
+    return similarity

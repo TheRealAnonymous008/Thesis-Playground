@@ -175,5 +175,7 @@ class DefaultFactoryMonitor(FactoryMonitor):
         Quality is defined as how well the product given matches the product ordered. Here, distance is defined using something analogous to
         Jaccard Index
         """ 
-        # TODO: Implement this. 
-        return 1.0
+        if not order.is_satisfied():
+            return 0
+        
+        return Product.compare(order._product, order._satisfied_product)

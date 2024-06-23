@@ -153,7 +153,7 @@ class Assembler(FactoryComponent):
             
 
     def _assess_product_with_queue(self, product : Product) -> int:
-        # TODO: Implement this 
+        # TODO: Implement this during model implementation phase. 
         # It is recommended that any function for this should take into account
         # The product's match to a specified order on the list
         # The current status of product inventory
@@ -164,5 +164,5 @@ class Assembler(FactoryComponent):
         """
         if len(self._job_queue) == 0:
             return -1
-        
+
         return 0
