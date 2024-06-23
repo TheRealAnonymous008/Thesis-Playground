@@ -7,7 +7,6 @@ from manenv.core.effector import Effector
 
 from .core.world import World
 
-# TODO: Implement this
 class MARLFactoryEnvironment(gym.Env):
     def __init__(self, world : World): 
         """

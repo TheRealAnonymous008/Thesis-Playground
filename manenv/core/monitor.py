@@ -15,13 +15,13 @@ if TYPE_CHECKING:
 
 @dataclass
 class FactoryMetrics:
-    throughput : float
-    # utilization: float
-    # inventory: float
-    # cycle_time: int  
-    # lead_time: int
-    # customer_service : float
-    # quality : float
+    throughput :dict[int, float] = field(default_factory=lambda: {})
+    utilization : dict[int, float] = field(default_factory=lambda : {})
+    inventory: dict[int, float] = field(default_factory=lambda : {})
+    cycle_time: dict[int, float] = field(default_factory=lambda : {})  
+    lead_time: int
+    customer_service : float
+    quality : float
 
 @dataclass
 class MonitorState: 
@@ -70,7 +70,40 @@ class DefaultFactoryMonitor(FactoryMonitor):
 
     def observe(self) -> FactoryMetrics:
         super().observe()
-        pass 
+        throughput = {}
+        utilization = {}
+        inventory = {}
+        cycle_time = {}
+        lead_time = 0 
+        customer_service = 0
+        quality = 0
+
+        for assembler in self._world.get_all_assemblers():
+            id = assembler._id
+            throughput[id] = self._process_assembler_throughput(assembler)
+            utilization[id] = self._process_assembler_utilization(assembler)
+            inventory[id] = self._process_assembler_inventory_cost(assembler)
+            cycle_time[id] = self._process_assembler_cycle_time(assembler)
+        
+        for order in self._world._demand._orders:
+            lead_time += self._process_lead_time_score(order) 
+            customer_service += self._process_service_level(order)
+            quality += self._process_quality_level(order)
+        
+        if len(self._world._demand._orders) > 0:
+            lead_time /= len(order)
+            customer_service /= len(order)
+            quality /= len(order)
+
+        return FactoryMetrics(
+            throughput=throughput,
+            utilization=utilization,
+            inventory=inventory,
+            cycle_time=cycle_time,
+            lead_time=lead_time,
+            customer_service=customer_service,
+            quality=quality
+        )
 
     def _process_assembler_throughput(self, assembler: Assembler) -> float: 
         """
@@ -142,4 +175,5 @@ class DefaultFactoryMonitor(FactoryMonitor):
         Quality is defined as how well the product given matches the product ordered. Here, distance is defined using something analogous to
         Jaccard Index
         """ 
-        return 0
+        # TODO: Implement this. 
+        return 1.0
