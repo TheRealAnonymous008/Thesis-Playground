@@ -19,9 +19,9 @@ class FactoryMetrics:
     utilization : dict[int, float] = field(default_factory=lambda : {})
     inventory: dict[int, float] = field(default_factory=lambda : {})
     cycle_time: dict[int, float] = field(default_factory=lambda : {})  
-    lead_time: int
-    customer_service : float
-    quality : float
+    lead_time: int = 0
+    customer_service : float = 0
+    quality : float = 0
 
 @dataclass
 class MonitorState: 

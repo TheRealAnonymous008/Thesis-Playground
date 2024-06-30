@@ -16,6 +16,7 @@ class AssetPath:
 
     GRABBER = os.path.join(os.curdir, "assets\\Arm.png")
     WELDER = os.path.join(os.curdir, "assets\\Welder.png")
+    TRANSFORMER = os.path.join(os.curdir, "assets\\Welder.png")     # TODO: Change this to be the actual transformer path
     DISCARD = os.path.join(os.curdir, "assets\\Discard.png")
     ACCEPTOR = os.path.join(os.curdir, "assets\\Acceptor.png")
     OUTPORT = os.path.join(os.curdir, "assets\\Outport.png")

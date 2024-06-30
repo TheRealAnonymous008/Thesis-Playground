@@ -86,6 +86,7 @@ class AssemblerDisplayWindow(gui.elements.UIPanel):
     def update(self, time_delta: float):
         super().update(time_delta)
 
+
     def _render_assembler(self, assembler : Assembler):
         px, py = assembler._workspace_size[0] - 1, assembler._workspace_size[1] - 1
         cell_size = self._window_size[0] / px, self._window_size[1] / py
@@ -137,6 +138,8 @@ class RenderWrapper:
         self.cell_dims : Tuple = cell_dims
         self._visible_cells : Tuple = (int(self.display_dims[0] / self.cell_dims[0]), int(self.display_dims[1] / self.cell_dims[1]))
 
+    def reset(self):
+        self.world.reset()
 
     def render(self, update_mode = False ):
         pg.init()
