@@ -51,6 +51,7 @@ class DemandSimulator(ABC):
         """
         self._orders : dict[int, Order] = {}
         self._max_orders = max_orders
+        self.reset()
 
     def update(self):
         # Remove any resolved orders
