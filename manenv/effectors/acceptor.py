@@ -25,4 +25,7 @@ class Acceptor(Effector):
     def _postupdate(self):
         super()._postupdate()
 
+    def reset(self):
+        pass
+
     

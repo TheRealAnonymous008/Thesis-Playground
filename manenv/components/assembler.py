@@ -60,6 +60,10 @@ class Assembler(FactoryComponent):
 
         self._job_queue : list[Order] = []
 
+        # Each effector in this assembler must be reset
+        for eff in self._effectors:
+            eff.reset()
+
     def add_order_to_queue(self, order : Order):
         self._job_queue.append(order)
 

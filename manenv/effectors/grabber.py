@@ -21,6 +21,7 @@ class GrabberActions(Enum):
 class Grabber(Effector):
     def __init__(self, position : Vector = None):
         super().__init__(GrabberActions, AssetPath.GRABBER, position)
+        self._starting_position : Vector = position.copy()
         self._grabbed_product : Product = None
 
     def _preupdate(self):
@@ -122,5 +123,9 @@ class Grabber(Effector):
             self._grabbed_product.reset_ang_vel()
 
         super()._postupdate()
-
     
+    def reset(self):
+        self._position = self._starting_position.copy()
+        if self._grabbed_product:
+            self._grabbed_product.delete()
+        self._grabbed_product = None

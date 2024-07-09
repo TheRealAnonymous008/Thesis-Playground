@@ -23,6 +23,7 @@ class Transformer(Effector):
         assert(p_in > 0 and p_out > 0 and p_in < len(AssetPath.PRODUCT_ASSETS) and p_out < len(AssetPath.PRODUCT_ASSETS))
 
         super().__init__(TransformerActions, AssetPath.TRANSFORMER, position)
+        self._starting_position = position
         # The job details contain the new product welded and where to place it on the
         # workspace
         self._transform_job_details = None
@@ -89,5 +90,11 @@ class Transformer(Effector):
 
     def _postupdate(self):
         super()._postupdate()
+
+    def reset(self):
+        # The job details contain the new product welded and where to place it on the
+        # workspace
+        self._position = self._starting_position
+        self._transform_job_details = None
 
     

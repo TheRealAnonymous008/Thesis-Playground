@@ -36,7 +36,7 @@ class Effector(Actor):
         self._asset = asset
 
         self._current_action = None 
-    
+
     def bind(self, assembler : Assembler):
         self._assembler = assembler
         self._workspace_size = self._assembler._workspace_size - make_vector(1, 1)
@@ -65,3 +65,6 @@ class Effector(Actor):
     @abstractmethod
     def _postupdate(self):
         self._current_action = None 
+
+    def reset(self):
+        pass

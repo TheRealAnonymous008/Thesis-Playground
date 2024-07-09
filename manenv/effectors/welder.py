@@ -23,7 +23,7 @@ class Welder(Effector):
         super().__init__(WelderActions, AssetPath.WELDER, position)
         # The job details contain the new product welded and where to place it on the
         # workspace
-
+        self._starting_position = position
         self._weld_job_details = None
 
     def _preupdate(self):
@@ -102,4 +102,8 @@ class Welder(Effector):
     def _postupdate(self):
         super()._postupdate()
 
-    
+    def reset(self):
+        # The job details contain the new product welded and where to place it on the
+        # workspace
+        self._position = self._starting_position
+        self._weld_job_details = None
