@@ -98,7 +98,7 @@ class Assembler(FactoryComponent):
 
     def get_product_in_workspace(self, position: Vector) -> Product:
         if not check_bounds(position, self._workspace_size):
-            raise Exception("Not in bounds")
+            return None
         
         id = self._product_mask[position[0]][position[1]]
         if id == 0:
@@ -109,7 +109,8 @@ class Assembler(FactoryComponent):
     
     def _pop_from_workspace(self, position: Vector) -> Product:
         if not check_bounds(position, self._workspace_size):
-            raise Exception("Not in bounds")
+            return None
+
         
         id = self._product_mask[position[0]][position[1]]
         if id == 0:

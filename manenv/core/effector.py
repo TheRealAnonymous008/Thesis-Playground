@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Tuple
+from typing import Literal, Tuple
 from enum import Enum
 
 from abc import abstractmethod, ABC

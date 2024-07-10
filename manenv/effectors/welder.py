@@ -39,38 +39,38 @@ class Welder(Effector):
     
     def _update(self):
         match(self._current_action):
-            case WelderActions.IDLE:
+            case WelderActions.IDLE.value:
                 pass 
 
-            case WelderActions.MOVE_LEFT:
+            case WelderActions.MOVE_LEFT.value:
                 self._position += VectorBuiltin.LEFT
                 self._position = np.clip(self._position, (0, 0), self._workspace_size)
             
-            case WelderActions.MOVE_RIGHT:
+            case WelderActions.MOVE_RIGHT.value:
                 self._position += VectorBuiltin.RIGHT
                 self._position = np.clip(self._position, (0, 0), self._workspace_size)
 
-            case WelderActions.MOVE_BACKWARD:
+            case WelderActions.MOVE_BACKWARD.value:
                 self._position += VectorBuiltin.BACKWARD
                 self._position = np.clip(self._position, (0, 0), self._workspace_size)
                 
-            case WelderActions.MOVE_FORWARD:
+            case WelderActions.MOVE_FORWARD.value:
                 self._position += VectorBuiltin.BACKWARD
                 self._position = np.clip(self._position, (0, 0), self._workspace_size)
 
-            case WelderActions.WELD_NORTH:
+            case WelderActions.WELD_NORTH.value:
                 job_details = self._weld_at_offset(self._position + VectorBuiltin.FORWARD)
                 self._weld_job_details = job_details
 
-            case WelderActions.WELD_SOUTH:
+            case WelderActions.WELD_SOUTH.value:
                 job_details = self._weld_at_offset(self._position + VectorBuiltin.BACKWARD)
                 self._weld_job_details = job_details
 
-            case WelderActions.WELD_EAST:
+            case WelderActions.WELD_EAST.value:
                 job_details = self._weld_at_offset(self._position + VectorBuiltin.RIGHT)
                 self._weld_job_details = job_details
                 
-            case WelderActions.WELD_WEST:
+            case WelderActions.WELD_WEST.value:
                 job_details = self._weld_at_offset(self._position + VectorBuiltin.LEFT)
                 self._weld_job_details = job_details
 

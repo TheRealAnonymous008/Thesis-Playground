@@ -43,26 +43,26 @@ class Transformer(Effector):
     
     def _update(self):
         match(self._current_action):
-            case TransformerActions.IDLE:
+            case TransformerActions.IDLE.value:
                 pass 
 
-            case TransformerActions.MOVE_LEFT:
+            case TransformerActions.MOVE_LEFT.value:
                 self._position += VectorBuiltin.LEFT
                 self._position = np.clip(self._position, (0, 0), self._workspace_size)
             
-            case TransformerActions.MOVE_RIGHT:
+            case TransformerActions.MOVE_RIGHT.value:
                 self._position += VectorBuiltin.RIGHT
                 self._position = np.clip(self._position, (0, 0), self._workspace_size)
 
-            case TransformerActions.MOVE_BACKWARD:
+            case TransformerActions.MOVE_BACKWARD.value:
                 self._position += VectorBuiltin.BACKWARD
                 self._position = np.clip(self._position, (0, 0), self._workspace_size)
                 
-            case TransformerActions.MOVE_FORWARD:
+            case TransformerActions.MOVE_FORWARD.value:
                 self._position += VectorBuiltin.BACKWARD
                 self._position = np.clip(self._position, (0, 0), self._workspace_size)
 
-            case TransformerActions.TRANSFORM:
+            case TransformerActions.TRANSFORM.value:
                 job_details = self._transform_product()
                 self._transform_job_details = job_details
 
