@@ -7,6 +7,8 @@ from manenv.core.effector import Effector
 
 from .core.world import World
 
+import numpy as np
+
 class MARLFactoryEnvironment(gym.Env):
     def __init__(self, world : World): 
         """
@@ -44,15 +46,24 @@ class MARLFactoryEnvironment(gym.Env):
         """
         Observations are obtained per actor
         """
+        observations = self.get_observation()
+
+        return observations, self._world._monitor.observe(), False, False, None
+    
+    def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None) -> tuple[Any, dict[str, Any]]:
+        np.random.seed(seed)
+        self._world.reset()
+
+        return self.get_observation()
+
+    
+    def get_observation(self):
         observations = {}
         for (key, actor) in self.actor_space.items():
             observations[key] = actor.get_observation()
 
         return observations
-    
-    def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None) -> tuple[Any, dict[str, Any]]:
-        self._world.reset()
-    
+
     def render(self):
         return None
     

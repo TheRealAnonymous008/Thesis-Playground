@@ -134,7 +134,7 @@ class DefaultFactoryMonitor(FactoryMonitor):
         Inventory for an assembler is defined as the number of products in its staging area at the current moment 
         """
 
-        inventory_cost = len(assembler._staging_area) 
+        inventory_cost = 1.0 / len(assembler._staging_area) 
 
         return inventory_cost 
     
