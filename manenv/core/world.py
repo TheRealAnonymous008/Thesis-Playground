@@ -121,6 +121,7 @@ class World:
         
         self._demand.reset()
         self._inventory.reset()
+        self._monitor.reset()
 
     def update(self): 
         self._time_step += 1

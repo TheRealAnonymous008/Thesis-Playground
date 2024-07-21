@@ -1,3 +1,4 @@
+import functools
 from typing import Any, SupportsFloat
 import gymnasium as gym
 from gymnasium.spaces import Dict,Discrete
@@ -9,7 +10,10 @@ from .core.world import World
 
 import numpy as np
 
-class MARLFactoryEnvironment(gym.Env):
+from pettingzoo import ParallelEnv, AECEnv
+
+
+class MARLFactoryEnvironment(ParallelEnv):
     def __init__(self, world : World): 
         """
         A gym wrapper for the Factory environment.
@@ -17,7 +21,7 @@ class MARLFactoryEnvironment(gym.Env):
         In particular, it takes in a configured `World` instance and sets it up to be usable in RL training.
         """
         self._world : World = world 
-        self.action_space, self.actor_space = self.build_action_space()
+        self._action_space, self.actor_space = self.build_action_space()
 
     def build_action_space(self): 
         # All effectors contribute to the action set of the gym wrapper. 
@@ -29,10 +33,6 @@ class MARLFactoryEnvironment(gym.Env):
             action_space[eff._id] = Discrete(len(eff._action_space))
 
         return Dict(action_space), actor_space
-    
-    def build_observation_space(self):
-        pass 
-
 
     def step(self, actions: dict[int, int]) -> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:
         """
@@ -41,20 +41,35 @@ class MARLFactoryEnvironment(gym.Env):
         for (actor, action) in actions.items():
             self.actor_space[actor].set_action(action)
 
+        print(self.steps)
+        self.steps += 1
         self._world.update()
 
         """
         Observations are obtained per actor
         """
         observations = self.get_observation()
+        rewards = self._world._monitor.observe()
+        trunc = {}
+        term = {}
+        info = {}
 
-        return observations, self._world._monitor.observe(), False, False, None
+        for agent in self.agents: 
+            trunc[agent] = False 
+            term[agent] = False 
+            info[agent] = False
+
+        return observations, {}, trunc, term, info 
     
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None) -> tuple[Any, dict[str, Any]]:
         np.random.seed(seed)
         self._world.reset()
+        self.agents = [x for x in self.actor_space.keys()]
 
-        return self.get_observation()
+        obs = self.get_observation()
+        
+        self.steps = 0
+        return obs, obs
 
     
     def get_observation(self):
@@ -63,6 +78,14 @@ class MARLFactoryEnvironment(gym.Env):
             observations[key] = actor.get_observation()
 
         return observations
+    
+    @functools.lru_cache(maxsize=None)
+    def observation_space(self, agentId : int):
+        return self.actor_space[agentId].get_observation()
+    
+    @functools.lru_cache(maxsize=None)
+    def action_space(self, agentId : int):
+        return self._action_space[agentId]
 
     def render(self):
         return None

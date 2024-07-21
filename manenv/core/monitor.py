@@ -85,15 +85,16 @@ class DefaultFactoryMonitor(FactoryMonitor):
             inventory[id] = self._process_assembler_inventory_cost(assembler)
             cycle_time[id] = self._process_assembler_cycle_time(assembler)
         
-        for order in self._world._demand._orders:
+        for (k, order) in self._world._demand._orders.items():
             lead_time += self._process_lead_time_score(order) 
             customer_service += self._process_service_level(order)
             quality += self._process_quality_level(order)
         
         if len(self._world._demand._orders) > 0:
-            lead_time /= len(order)
-            customer_service /= len(order)
-            quality /= len(order)
+            num_orders = len(self._world._demand._orders)
+            lead_time /= num_orders
+            customer_service /= num_orders
+            quality /= num_orders
 
         return FactoryMetrics(
             throughput=throughput,
@@ -111,7 +112,7 @@ class DefaultFactoryMonitor(FactoryMonitor):
         """
         products = assembler._product_outputs
         
-        return max(0, len(products) - self._state.assembler_output_buffer[assembler._id])
+        return max(0, len(products) - len(self._state.assembler_output_buffer[assembler._id]))
     
     def _process_assembler_utilization(self, assembler: Assembler) -> float:
         """
@@ -133,7 +134,9 @@ class DefaultFactoryMonitor(FactoryMonitor):
         """
         Inventory for an assembler is defined as the number of products in its staging area at the current moment 
         """
-
+        if len(assembler._staging_area) == 0:
+            return 2
+        
         inventory_cost = 1.0 / len(assembler._staging_area) 
 
         return inventory_cost 
