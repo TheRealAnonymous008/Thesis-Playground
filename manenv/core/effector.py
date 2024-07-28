@@ -39,7 +39,7 @@ class Effector(Actor):
 
     def bind(self, assembler : Assembler):
         self._assembler = assembler
-        self._workspace_size = self._assembler._workspace_size - make_vector(1, 1)
+        self._workspace_size = self._assembler._workspace_size.copy() - make_vector(1, 1)
 
     def is_bound(self):
         return self._assembler != None

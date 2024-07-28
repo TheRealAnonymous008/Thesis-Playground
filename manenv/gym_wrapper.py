@@ -40,9 +40,7 @@ class MARLFactoryEnvironment(ParallelEnv):
         """
         for (actor, action) in actions.items():
             self.actor_space[actor].set_action(action)
-
-        print(self.steps)
-        self.steps += 1
+            
         self._world.update()
 
         """

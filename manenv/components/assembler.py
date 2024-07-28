@@ -22,7 +22,7 @@ class Assembler(FactoryComponent):
                  staging_size : int = -1):
         super().__init__(AssetPath.ASSEMBLER)
         
-        self._workspace_size = workspace_size
+        self._workspace_size = workspace_size.copy()
         self._effectors = effectors
         self._staging_size = staging_size
         self._completed_order_buffer : list[Order] = []
@@ -44,7 +44,6 @@ class Assembler(FactoryComponent):
         for eff in self._effectors:
             eff._postupdate()
 
-        self.update_masks()
         self.update_staging()
 
     def reset(self):
@@ -78,25 +77,14 @@ class Assembler(FactoryComponent):
             return 
         if not is_region_zeros(product._structure, self._workspace, position):
             return 
-
+        
+        structure = (product._structure != 0) * product._id 
+        self._product_mask = place_structure(structure, self._product_mask, position)
         self._product_list[product._id] = product
+
         product._transform_pos = position
 
-    def update_masks(self):
-        # Flush the workspace and the product mask 
-        self._workspace *= 0 
-        self._product_mask *= 0
-
-        for product in self._product_list.values():
-            cpy = self._workspace.copy()
-            new_workspace = place_structure(product._structure, cpy, product._transform_pos)
-            mask = ((new_workspace - self._workspace) != 0).astype(int) 
-            self._product_mask = (self._product_mask + mask * product._id).astype(int)
-            self._workspace = new_workspace
-
-            del cpy
-
-    def get_product_in_workspace(self, position: Vector) -> Product:
+    def get_product_in_workspace(self, position: Vector) -> Product | None:
         if not check_bounds(position, self._workspace_size):
             return None
         
@@ -104,21 +92,17 @@ class Assembler(FactoryComponent):
         if id == 0:
             return None 
         
-        product = self._product_list[id]
-        return product
+        return self._product_list[id]
     
     def _pop_from_workspace(self, position: Vector) -> Product:
-        if not check_bounds(position, self._workspace_size):
-            return None
+        product = self.get_product_in_workspace(position)
 
-        
-        id = self._product_mask[position[0]][position[1]]
-        if id == 0:
-            return None 
-        
-        product = self._product_list[id]
-        self._product_list.pop(id)
-        
+        if product == None:
+            return 
+
+        self._product_list.pop(product._id)    
+        self._product_mask = (self._product_mask != product._id) * self._product_mask
+         
         return product
 
 

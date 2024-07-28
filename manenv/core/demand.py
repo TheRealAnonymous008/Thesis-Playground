@@ -123,6 +123,6 @@ class DefaultDemandSimulator(DemandSimulator):
             return None 
         
         prod : Product = np.random.choice(self._products_list)
-        return Order(self._current_time, prod.copy())
+        return prod
     
     
