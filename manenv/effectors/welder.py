@@ -84,20 +84,19 @@ class Welder(Effector):
 
             if p1 == None or p2 == None:
                 return None
+            
+            if p1._id == p2._id:
+                return None
 
             # Weld the two products together if they are distinct
             # Welding is defined by returning a new product that is the union of the two constituents 
             t1 = p1._transform_pos
             t2 = p2._transform_pos
 
-            if is_equal(t1, t2):
-                return None
 
             self._assembler.delete_product_in_workspace(self._position)
             self._assembler.delete_product_in_workspace(offset)
-            
-            print(t1, t2, p1._id, p2._id, offset, self._position)
-            
+                        
             structure = np.zeros(self._assembler._workspace_size)
             structure = place_structure(p1._structure, structure, t1)
             structure = place_structure(p2._structure, structure, t2)

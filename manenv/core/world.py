@@ -68,12 +68,11 @@ class WorldCell:
         """
         Remove product with specified `id` from the products on this cell
         """
-        idx = 0
         for _product in self._products:
-            if _product._id == product._id and self.is_product_placed(product):
-                self._products.remove(_product)
+            if _product._id == product._id:
+                if self.is_product_placed(product):
+                    self._products.remove(_product)
                 break
-            idx += 1
 
 class World: 
     """

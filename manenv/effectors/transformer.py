@@ -70,7 +70,7 @@ class Transformer(Effector):
                 pass 
 
     def _transform_product(self):
-            p1 : Product = self._assembler.get_product_in_workspace(self._position)
+            p1 = self._assembler.get_product_in_workspace(self._position)
 
             if p1 == None:
                 return None

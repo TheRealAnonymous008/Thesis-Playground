@@ -38,6 +38,8 @@ class MARLFactoryEnvironment(ParallelEnv):
         """
         Actions are expected to align with the actor_space specified
         """
+        self.steps += 1
+
         for (actor, action) in actions.items():
             self.actor_space[actor].set_action(action)
             
