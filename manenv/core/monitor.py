@@ -52,6 +52,7 @@ class FactoryMonitor(ABC):
     def observe(self) -> FactoryMetrics:
         # Observe returns a dictionary
         assert(self._world != None)
+        self.reset()
         pass 
 
     

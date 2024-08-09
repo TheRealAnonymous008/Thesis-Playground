@@ -5,6 +5,7 @@ from gymnasium.spaces import Dict,Discrete
 
 from manenv.core.actor import Actor
 from manenv.core.effector import Effector
+from manenv.core.monitor import FactoryMetrics
 
 from .core.world import World
 
@@ -49,7 +50,7 @@ class MARLFactoryEnvironment(ParallelEnv):
         Observations are obtained per actor
         """
         observations = self.get_observation()
-        rewards = self._world._monitor.observe()
+        rewards = self._clean_rewards(self._world._monitor.observe())
         trunc = {}
         term = {}
         info = {}
@@ -59,8 +60,19 @@ class MARLFactoryEnvironment(ParallelEnv):
             term[agent] = False 
             info[agent] = False
 
-        return observations, {}, trunc, term, info 
+        return observations, rewards, trunc, term, info 
     
+    def _clean_rewards(self, metrics : FactoryMetrics):
+        rew : dict[int, int] = {}
+
+        for (key, actor) in self.actor_space.items():
+            # TODO: Insert calculations for single reward here
+            if actor is Effector:
+                eff : Effector = actor
+                rew[key] = metrics.throughput[eff._assembler._id]
+
+        return rew
+
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None) -> tuple[Any, dict[str, Any]]:
         np.random.seed(seed)
         self._world.reset()
