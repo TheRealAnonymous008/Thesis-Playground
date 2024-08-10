@@ -1,4 +1,5 @@
 from __future__ import annotations
+import copy
 import numpy as np 
 from typing import Tuple
 
@@ -31,7 +32,7 @@ class WorldCell:
         """
 
         self._factory_component : FactoryComponent | None = None 
-        self._products : list[Product] = [] 
+        self._products : dict[int, Product] = {}
         # is_placed stores a series of booleans corresponding to whether or not a product is at the edge
         # of this cell or not 
 
@@ -52,10 +53,14 @@ class WorldCell:
         self._factory_component = cmp
         cmp.place(self)
 
-    def place_product(self, product: Product, position : Vector = make_vector(0, 0)):
-        self._products.append(product)
+    def place_product(self, product: Product, position : Vector | None = make_vector(0, 0)):
+        self._products[product._id] = product
+        if position is None:
+            return 
+        
         if position[0] != 0 or position[1] != 0:
             self._dirty_set.add(product._id)
+
 
     def is_product_placed(self, product : Product) -> bool:
         return not (product._id in self._dirty_set)
@@ -68,12 +73,16 @@ class WorldCell:
         """
         Remove product with specified `id` from the products on this cell
         """
-        for _product in self._products:
-            if _product._id == product._id:
-                if self.is_product_placed(product):
-                    self._products.remove(_product)
-                break
+        p = self._products[product._id]
+        if self.is_product_placed(p):
+            self._products.pop(p._id)
 
+    def clear_products(self):
+        self._products.clear()
+
+    def get_product_list(self):
+        return copy.deepcopy(self._products).values()
+        
 class World: 
     """
     Contains information about the smart factory environment 
@@ -132,7 +141,7 @@ class World:
         for x in range(self._shape[0]):
             for y in range(self._shape[1]):
                 cell = self._map[x][y]
-                for prod in cell._products:
+                for prod in cell._products.values():
                     if not cell.is_product_placed(prod):
                         cell.update_place_status(prod)
 

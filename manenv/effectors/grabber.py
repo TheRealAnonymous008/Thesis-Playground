@@ -99,9 +99,8 @@ class Grabber(Effector):
                     self._grabbed_product = None 
             
             case GrabberActions.GRAB_INVENTORY.value:
-                inventory = self._assembler.get_product_inventory()
-                if len(inventory) > 0:
-                    self._grabbed_product = inventory.pop(0)
+                self._grabbed_product = self._assembler.get_from_inventory()
+                if self._grabbed_product != None:
                     self._grabbed_product._transform_pos = self._position.copy()
 
             case GrabberActions.ROTATE_CW.value:

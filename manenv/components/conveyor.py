@@ -67,7 +67,7 @@ class Conveyor(FactoryComponent):
                         src_cell.remove_product(product)
                         self._cell.place_product(product)
                 else: 
-                    for product in src_cell._products:
+                    for product in src_cell.get_product_list():
                         if self._cell.is_product_placed(product):
                             src_cell.remove_product(product)
                             self._cell.place_product(product, input_offset)
@@ -81,7 +81,7 @@ class Conveyor(FactoryComponent):
             
             # Move current product out of this cell 
             if dest_cell != None: 
-                P = self._cell._products
+                P = self._cell.get_product_list()
                 for product in P:
                     if self._cell.is_product_placed(product):
                         self._cell.remove_product(product)

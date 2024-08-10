@@ -56,6 +56,7 @@ class Assembler(FactoryComponent):
         # The staging area is where we first push our products.
         # We then push it onto the product outputs array to be delivered outside
         # The assembler. This way, we can match orders in the queue with staged products
+        self._inventory : list[Product] = []
         self._staging_area : list[Product]= []
         self._product_outputs : list[Product] = []
 
@@ -67,12 +68,17 @@ class Assembler(FactoryComponent):
 
     def add_order_to_queue(self, order : Order):
         self._job_queue.append(order)
-
-    def get_product_inventory(self) -> list[Product]:
-        return self._cell._products
     
     def place_in_inventory(self, product : Product):
-        self._cell._products.append(product)
+        self._cell.place_product(product, None)
+        self._inventory.append(product)
+
+    def get_from_inventory(self) -> Product | None:
+        if len(self._inventory) > 0:
+            prod = self._inventory.pop(0)
+            self._cell.remove_product(prod)
+            return prod
+        return None
 
     def place_in_workspace(self, product: Product, position : Vector):
         if not check_bounds(position, self._workspace_size - product._structure.shape):
