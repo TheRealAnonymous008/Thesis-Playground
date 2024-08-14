@@ -44,7 +44,7 @@ class WorldCell:
         if self._factory_component != None: 
             self._factory_component.reset()
         
-        self._products.clear()
+        self.clear_products()
         self._dirty_set.clear()
 
     def place_component(self, cmp : FactoryComponent):
@@ -78,6 +78,9 @@ class WorldCell:
             self._products.pop(p._id)
 
     def clear_products(self):
+        for i in self._products.values():
+            IDPool.pop(i._id)
+
         self._products.clear()
 
     def get_product_list(self):

@@ -66,10 +66,12 @@ class MARLFactoryEnvironment(ParallelEnv):
         info = {}
 
         for agent in self.agents: 
+            print(agent)
             trunc[agent] = self.steps >= MARLFactoryEnvironment.MAX_GAME_STEPS 
             term[agent] = self.steps >= MARLFactoryEnvironment.MAX_GAME_STEPS
             info[agent] = False
 
+        print("Rewards", rewards)
         return observations, rewards, trunc, term, info 
     
     def _clean_rewards(self, metrics : FactoryMetrics):
@@ -77,9 +79,11 @@ class MARLFactoryEnvironment(ParallelEnv):
 
         for (key, actor) in self.actor_space.items():
             # TODO: Insert calculations for single reward here
-            if actor is Effector:
+            if isinstance(actor, Effector):
                 eff : Effector = actor
                 rew[key] = metrics.throughput[eff._assembler._id]
+            else:
+                rew[key] = 1
 
         return rew
 

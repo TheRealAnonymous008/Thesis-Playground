@@ -1,0 +1,2 @@
+# Notes
+1. Training loop might throw an error about the info_dict not containing string keys or being emptpy. The fix is to modify the line (in the lib responsible) to force the info dictionary to be a {}. Could fix this by making all agent keys strings, but too coostly.
