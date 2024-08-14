@@ -33,7 +33,7 @@ class MARLFactoryEnvironment(ParallelEnv):
 
     def build_action_space(self): 
         # All effectors contribute to the action set of the gym wrapper. 
-        actor_space : dict[int, Actor] = {}
+        actor_space : dict[str, Actor] = {}
         action_space : dict = {}
         effectors : list[Effector] = self._world.get_all_effectors()
         for eff in effectors:
@@ -66,10 +66,9 @@ class MARLFactoryEnvironment(ParallelEnv):
         info = {}
 
         for agent in self.agents: 
-            print(agent)
             trunc[agent] = self.steps >= MARLFactoryEnvironment.MAX_GAME_STEPS 
             term[agent] = self.steps >= MARLFactoryEnvironment.MAX_GAME_STEPS
-            info[agent] = False
+            info[agent] = {}
 
         return observations, rewards, trunc, term, info 
     
@@ -110,12 +109,12 @@ class MARLFactoryEnvironment(ParallelEnv):
     
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agentId : int):
-        space = self.actor_space[agentId].get_observation_space()
+        space = self.actor_space[str(agentId)].get_observation_space()
         return space
     
     @functools.lru_cache(maxsize=None)
     def action_space(self, agentId : int):
-        return self._action_space[agentId]
+        return self._action_space[str(agentId)]
 
     def render(self):
         return None

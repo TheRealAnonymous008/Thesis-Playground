@@ -5,7 +5,8 @@ from manenv.core.idpool import IDPool
 
 class Actor(ABC):
     def __init__(self):
-        self._id = IDPool.get()
+        # ID has to be a string because of pettingzoo / stablebaselines3 specs. 
+        self._id = str(IDPool.get())
         
     @abstractmethod
     def set_action(self, action_code : int):
