@@ -71,7 +71,6 @@ class MARLFactoryEnvironment(ParallelEnv):
             term[agent] = self.steps >= MARLFactoryEnvironment.MAX_GAME_STEPS
             info[agent] = False
 
-        print("Rewards", rewards)
         return observations, rewards, trunc, term, info 
     
     def _clean_rewards(self, metrics : FactoryMetrics):
