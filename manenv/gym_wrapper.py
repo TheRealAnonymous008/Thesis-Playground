@@ -15,7 +15,7 @@ from pettingzoo import ParallelEnv, AECEnv
 
 
 class MARLFactoryEnvironment(ParallelEnv):
-    MAX_GAME_STEPS = 10000
+    MAX_GAME_STEPS = 1000
 
     def __init__(self, world : World): 
         """
