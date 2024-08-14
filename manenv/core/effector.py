@@ -53,14 +53,25 @@ class Effector(Actor):
         return {
             "position": self._position,
             "r_mask": self._assembler._workspace,
-            "p_mask": self._assembler._product_mask,
+            # "p_mask": self._assembler._product_mask,
         }
     
     def get_observation_space(self):
+        shape = np.array([self._assembler._workspace_size[0], self._assembler._workspace_size[1]])
+                         
         return gymnasium.spaces.Dict({
-            "position": gymnasium.spaces.Box(low=np.array(0, 0), high = np.array(self._assembler._workspace_size[0], self._assembler._workspace_size[1])),
-            "r_mask": gymnasium.spaces.Box(),
-            "p_mask": gymnasium.spaces.Box()
+            "position": gymnasium.spaces.Box(
+                low= 0,
+                high =max(shape[0], shape[1]) ,
+                shape = (2,),
+                dtype=np.int32
+            ),
+            "r_mask": gymnasium.spaces.Box(
+                low = 0, high = 10, shape = shape, dtype=np.int32
+            ),
+            # "p_mask": gymnasium.spaces.Box(
+            #     low = 0, high = 2**63 - 2, shape = shape, dtype=np.int32
+            # )
         })
 
     @abstractmethod

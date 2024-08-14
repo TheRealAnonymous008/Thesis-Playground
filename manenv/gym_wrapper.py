@@ -96,13 +96,15 @@ class MARLFactoryEnvironment(ParallelEnv):
     def get_observation(self):
         observations = {}
         for (key, actor) in self.actor_space.items():
-            observations[key] = actor.get_observation_space()
+            observations[key] = actor.get_observation()
 
         return observations
     
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agentId : int):
-        return self.actor_space[agentId].get_observation()
+        space = self.actor_space[agentId].get_observation_space()
+        print(space)
+        return space
     
     @functools.lru_cache(maxsize=None)
     def action_space(self, agentId : int):

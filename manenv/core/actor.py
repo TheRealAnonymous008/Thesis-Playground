@@ -15,7 +15,6 @@ class Actor(ABC):
     def get_observation(self):
         pass 
     
-    # TODO: Implement this
     @abstractmethod
     def get_observation_space(self):
         pass
