@@ -46,8 +46,10 @@ class MARLFactoryEnvironment(ParallelEnv):
         """
         Actions are expected to align with the actor_space specified
         """
+
         self.steps += 1
-        print(self.steps)
+        if self.steps >= MARLFactoryEnvironment.MAX_GAME_STEPS:
+            self.reset()
 
         for (actor, action) in actions.items():
             self.actor_space[actor].set_action(action)
