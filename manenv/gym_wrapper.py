@@ -40,6 +40,7 @@ class MARLFactoryEnvironment(ParallelEnv):
         Actions are expected to align with the actor_space specified
         """
         self.steps += 1
+        # print(self.steps)
 
         for (actor, action) in actions.items():
             self.actor_space[actor].set_action(action)
@@ -57,7 +58,7 @@ class MARLFactoryEnvironment(ParallelEnv):
 
         for agent in self.agents: 
             trunc[agent] = False 
-            term[agent] = False 
+            term[agent] = self.steps == 10000 
             info[agent] = False
 
         return observations, rewards, trunc, term, info 

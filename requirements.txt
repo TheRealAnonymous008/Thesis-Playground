@@ -1,4 +1,5 @@
 gymnasium==0.29.1
-numpy==1.26.4
+numpy==2.0.1
+pettingzoo==1.24.3
 pygame_ce==2.4.1
 pygame_gui==0.6.10
