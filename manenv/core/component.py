@@ -3,6 +3,8 @@ from typing import Tuple
 
 from abc import abstractmethod, ABC
 
+import gymnasium
+
 from manenv.core.actor import Actor
 from ..utils.vector import *
 from ..asset_paths import AssetPath
@@ -63,6 +65,9 @@ class FactoryComponent(Actor, ABC):
 
     def get_observation(self):
         pass 
+
+    def get_observation_space(self):
+        return gymnasium.spaces.Dict({})
 
     def _check_is_bound(self):
         if self._world == None: 

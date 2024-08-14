@@ -14,6 +14,11 @@ class Actor(ABC):
     @abstractmethod
     def get_observation(self):
         pass 
+    
+    # TODO: Implement this
+    @abstractmethod
+    def get_observation_space(self):
+        pass
 
     def unplace(self):
         IDPool.pop(self._id)

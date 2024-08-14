@@ -4,6 +4,8 @@ from enum import Enum
 
 from abc import abstractmethod, ABC
 
+import gymnasium
+
 from manenv.core.actor import Actor
 from ..utils.vector import *
 import numpy as np
@@ -53,6 +55,13 @@ class Effector(Actor):
             "r_mask": self._assembler._workspace,
             "p_mask": self._assembler._product_mask,
         }
+    
+    def get_observation_space(self):
+        return gymnasium.spaces.Dict({
+            "position": gymnasium.spaces.Box(low=np.array(0, 0), high = np.array(self._assembler._workspace_size[0], self._assembler._workspace_size[1])),
+            "r_mask": gymnasium.spaces.Box(),
+            "p_mask": gymnasium.spaces.Box()
+        })
 
     @abstractmethod
     def _preupdate(self):

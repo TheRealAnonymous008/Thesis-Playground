@@ -15,14 +15,21 @@ from pettingzoo import ParallelEnv, AECEnv
 
 
 class MARLFactoryEnvironment(ParallelEnv):
+    MAX_GAME_STEPS = 10000
+
     def __init__(self, world : World): 
         """
         A gym wrapper for the Factory environment.
 
         In particular, it takes in a configured `World` instance and sets it up to be usable in RL training.
         """
+        super().__init__()
         self._world : World = world 
         self._action_space, self.actor_space = self.build_action_space()
+        self.metadata = {
+            "name" : "factory"
+        }
+        self.render_mode = None
 
     def build_action_space(self): 
         # All effectors contribute to the action set of the gym wrapper. 
@@ -58,7 +65,7 @@ class MARLFactoryEnvironment(ParallelEnv):
 
         for agent in self.agents: 
             trunc[agent] = False 
-            term[agent] = self.steps == 10000 
+            term[agent] = self.steps >= MARLFactoryEnvironment.MAX_GAME_STEPS
             info[agent] = False
 
         return observations, rewards, trunc, term, info 
@@ -78,17 +85,18 @@ class MARLFactoryEnvironment(ParallelEnv):
         np.random.seed(seed)
         self._world.reset()
         self.agents = [x for x in self.actor_space.keys()]
+        self.possible_agents = [x for x in self.actor_space.keys()]
 
         obs = self.get_observation()
         
         self.steps = 0
-        return obs, obs
+        return obs, {}
 
     
     def get_observation(self):
         observations = {}
         for (key, actor) in self.actor_space.items():
-            observations[key] = actor.get_observation()
+            observations[key] = actor.get_observation_space()
 
         return observations
     
