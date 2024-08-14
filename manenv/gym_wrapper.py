@@ -47,7 +47,7 @@ class MARLFactoryEnvironment(ParallelEnv):
         Actions are expected to align with the actor_space specified
         """
         self.steps += 1
-        # print(self.steps)
+        print(self.steps)
 
         for (actor, action) in actions.items():
             self.actor_space[actor].set_action(action)
@@ -64,7 +64,7 @@ class MARLFactoryEnvironment(ParallelEnv):
         info = {}
 
         for agent in self.agents: 
-            trunc[agent] = False 
+            trunc[agent] = self.steps >= MARLFactoryEnvironment.MAX_GAME_STEPS 
             term[agent] = self.steps >= MARLFactoryEnvironment.MAX_GAME_STEPS
             info[agent] = False
 
@@ -81,16 +81,19 @@ class MARLFactoryEnvironment(ParallelEnv):
 
         return rew
 
-    def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None) -> tuple[Any, dict[str, Any]]:
+    def reset(self, *, seed: int | None = None, options: dict[int, Any] | None = None) -> tuple[Any, dict[str, Any]]:
         np.random.seed(seed)
         self._world.reset()
         self.agents = [x for x in self.actor_space.keys()]
         self.possible_agents = [x for x in self.actor_space.keys()]
 
         obs = self.get_observation()
-        
+        infos = {}
+        for ag in self.agents:
+            infos[ag] = 1
+
         self.steps = 0
-        return obs, {}
+        return obs, infos
 
     
     def get_observation(self):
@@ -103,7 +106,6 @@ class MARLFactoryEnvironment(ParallelEnv):
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agentId : int):
         space = self.actor_space[agentId].get_observation_space()
-        print(space)
         return space
     
     @functools.lru_cache(maxsize=None)
