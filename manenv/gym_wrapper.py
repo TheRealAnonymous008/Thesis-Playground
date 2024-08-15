@@ -79,9 +79,12 @@ class MARLFactoryEnvironment(ParallelEnv):
             # TODO: Insert calculations for single reward here
             if isinstance(actor, Effector):
                 eff : Effector = actor
-                rew[key] = metrics.throughput[eff._assembler._id]
+                rew[key] = metrics.throughput[eff._assembler._id] + \
+                    metrics.lead_time[eff._assembler._id] + \
+                    metrics.cycle_time[eff._assembler._id] + \
+                    metrics.utilization[eff._assembler._id] 
             else:
-                rew[key] = 1
+                rew[key] = 0
 
         return rew
 
