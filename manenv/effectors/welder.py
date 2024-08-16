@@ -93,14 +93,19 @@ class Welder(Effector):
             t1 = p1._transform_pos
             t2 = p2._transform_pos
 
+            # TODO: This is a very crude fix. Need to fix this later
+            try:
+                structure = np.zeros_like(self._assembler._workspace)
+                structure = place_structure(p1._structure, structure, t1)
+                structure = place_structure(p2._structure, structure, t2)
+            except:
+                return None
+            
             self._assembler.delete_product_in_workspace(self._position)
             self._assembler.delete_product_in_workspace(offset)
-                        
-            structure = np.zeros_like(self._assembler._workspace)
-            structure = place_structure(p1._structure, structure, t1)
-            structure = place_structure(p2._structure, structure, t2)
-            
+
             return Product(structure), get_min(t1, t2)
+
 
 
     def _postupdate(self):

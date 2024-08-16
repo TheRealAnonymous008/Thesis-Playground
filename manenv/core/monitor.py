@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 
 from abc import abstractmethod, ABC
 from typing import TYPE_CHECKING
+
+import numpy as np
 from manenv.components.assembler import Assembler
 from manenv.core.demand import Order
 from manenv.core.effector import Effector
@@ -137,10 +139,15 @@ class DefaultFactoryMonitor(FactoryMonitor):
         """
         Inventory for an assembler is defined as the number of products in its staging area at the current moment 
         """
+        inventory_cost = 0
         if len(assembler._staging_area) == 0:
-            return 2
-        
-        inventory_cost = 1.0 / len(assembler._staging_area) 
+            inventory_cost += 2
+        else: 
+            inventory_cost = 1.0 / len(assembler._staging_area) 
+
+        dims = assembler._workspace_size
+        nonempty_cells = np.count_nonzero(assembler._workspace != 0) / (dims[0] * dims[1])
+        inventory_cost -= nonempty_cells
 
         return inventory_cost 
     

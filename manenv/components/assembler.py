@@ -22,7 +22,7 @@ class Assembler(FactoryComponent):
                  staging_size : int = -1):
         super().__init__(AssetPath.ASSEMBLER)
         
-        self._workspace_size = workspace_size.copy()
+        self._workspace_size : Vector = workspace_size.copy()
         self._effectors = effectors
         self._staging_size = staging_size
         self._completed_order_buffer : list[Order] = []
