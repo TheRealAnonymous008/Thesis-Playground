@@ -61,10 +61,10 @@ class Conveyor(FactoryComponent):
             input_vec = self._cell._position + input_offset
             src_cell = self._world.get_cell(input_vec)
 
+            # Move product into this cell
             if src_cell != None:
                 if isinstance(src_cell._factory_component, Assembler):
                     for product in src_cell._factory_component._product_outputs:
-                        src_cell.remove_product(product)
                         self._cell.place_product(product)
                 else: 
                     for product in src_cell.get_product_list():
@@ -85,10 +85,11 @@ class Conveyor(FactoryComponent):
                 for product in P:
                     if self._cell.is_product_placed(product):
                         self._cell.remove_product(product)
-                        dest_cell.place_product(product, -output_offset)
-
                         if isinstance(dest_cell._factory_component, Assembler):
                             dest_cell._factory_component.place_in_inventory(product)
+                        else:
+                            dest_cell.place_product(product, -output_offset)
+
 
     def reset(self):
         pass 

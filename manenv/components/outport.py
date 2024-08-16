@@ -13,7 +13,7 @@ class Outport(FactoryComponent):
     
     def update(self):
         super().update()
-        for prod in self._cell._products:
+        for prod in self._cell.get_product_list():
             self._world._inventory.add_product(prod)
         self._cell.clear_products()
 
