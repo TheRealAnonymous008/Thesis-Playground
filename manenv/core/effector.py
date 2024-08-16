@@ -37,6 +37,7 @@ class Effector(Actor):
         self._position : Vector = position
         self._asset = asset
 
+        self._is_idle = True
         self._current_action = None 
 
     def bind(self, assembler : Assembler):
@@ -46,6 +47,12 @@ class Effector(Actor):
     def is_bound(self):
         return self._assembler != None
     
+    def do_work(self):
+        self._is_idle = False
+    
+    def is_idle(self) -> bool:
+        return self._is_idle
+
     def set_action(self, action_code: int):
         self._current_action = action_code
 
@@ -76,6 +83,7 @@ class Effector(Actor):
 
     @abstractmethod
     def _preupdate(self):
+        self._is_idle = True
         pass 
 
     @abstractmethod

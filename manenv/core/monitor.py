@@ -122,16 +122,13 @@ class DefaultFactoryMonitor(FactoryMonitor):
         Utilization is defined as the fraction of time the station is busy. 
 
         The busyness of a station is defined as the proportion of its effectors that did not perform the Idle Action
-
-        TODO: It should also be defined based on "idleness". That is, the amount of times that an action failed.
         """
 
         effectors : list[Effector] = assembler._effectors
         ctr : int = 0
 
         for eff in effectors:
-            if eff._current_action != 0:
-                ctr += 1
+            ctr += (not eff._is_idle)
         
         return 1.0 * ctr / len(effectors)
     

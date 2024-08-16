@@ -71,45 +71,58 @@ class Grabber(Effector):
                     return 
                 self._position += VectorBuiltin.LEFT
                 self._position = np.clip(self._position, (0, 0), self._workspace_size - VectorBuiltin.ONE_VECTOR)
+                if self._grabbed_product != None:
+                    self.do_work()
             
             case GrabberActions.MOVE_RIGHT.value:
                 if self._grabbed_product != None and not is_equal(self._grabbed_product._transform_vel, VectorBuiltin.RIGHT):
                     return 
                 self._position += VectorBuiltin.RIGHT
                 self._position = np.clip(self._position, (0, 0), self._workspace_size - VectorBuiltin.ONE_VECTOR)
+                if self._grabbed_product != None:
+                    self.do_work()
 
             case GrabberActions.MOVE_BACKWARD.value:
                 if self._grabbed_product != None and not is_equal(self._grabbed_product._transform_vel, VectorBuiltin.BACKWARD):
                     return 
                 self._position += VectorBuiltin.BACKWARD
                 self._position = np.clip(self._position, (0, 0), self._workspace_size - VectorBuiltin.ONE_VECTOR)
+                if self._grabbed_product != None:
+                    self.do_work()
 
             case GrabberActions.MOVE_FORWARD.value:
                 if self._grabbed_product != None and not is_equal(self._grabbed_product._transform_vel, VectorBuiltin.FORWARD):
                     return 
                 self._position += VectorBuiltin.FORWARD
                 self._position = np.clip(self._position, (0, 0), self._workspace_size - VectorBuiltin.ONE_VECTOR)
+                if self._grabbed_product != None:
+                    self.do_work()
 
             case GrabberActions.GRAB.value:
                 self._grabbed_product = self._assembler.get_product_in_workspace(self._position)
+                self.do_work()
 
             case GrabberActions.RELEASE.value:
                 if self._grabbed_product != None:
                     self._assembler.place_in_workspace(self._grabbed_product, self._grabbed_product._transform_pos)
                     self._grabbed_product = None 
+                    self.do_work()
             
             case GrabberActions.GRAB_INVENTORY.value:
                 self._grabbed_product = self._assembler.get_from_inventory()
                 if self._grabbed_product != None:
                     self._grabbed_product._transform_pos = self._position.copy()
+                    self.do_work()
 
             case GrabberActions.ROTATE_CW.value:
                 if self._grabbed_product != None and self._grabbed_product._transform_ang_vel > 0:
                     self._grabbed_product.rotate(1)
+                    self.do_work()
                 
             case GrabberActions.ROTATE_CCW.value:
                 if self._grabbed_product != None and self._grabbed_product._transform_ang_vel < 0:
                     self._grabbed_product.rotate(-1)
+                    self.do_work()
                     
             case _: 
                 pass 

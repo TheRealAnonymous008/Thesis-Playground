@@ -103,7 +103,8 @@ class Welder(Effector):
             
             self._assembler.delete_product_in_workspace(self._position)
             self._assembler.delete_product_in_workspace(offset)
-
+            self.do_work()
+            
             return Product(structure), get_min(t1, t2)
 
 

@@ -85,6 +85,7 @@ class Transformer(Effector):
 
             structure[self._position[0]][self._position[1]] = self.p_out
             
+            self.do_work()
             return Product(structure), t1
 
 
