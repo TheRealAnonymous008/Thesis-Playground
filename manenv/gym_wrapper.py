@@ -75,6 +75,8 @@ class MARLFactoryEnvironment(ParallelEnv):
     def _clean_rewards(self, metrics : FactoryMetrics):
         rew : dict[int, int] = {}
 
+        print(metrics)
+
         for (key, actor) in self.actor_space.items():
             if isinstance(actor, Effector):
                 eff : Effector = actor

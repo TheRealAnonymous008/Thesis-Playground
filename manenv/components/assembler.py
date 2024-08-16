@@ -90,6 +90,7 @@ class Assembler(FactoryComponent):
         self._product_mask = place_structure(structure, self._product_mask, position)
         self._product_list[product._id] = product
 
+        self._workspace = place_structure(product._structure, self._workspace, position)
         product._transform_pos = position
 
     def get_product_in_workspace(self, position: Vector) -> Product | None:
@@ -109,6 +110,7 @@ class Assembler(FactoryComponent):
             return 
 
         self._product_list.pop(product._id)    
+        self._workspace = (self._product_mask != product._id) * self._workspace
         self._product_mask = (self._product_mask != product._id) * self._product_mask
          
         return product
