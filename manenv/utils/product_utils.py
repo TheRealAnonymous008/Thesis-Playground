@@ -45,7 +45,7 @@ def place_structure(obj: np.ndarray, target: np.ndarray, pos: np.ndarray) -> np.
     
     # Check if the object fits within the target array at the specified position
     if pos_row + obj_height > target_height or pos_col + obj_width > target_width:
-        raise ValueError("Object does not fit within the target array at the specified position.")
+        raise ValueError(f"Object does not fit within the target array at the specified position. {obj, target, pos}")
     
     # Place the object within the target array
     target[pos_row:pos_row+obj_height, pos_col:pos_col+obj_width] = obj

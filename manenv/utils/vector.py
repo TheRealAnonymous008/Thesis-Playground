@@ -15,6 +15,7 @@ class VectorBuiltin:
     BACKWARD = make_vector(-1, 0)
     LEFT = make_vector(0, -1)
     RIGHT = make_vector(0, 1)
+    ONE_VECTOR = make_vector(1, 1)
 
 def is_equal(x : Vector, y : Vector) -> bool:
     return np.all(x == y)

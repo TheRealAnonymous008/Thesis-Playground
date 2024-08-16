@@ -35,7 +35,7 @@ class Assembler(FactoryComponent):
     def update(self):
         self._completed_order_buffer = []
         for product in self._product_list.values():
-            product._transform_pos = np.clip(product._transform_pos, (0, 0), self._workspace_size)
+            product._transform_pos = np.clip(product._transform_pos, (0, 0), self._workspace_size  - VectorBuiltin.ONE_VECTOR)
 
         for eff in self._effectors:
             eff._preupdate()

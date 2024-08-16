@@ -70,25 +70,25 @@ class Grabber(Effector):
                 if self._grabbed_product != None and not is_equal(self._grabbed_product._transform_vel, VectorBuiltin.LEFT):
                     return 
                 self._position += VectorBuiltin.LEFT
-                self._position = np.clip(self._position, (0, 0), self._workspace_size)
+                self._position = np.clip(self._position, (0, 0), self._workspace_size - VectorBuiltin.ONE_VECTOR)
             
             case GrabberActions.MOVE_RIGHT.value:
                 if self._grabbed_product != None and not is_equal(self._grabbed_product._transform_vel, VectorBuiltin.RIGHT):
                     return 
                 self._position += VectorBuiltin.RIGHT
-                self._position = np.clip(self._position, (0, 0), self._workspace_size)
+                self._position = np.clip(self._position, (0, 0), self._workspace_size - VectorBuiltin.ONE_VECTOR)
 
             case GrabberActions.MOVE_BACKWARD.value:
                 if self._grabbed_product != None and not is_equal(self._grabbed_product._transform_vel, VectorBuiltin.BACKWARD):
                     return 
                 self._position += VectorBuiltin.BACKWARD
-                self._position = np.clip(self._position, (0, 0), self._workspace_size)
+                self._position = np.clip(self._position, (0, 0), self._workspace_size - VectorBuiltin.ONE_VECTOR)
 
             case GrabberActions.MOVE_FORWARD.value:
                 if self._grabbed_product != None and not is_equal(self._grabbed_product._transform_vel, VectorBuiltin.FORWARD):
                     return 
                 self._position += VectorBuiltin.FORWARD
-                self._position = np.clip(self._position, (0, 0), self._workspace_size)
+                self._position = np.clip(self._position, (0, 0), self._workspace_size - VectorBuiltin.ONE_VECTOR)
 
             case GrabberActions.GRAB.value:
                 self._grabbed_product = self._assembler.get_product_in_workspace(self._position)

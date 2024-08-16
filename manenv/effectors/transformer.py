@@ -48,19 +48,19 @@ class Transformer(Effector):
 
             case TransformerActions.MOVE_LEFT.value:
                 self._position += VectorBuiltin.LEFT
-                self._position = np.clip(self._position, (0, 0), self._workspace_size)
+                self._position = np.clip(self._position, (0, 0), self._workspace_size - VectorBuiltin.ONE_VECTOR)
             
             case TransformerActions.MOVE_RIGHT.value:
                 self._position += VectorBuiltin.RIGHT
-                self._position = np.clip(self._position, (0, 0), self._workspace_size)
+                self._position = np.clip(self._position, (0, 0), self._workspace_size - VectorBuiltin.ONE_VECTOR)
 
             case TransformerActions.MOVE_BACKWARD.value:
                 self._position += VectorBuiltin.BACKWARD
-                self._position = np.clip(self._position, (0, 0), self._workspace_size)
+                self._position = np.clip(self._position, (0, 0), self._workspace_size - VectorBuiltin.ONE_VECTOR)
                 
             case TransformerActions.MOVE_FORWARD.value:
                 self._position += VectorBuiltin.BACKWARD
-                self._position = np.clip(self._position, (0, 0), self._workspace_size)
+                self._position = np.clip(self._position, (0, 0), self._workspace_size - VectorBuiltin.ONE_VECTOR)
 
             case TransformerActions.TRANSFORM.value:
                 job_details = self._transform_product()

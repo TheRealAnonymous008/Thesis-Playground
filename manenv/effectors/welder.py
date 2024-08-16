@@ -44,19 +44,19 @@ class Welder(Effector):
 
             case WelderActions.MOVE_LEFT.value:
                 self._position += VectorBuiltin.LEFT
-                self._position = np.clip(self._position, (0, 0), self._workspace_size)
+                self._position = np.clip(self._position, (0, 0), self._workspace_size - VectorBuiltin.ONE_VECTOR)
             
             case WelderActions.MOVE_RIGHT.value:
                 self._position += VectorBuiltin.RIGHT
-                self._position = np.clip(self._position, (0, 0), self._workspace_size)
+                self._position = np.clip(self._position, (0, 0), self._workspace_size - VectorBuiltin.ONE_VECTOR)
 
             case WelderActions.MOVE_BACKWARD.value:
                 self._position += VectorBuiltin.BACKWARD
-                self._position = np.clip(self._position, (0, 0), self._workspace_size)
+                self._position = np.clip(self._position, (0, 0), self._workspace_size - VectorBuiltin.ONE_VECTOR)
                 
             case WelderActions.MOVE_FORWARD.value:
                 self._position += VectorBuiltin.BACKWARD
-                self._position = np.clip(self._position, (0, 0), self._workspace_size)
+                self._position = np.clip(self._position, (0, 0), self._workspace_size - VectorBuiltin.ONE_VECTOR)
 
             case WelderActions.WELD_NORTH.value:
                 job_details = self._weld_at_offset(self._position + VectorBuiltin.FORWARD)
@@ -93,11 +93,10 @@ class Welder(Effector):
             t1 = p1._transform_pos
             t2 = p2._transform_pos
 
-
             self._assembler.delete_product_in_workspace(self._position)
             self._assembler.delete_product_in_workspace(offset)
                         
-            structure = np.zeros(self._assembler._workspace_size)
+            structure = np.zeros_like(self._assembler._workspace)
             structure = place_structure(p1._structure, structure, t1)
             structure = place_structure(p2._structure, structure, t2)
             
