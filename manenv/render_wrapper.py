@@ -33,8 +33,8 @@ class ProductDisplayWindow(gui.elements.UIPanel):
         self.clear_view()
         if (len(cell._products) == 0):
             return 
-        
-        self.set_curr_product(cell._products[0])
+        p = next(iter(cell.get_product_list()))
+        self.set_curr_product(p)
         
     def update(self, time_delta: float):
         super().update(time_delta)
