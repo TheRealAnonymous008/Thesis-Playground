@@ -25,10 +25,6 @@ class FactoryMetrics:
     customer_service : float = 0
     quality : float = 0
 
-@dataclass
-class MonitorState: 
-    assembler_output_buffer : dict[int, list[Product]] =  field(default_factory=lambda: {})
-
 class FactoryMonitor(ABC): 
     def __init__(self):
         """
@@ -36,14 +32,9 @@ class FactoryMonitor(ABC):
         """
 
         self._world : World = None 
-        self._state : MonitorState = None 
 
     def reset(self):
         assert(self._world != None)
-        self._state = MonitorState()
-
-        for assembler in self._world.get_all_assemblers():
-            self._state.assembler_output_buffer[assembler._id] = []
 
 
     def bind(self, world : World):
@@ -113,9 +104,7 @@ class DefaultFactoryMonitor(FactoryMonitor):
         """
         Throughput is defined as the number of outputs per time unit.
         """
-        products = assembler._product_outputs
-        
-        return max(0, len(products) - len(self._state.assembler_output_buffer[assembler._id]))
+        return max(0, len(assembler._product_outputs))
     
     def _process_assembler_utilization(self, assembler: Assembler) -> float:
         """

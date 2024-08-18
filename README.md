@@ -1,2 +1,8 @@
-# Notes
-1. Training loop might throw an error about the info_dict not containing string keys or being emptpy. The fix is to modify the line (in the lib responsible) to force the info dictionary to be a {}. Could fix this by making all agent keys strings, but too coostly.
+# Misc
+Idea for training the model
+
+Train RL agents first on a fixed layout of the factory. 
+
+Then train GAN but with a fixed league of the RL agents. That is, run the simulation on the current epoch of RL agents
+
+Repeat loop

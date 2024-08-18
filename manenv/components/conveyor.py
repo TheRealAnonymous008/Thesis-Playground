@@ -63,14 +63,13 @@ class Conveyor(FactoryComponent):
 
             # Move product into this cell
             if src_cell != None:
-                if isinstance(src_cell._factory_component, Assembler):
-                    for product in src_cell._factory_component._product_outputs:
+                for product in src_cell.get_product_list():
+                    if isinstance(src_cell._factory_component, Assembler): 
+                        # src_cell.remove_product(product)
                         self._cell.place_product(product)
-                else: 
-                    for product in src_cell.get_product_list():
-                        if self._cell.is_product_placed(product):
-                            src_cell.remove_product(product)
-                            self._cell.place_product(product, input_offset)
+                    elif self._cell.is_product_placed(product):
+                        src_cell.remove_product(product)
+                        self._cell.place_product(product, input_offset)
 
         if len(self._outports) > 0:
             self._curr_out = (self._curr_out + 1) % len(self._outports)
