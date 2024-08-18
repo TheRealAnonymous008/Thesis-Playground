@@ -48,15 +48,6 @@ class FactoryMonitor(ABC):
         self.reset()
         pass 
 
-    
-    def _probe_assembler(self, assembler: Assembler):
-        """
-        The following method simply checks if the assembler is recognized in the state object 
-        and if not adds it to the state. 
-        """
-        if not assembler._id in self._state.assembler_output_buffer:
-            self._state.assembler_output_buffer[assembler._id] = [] 
-
 
 class DefaultFactoryMonitor(FactoryMonitor):
     def __init__(self):
@@ -78,6 +69,9 @@ class DefaultFactoryMonitor(FactoryMonitor):
             utilization[id] = self._process_assembler_utilization(assembler)
             inventory[id] = self._process_assembler_inventory_cost(assembler)
             cycle_time[id] = self._process_assembler_cycle_time(assembler)
+
+            for effector in assembler._effectors:
+                utilization[effector._id] = self._process_effector_utilization(effector)
         
         for (k, order) in self._world._demand._orders.items():
             lead_time += self._process_lead_time_score(order) 
@@ -120,6 +114,9 @@ class DefaultFactoryMonitor(FactoryMonitor):
             ctr += (not eff._is_idle)
         
         return 1.0 * ctr / len(effectors)
+    
+    def _process_effector_utilization(self, effector : Effector) -> float: 
+        return int (not effector._is_idle)
     
     def _process_assembler_inventory_cost(self, assembler: Assembler) -> float:
         """

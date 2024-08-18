@@ -75,7 +75,7 @@ class MARLFactoryEnvironment(ParallelEnv):
     def _clean_rewards(self, metrics : FactoryMetrics):
         rew : dict[int, int] = {}
 
-        print(metrics)
+        # print(metrics)
 
         for (key, actor) in self.actor_space.items():
             if isinstance(actor, Effector):
@@ -83,7 +83,7 @@ class MARLFactoryEnvironment(ParallelEnv):
                 rew[key] = metrics.throughput[eff._assembler._id] + \
                     metrics.inventory[eff._assembler._id] + \
                     metrics.cycle_time[eff._assembler._id] + \
-                    metrics.utilization[eff._assembler._id] + \
+                    metrics.utilization[eff._id] + \
                     metrics.quality + \
                     metrics.customer_service
             else:
