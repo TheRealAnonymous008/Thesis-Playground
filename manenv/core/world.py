@@ -26,9 +26,10 @@ class WorldCell:
     - a robot 
     """
 
-    def __init__(self, position : Vector):
+    def __init__(self, position : Vector, capacity : int = 5):
         """
         `position` - the position associated with this cell
+        `capacity` - the max number of products that can be in this cell
         """
 
         self._factory_component : FactoryComponent | None = None 
@@ -38,6 +39,7 @@ class WorldCell:
 
         self._dirty_set : set[int] = set()
         self._position : Vector = position
+        self._capacity : int = capacity
         self.reset()
 
     def reset(self):
@@ -46,6 +48,9 @@ class WorldCell:
         
         self.clear_products()
         self._dirty_set.clear()
+
+    def is_full(self):
+        return len(self._products) >= self._capacity
 
     def place_component(self, cmp : FactoryComponent):
         if self._factory_component == cmp: 
@@ -84,7 +89,7 @@ class WorldCell:
         self._products.clear()
 
     def get_product_list(self):
-        return copy.deepcopy(self._products).values()
+        return copy.copy(self._products).values()
         
 class World: 
     """

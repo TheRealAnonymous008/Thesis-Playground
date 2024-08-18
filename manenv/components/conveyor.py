@@ -16,6 +16,7 @@ class Conveyor(FactoryComponent):
         An integer n means that n of that product will be allowed first from that side (if applicable)
         Positive n means the product is moved away from the cell
         Negative n means the product is moved towards the cell. 
+
         """
         assert(weights.shape == (3, 3))
         self._weights = weights
@@ -51,7 +52,7 @@ class Conveyor(FactoryComponent):
 
         np.random.shuffle(self._inports)
         np.random.shuffle(self._outports)
-
+    
     def update(self): 
         super().update() 
         if len(self._inports) > 0: 
@@ -64,6 +65,9 @@ class Conveyor(FactoryComponent):
             # Move product into this cell
             if src_cell != None:
                 for product in src_cell.get_product_list():
+                    if self._cell.is_full():
+                        break 
+
                     if isinstance(src_cell._factory_component, Assembler): 
                         # src_cell.remove_product(product)
                         self._cell.place_product(product)
@@ -83,11 +87,14 @@ class Conveyor(FactoryComponent):
                 P = self._cell.get_product_list()
                 for product in P:
                     if self._cell.is_product_placed(product):
-                        self._cell.remove_product(product)
                         if isinstance(dest_cell._factory_component, Assembler):
                             dest_cell._factory_component.place_in_inventory(product)
                         else:
+                            if dest_cell.is_full():
+                                break
                             dest_cell.place_product(product, -output_offset)
+                        
+                        self._cell.remove_product(product)
 
 
     def reset(self):
