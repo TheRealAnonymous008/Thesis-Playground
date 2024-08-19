@@ -126,7 +126,7 @@ class DefaultFactoryMonitor(FactoryMonitor):
         if len(assembler._staging_area) == 0:
             inventory_cost += 2
         else: 
-            inventory_cost = 1.0 / len(assembler._staging_area) 
+            inventory_cost = 2.0 * (1.0 - 1.0 / len(assembler._staging_area)) 
 
         dims = assembler._workspace_size
         nonempty_cells = np.count_nonzero(assembler._workspace != 0) / (dims[0] * dims[1])
@@ -155,14 +155,16 @@ class DefaultFactoryMonitor(FactoryMonitor):
         """
         Lead time is defined as the time quoted to the customer. For each order in the demand module, we penalize for high lead times
         """
-        return 1.0 / order._due_date
+        return 1.0 / (order._due_date - order._issue_date)
     
     def _process_service_level(self, order : Order) -> float: 
         """
         Service is defined as the number of products delivered on time. Here, we also quantify the lateness.
         """
         if order.is_satisfied():
-            return order._due_date - order._satisfied_time
+            s = order._satisfied_time - order._issue_date
+            d = order._due_date - order._issue_date
+            return max(0, 2.0 - s / d)
 
         return 0
 
@@ -173,5 +175,6 @@ class DefaultFactoryMonitor(FactoryMonitor):
         """ 
         if not order.is_satisfied():
             return 0
-        
-        return Product.compare(order._product, order._satisfied_product)
+
+        quality = Product.compare(order._product, order._satisfied_product)
+        return quality

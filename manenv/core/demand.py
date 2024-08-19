@@ -70,14 +70,16 @@ class DemandSimulator(ABC):
         if p == None:
             return 
         
-        order = Order(self._current_time, p)
+        # TODO: Sample due date instead. For nowo this works
+        due_date= self._current_time + 1
+        order = Order(self._current_time, p, due_date)
         self._orders[order._id] = order
         self._current_time += 1
 
     def resolve_order(self, product : Product, order : Order) :
         if not order._id in self._orders:
             return
-
+        
         order.satisfy(product, self._current_time)
 
     def reset(self):

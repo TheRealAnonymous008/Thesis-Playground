@@ -35,7 +35,7 @@ def train_loop(_env : MARLFactoryEnvironment, games : int = 100, seed : int = 0)
     checkpts = int(steps / steps_per_checkpt)
 
     for i in range(checkpts):
-        model.learn(total_timesteps=steps_per_checkpt)
+        model = model.learn(total_timesteps=steps_per_checkpt)
         model.save(f"{env.unwrapped.metadata.get('name')}_{time.strftime('%Y%m%d-%H%M%S')}")
         print("Model has been saved.")
 

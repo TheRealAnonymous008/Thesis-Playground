@@ -15,7 +15,7 @@ from pettingzoo import ParallelEnv, AECEnv
 
 
 class MARLFactoryEnvironment(ParallelEnv):
-    MAX_GAME_STEPS = 1000
+    MAX_GAME_STEPS = 1500
 
     def __init__(self, world : World): 
         """
@@ -80,11 +80,11 @@ class MARLFactoryEnvironment(ParallelEnv):
         for (key, actor) in self.actor_space.items():
             if isinstance(actor, Effector):
                 eff : Effector = actor
-                rew[key] = metrics.throughput[eff._assembler._id] + \
+                rew[key] = 5 * metrics.throughput[eff._assembler._id] + \
                     metrics.inventory[eff._assembler._id] + \
                     metrics.cycle_time[eff._assembler._id] + \
                     metrics.utilization[eff._id] + \
-                    metrics.quality + \
+                    4 * metrics.quality + \
                     metrics.customer_service
             else:
                 rew[key] = 0
