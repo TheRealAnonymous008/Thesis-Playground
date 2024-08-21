@@ -199,12 +199,12 @@ class World:
         print("====== Demand ======")
         print("Total Orders: ", len(self._demand._orders))
         if verbose:
-            for order in self.world._demand._orders:
+            for order in self._demand._orders:
                 print(order)
 
         print("====================")
 
-        print("====== Inventoy ===== ")
+        print("====== Inventory ===== ")
         print("Total Cost: ", self._inventory.compute_storage_cost())
         print("Total Items: ", len(self._inventory._product_inventory))
 

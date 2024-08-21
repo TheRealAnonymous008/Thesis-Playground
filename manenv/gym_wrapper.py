@@ -6,6 +6,7 @@ from gymnasium.spaces import Dict,Discrete
 from manenv.core.actor import Actor
 from manenv.core.effector import Effector
 from manenv.core.monitor import FactoryMetrics
+from manenv.solution.assembler_order_selector import AssemblerSelectorModel
 
 from .core.world import World
 
@@ -25,11 +26,21 @@ class MARLFactoryEnvironment(ParallelEnv):
         """
         super().__init__()
         self._world : World = world 
+
+        aux_models : list = []
+        # Build additional models
+        for assembler in self._world.get_all_assemblers():
+            aux_models.append(AssemblerSelectorModel(assembler))
+    
+
         self._action_space, self.actor_space = self.build_action_space()
         self.metadata = {
             "name" : "factory"
         }
         self.render_mode = None
+
+        self.reset()
+
 
     def build_action_space(self): 
         # All effectors contribute to the action set of the gym wrapper. 

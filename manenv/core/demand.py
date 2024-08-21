@@ -70,7 +70,7 @@ class DemandSimulator(ABC):
         if p == None:
             return 
         
-        # TODO: Sample due date instead. For nowo this works
+        # TODO: Sample due date instead. For now this works
         due_date= self._current_time + 1
         order = Order(self._current_time, p, due_date)
         self._orders[order._id] = order

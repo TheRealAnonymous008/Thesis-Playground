@@ -62,13 +62,29 @@ class Assembler(FactoryComponent):
         self._product_outputs : list[Product] = []
 
         self._job_queue : list[Order] = []
+        self._max_jobs : int = 1
+        self._current_order_idx : int = -1
 
         # Each effector in this assembler must be reset
         for eff in self._effectors:
             eff.reset()
 
-    def add_order_to_queue(self, order : Order):
+    def add_order_to_queue(self, order : Order) -> bool:
+        """
+        Adds an order to the job queue. Returns True if successful and False if not
+        """
+        if len(self._job_queue) > self._max_jobs:
+            return False 
+        
         self._job_queue.append(order)
+        return True 
+    
+    def set_current_order(self, order : Order) -> bool:
+        if not (order in self._job_queue):
+            return False 
+        
+        self._current_order_idx = self._job_queue.index(order)
+        return True 
     
     def place_in_inventory(self, product : Product):
         self._cell.place_product(product, None)
@@ -104,6 +120,15 @@ class Assembler(FactoryComponent):
         
         return self._product_list[id]
     
+    def get_current_order(self) -> Order:
+        if self._current_order_idx < 0 or self._current_order_idx >= len(self._job_queue): 
+            return None 
+        return self._current_order_idx
+        
+    def can_take_order(self) -> bool:
+        return len(self._job_queue) < self._max_jobs
+    
+
     def _pop_from_workspace(self, position: Vector) -> Product:
         product = self.get_product_in_workspace(position)
 
@@ -139,28 +164,26 @@ class Assembler(FactoryComponent):
         return product
     
     def update_staging(self):
-        for i in range(len(self._staging_area)):
-            p = self._staging_area[i] 
-            idx = self._assess_product_with_queue(p)
-            self._product_outputs.append(p)
-            
-            if idx < 0:
-                continue 
-            
-            order = self._job_queue.pop(idx)
-            self._completed_order_buffer.append(order)
-            self._staging_area.pop(i)
-            
+        curr_order = self.get_current_order()
+        if curr_order == None: 
+            return 
+        
+        best_qual : Product = -10000
+        best_idx : Product = None 
 
-    def _assess_product_with_queue(self, product : Product) -> int:
-        # TODO: Implement this during model implementation phase. 
-        # It is recommended that any function for this should take into account
-        # The product's match to a specified order on the list
-        # The current status of product inventory
-        # The current status of the staging area (is it being filled)
+        for i, p in enumerate(self._staging_area):
+            qual = Product.compare(p, curr_order._product)
+            if qual > best_qual:
+                qual = best_qual
+                best_idx = i
 
+        self._job_queue.pop(self._current_order_idx)
+        self._completed_order_buffer.append(curr_order)
+        self._staging_area.pop(best_idx)
+
+    def _assess_product(self, order : Order) -> int:
         """
-        This determines if the product can be matched to a job in the queue.
+        This determines if the order can be matched to a product in the staging area:
         """
         if len(self._job_queue) == 0:
             return -1
