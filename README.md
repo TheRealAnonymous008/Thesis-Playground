@@ -16,3 +16,9 @@ Idea for training the model
 * Train RL agents first on a fixed layout of the factory. 
 * Then train GAN but with a fixed league of the RL agents. That is, run the simulation on the current epoch of RL agents
 * Repeat loop
+
+
+# (Unimplemented) Ideas for MARL solution
+1. Use MAPPO (Multi Agent PPO) but modify it 
+2. Use a Learned Reawrd Function as in the work of Miyake (2024) 
+3. Use a CTDE scheme

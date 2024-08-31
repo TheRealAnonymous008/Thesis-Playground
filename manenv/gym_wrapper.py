@@ -31,7 +31,7 @@ class MARLFactoryEnvironment(ParallelEnv):
         # Build additional models
         for assembler in self._world.get_all_assemblers():
             aux_models.append(AssemblerSelectorModel(assembler))
-    
+
 
         self._action_space, self.actor_space = self.build_action_space()
         self.metadata = {
@@ -86,7 +86,7 @@ class MARLFactoryEnvironment(ParallelEnv):
     def _clean_rewards(self, metrics : FactoryMetrics):
         rew : dict[int, int] = {}
 
-        print(metrics)
+        # print(metrics)
 
         for (key, actor) in self.actor_space.items():
             if isinstance(actor, Effector):
