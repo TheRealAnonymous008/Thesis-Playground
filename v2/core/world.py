@@ -4,10 +4,12 @@ import numpy as np
 from .agent import Agent
 from .observation import LocalObservation
 from .action import ActionInformation, Direction
+from .resource import ResourceGenerator
 
 class World: 
     def __init__(self, 
-                 dims : tuple[int, int]
+                 dims : tuple[int, int],
+                 resource_generator : ResourceGenerator 
         ):
         """
         `dims`: Dimensions of the world (x, y) form.
@@ -19,6 +21,7 @@ class World:
         self._world_grid = np.zeros(dims, dtype = np.int32)
 
         self._agents : dict[int, Agent] = {}
+        self._resource_generator = resource_generator
         self.reset()
 
     def reset(self):
@@ -28,6 +31,9 @@ class World:
         self._agents.clear()
         self._time_step = 0 
         self._nagents = 0
+
+        # Generate a new resource map 
+        self._resource_grid = self._resource_generator.generate(self._dims)
 
     def update(self):
         """
@@ -69,7 +75,7 @@ class World:
                 new_position[0] += dir_movement[0]
                 new_position[1] += dir_movement[1]
 
-                if not self.is_in_bounds(new_position) or not movement_mask[new_position[0]][new_position[1]] == False:
+                if not self.is_traversable(new_position) or not movement_mask[new_position[0]][new_position[1]] == False:
                     new_position = agent.get_position()
                 
                 movement_mask[new_position[0]][new_position[1]] = True 
@@ -115,6 +121,12 @@ class World:
         Check whether a position is in the bounds of the world or not.
         """
         return position[0] >= 0 and position[1] >= 0 and position[0] < self._dims[0] and position[1] < self._dims[1]
+    
+    def is_traversable(self, position: np.ndarray) -> bool:
+        """
+        Check whether a position is traversable to any agent
+        """
+        return self.is_in_bounds(position) and self._resource_grid[position[0]][position[1]] == 0
     
     def get_presence_mask(self, agents : list[Agent]) -> np.ndarray:
         """

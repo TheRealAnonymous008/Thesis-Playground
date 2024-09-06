@@ -12,13 +12,14 @@ class Agent:
         """
         Initializes a simple agent 
         """
-        self._id = id
+        self._id = -1
         self._position : np.ndarray[int] = np.array([0, 0], dtype=np.int32)
 
         self._current_observation : LocalObservation = None
         self._current_action : ActionInformation = ActionInformation()
         
-        # Attributes of the agent
+        # Attributes of the agent. 
+        # TODO: Attributes should be collected into their own class at some point.
         self._visibility_range : int = 3
 
     def bind_to_world(self, world_id : int):
