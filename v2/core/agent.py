@@ -21,6 +21,9 @@ class Agent:
         self._position = position
 
     def get_position(self) -> np.ndarray:
+        """
+        Get a copy of the agent's position
+        """
         return self._position.copy()
         
 
@@ -51,4 +54,7 @@ class Agent:
                 raise Exception(f"Invalid direction specified {val}")
             
     def reset_for_next_action(self):
+        """
+        Resets the agent for a new action
+        """
         self._current_action.reset()
