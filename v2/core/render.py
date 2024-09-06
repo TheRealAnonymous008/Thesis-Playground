@@ -4,13 +4,13 @@ import numpy as np
 from typing import Callable
 from .world import World
 
-def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update_fn : Callable | None= None ):
+def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update_fn : Callable | None= None, delay_s : float = 1 ):
     pygame.init()
 
     screen = pygame.display.set_mode(screen_size)
     clock = pygame.time.Clock()
     cell_size = (screen_size[0] // world._dims[0], screen_size[1] // world._dims[1])
-
+    delay = int (delay_s * 1000)
     def draw_grid():
         for x in range(0, screen_size[0], cell_size[0]):
             pygame.draw.line(screen, (200, 200, 200), (x, 0), (x, screen_size[1]))
@@ -20,8 +20,9 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
     def draw_agents():
         for agent in world._agents:
             pos = agent.get_position()
-            rect = pygame.Rect(pos[0] * cell_size[0], pos[1] * cell_size[1], cell_size[0], cell_size[1])
-            pygame.draw.rect(screen, (0, 255, 0), rect)
+            center = (pos[0] * cell_size[0] + cell_size[0] // 2, pos[1] * cell_size[1] + cell_size[1] // 2)
+            radius = min(cell_size) // 3
+            pygame.draw.circle(screen, (0, 255, 0), center, radius)
 
     running = True
     while running:
@@ -35,7 +36,8 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
         screen.fill((0, 0, 0))
         # draw_grid()
         draw_agents()
-
+        
+        pygame.time.delay(delay)
         pygame.display.flip()
         clock.tick(30)
 
