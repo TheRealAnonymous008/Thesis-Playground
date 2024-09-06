@@ -18,7 +18,7 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
             pygame.draw.line(screen, (200, 200, 200), (0, y), (screen_size[0], y))
 
     def draw_agents():
-        for agent in world._agents:
+        for agent in world.get_agents():
             pos = agent.get_position()
             center = (pos[0] * cell_size[0] + cell_size[0] // 2, pos[1] * cell_size[1] + cell_size[1] // 2)
             radius = min(cell_size) // 3

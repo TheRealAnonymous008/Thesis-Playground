@@ -1,7 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
 
-from abc import ABC
 from enum import Enum
 
 class Direction(Enum):

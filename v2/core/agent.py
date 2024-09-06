@@ -3,6 +3,8 @@ from __future__ import annotations
 import numpy as np
 from enum import Enum
 
+from .observation import LocalObservation
+
 from .action import *
 
 class Agent:
@@ -10,9 +12,26 @@ class Agent:
         """
         Initializes a simple agent 
         """
+        self._id = id
         self._position : np.ndarray[int] = np.array([0, 0], dtype=np.int32)
 
+        self._current_observation : LocalObservation = None
         self._current_action : ActionInformation = ActionInformation()
+        
+        # Attributes of the agent
+        self._visibility_range : int = 3
+
+    def bind_to_world(self, world_id : int):
+        """
+        Set the agent's ID to be that of the ID assigned to it by the world
+        """
+        self._id = world_id
+
+    def get_id(self) -> int:
+        """
+        Return the ID of this agent in the world
+        """
+        return self._id 
 
     def set_position(self, position : np.array):
         """
@@ -58,3 +77,6 @@ class Agent:
         Resets the agent for a new action
         """
         self._current_action.reset()
+
+    def set_observation(self, observation : LocalObservation):
+        self._current_observation = observation
