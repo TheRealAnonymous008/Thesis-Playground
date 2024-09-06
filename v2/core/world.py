@@ -88,8 +88,12 @@ class World:
         y_min = max(0, y - visibility_range)
         y_max = min(self._dims[1], y + visibility_range + 1)
 
-        # Return the sliced observation grid
-        return np.array(self._world_state[x_min:x_max, y_min:y_max])
+        # Get the sliced observation grid
+        observation = np.array(self._world_state[x_min:x_max, y_min:y_max])
+
+        # Mask the agent's own position with 0
+        observation[x - x_min, y - y_min] = 0
+        return observation
 
     # Functionalities  
     def add_agent(self, agent : Agent):
