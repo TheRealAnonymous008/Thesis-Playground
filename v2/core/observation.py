@@ -12,6 +12,6 @@ class LocalObservation:
 
     `nearby_agents`: A list of all nearby agents and their location relative to the current agent 
     """
-    
+    nearby_agents : np.ndarray
     
     

@@ -80,3 +80,6 @@ class Agent:
 
     def set_observation(self, observation : LocalObservation):
         self._current_observation = observation
+
+    def get_observation(self) -> LocalObservation:
+        return self._current_observation

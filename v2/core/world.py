@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 from .agent import Agent
+from .observation import LocalObservation
 from .action import ActionInformation, Direction
 
 class World: 
@@ -46,7 +47,9 @@ class World:
             # Give them the observations they can see in the environment
             visibility_range = agent._visibility_range  
             nearby_agents = self._get_nearby_agents(agent, visibility_range)
-            agent.set_observation(nearby_agents)
+            observation = LocalObservation(nearby_agents)
+
+            agent.set_observation(observation)
 
         self._time_step += 1
 
@@ -93,9 +96,9 @@ class World:
         """
         Adds an `agent` to the environment
         """
+        self._nagents += 1
         agent.bind_to_world(self._nagents)
         self._agents[agent.get_id()] = agent
-        self._nagents += 1
 
     def remove_agent(self, agent : Agent):
         """
@@ -117,7 +120,7 @@ class World:
         for agent in agents: 
             pos = agent.get_position()
             x, y = pos[0], pos[1]
-            presence_mask[x][y] = 1
+            presence_mask[x][y] = agent.get_id()
 
         return presence_mask
 
