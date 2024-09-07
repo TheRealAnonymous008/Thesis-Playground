@@ -146,14 +146,32 @@ class World:
         """
         return list(self._agents.values())
     
+    def get_resource_map(self) -> np.ndarray:
+        """
+        Returns a copy of the resource map
+        """
+        return self._resource_grid.copy()
+    
+    def get_total_cell_count(self) -> int:
+        """
+        Returns the number of cells in the world
+        """
+        return self._dims[0] * self._dims[1]
+    
+def initialize_positions_randomly(world: World, swarm: list[Agent]):
+    positions : list[tuple[int, int]] = []
 
-def initialize_positions_randomly(world : World, swarm : list[Agent]):
-    positions = set()
-    while len(positions) < len(swarm):
-        x, y = np.random.randint(0, world._dims[0]), np.random.randint(0, world._dims[1])
-        positions.add((x, y))
+    # Add all traversable cells to the positions set
+    for x in range(world._dims[0]):
+        for y in range(world._dims[1]):
+            if world.is_traversable(np.array([x, y])):
+                positions.append((x, y))
 
-    for agent, pos in zip(swarm, positions):
-        agent.set_position(np.array([pos[0], pos[1]], dtype = np.int32))
+    # Randomly sample positions for the agents
+    sampled_position_idx = np.random.choice(len(positions), size=len(swarm), replace=False)
+
+    for agent, idx in zip(swarm, sampled_position_idx):
+        pos = positions[idx]
+        agent.set_position(np.array([pos[0], pos[1]], dtype=np.int32))
 
     return swarm

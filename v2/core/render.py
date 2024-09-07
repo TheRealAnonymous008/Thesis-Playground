@@ -23,6 +23,17 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
             center = (pos[0] * cell_size[0] + cell_size[0] // 2, pos[1] * cell_size[1] + cell_size[1] // 2)
             radius = min(cell_size) // 3
             pygame.draw.circle(screen, (0, 255, 0), center, radius)
+            
+    def draw_resources():
+        resource_map = world.get_resource_map()
+        for x in range(resource_map.shape[0]):
+            for y in range(resource_map.shape[1]):
+                resource_type = resource_map[x, y]
+                if resource_type > 0:
+                    color = (resource_type * 40, 100, 100)  # Assign color based on resource type
+                    rect = pygame.Rect(x * cell_size[0], y * cell_size[1], cell_size[0], cell_size[1])
+                    pygame.draw.rect(screen, color, rect)
+
 
     running = True
     while running:
@@ -34,7 +45,7 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
             update_fn()
 
         screen.fill((0, 0, 0))
-        # draw_grid()
+        draw_resources()
         draw_agents()
         
         pygame.time.delay(delay)
