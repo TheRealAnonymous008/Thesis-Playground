@@ -5,11 +5,13 @@ from .agent import Agent
 from .observation import LocalObservation
 from .action import ActionInformation, Direction
 from .resource import ResourceGenerator
+from .models import *
 
 class World: 
     def __init__(self, 
                  dims : tuple[int, int],
-                 resource_generator : ResourceGenerator 
+                 resource_generator : ResourceGenerator,
+                 energy_model : EnergyModel = None
         ):
         """
         `dims`: Dimensions of the world (x, y) form.
@@ -21,7 +23,9 @@ class World:
         self._world_grid = np.zeros(dims, dtype = np.int32)
 
         self._agents : dict[int, Agent] = {}
-        self._resource_generator = resource_generator
+        self._resource_generator : ResourceGenerator = resource_generator
+
+        self._energy_model : EnergyModel | None = energy_model
         self.reset()
 
     def reset(self):
@@ -39,12 +43,18 @@ class World:
         """
         Update the environment 
         """
-
         # Get a working list of agents and shuffle them
         agents = self.get_agents()
         self._update_movement(agents)
-        
+
+        # Get the current world state
         self._world_state = self._get_world_state()
+
+        # Update any models that we have
+        if self._energy_model != None: 
+            for agent in agents:
+                self._energy_model.forward(agent)
+
 
         for agent in agents:
             # Reset the agents
@@ -66,8 +76,13 @@ class World:
     def _update_movement(self, agents : list[Agent]):
         movement_mask = np.zeros(self._dims, dtype=bool)
 
+        for agent in agents:
+            position = agent.get_position()
+            movement_mask[position[0]][position[1]] = True 
+
         for agent in agents: 
-            action : ActionInformation = agent._current_action
+            action : ActionInformation = agent.get_action()
+            old_position = agent.get_position()
             if action.movement != None: 
                 dir_movement = Direction.get_direction_of_movement(action.movement)
                 new_position = agent.get_position()
@@ -77,9 +92,14 @@ class World:
 
                 if not self.is_traversable(new_position) or not movement_mask[new_position[0]][new_position[1]] == False:
                     new_position = agent.get_position()
-                
-                movement_mask[new_position[0]][new_position[1]] = True 
-                agent.set_position(new_position)
+                else:
+                    action.mark_movement_successful()
+            else: 
+                new_position = agent.get_position()
+
+            movement_mask[old_position[0]][old_position[1]] = False 
+            movement_mask[new_position[0]][new_position[1]] = True 
+            agent.set_position(new_position)
 
     def _get_nearby_agents(self, agent: Agent, visibility_range: int) -> np.ndarray:
         """

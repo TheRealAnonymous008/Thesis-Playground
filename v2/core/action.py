@@ -37,6 +37,11 @@ class ActionInformation:
     `movement` - action correpsonding to motion on the world
     """
     movement : Direction | Direction = None
+    moved_successfully : bool = False
 
     def reset(self):
         self.movement = None
+        self.moved_successfully = False
+
+    def mark_movement_successful(self):
+        self.moved_successfully = True 

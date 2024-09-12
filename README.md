@@ -1,5 +1,7 @@
 # Design TODOs
 1. What are the agents are doing
+* Resource Gathering
+
 2. What are the that things exist in the world that is being simulated
 3. Communication / Negotiation Pipeline
 
