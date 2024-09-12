@@ -23,14 +23,14 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
             pygame.draw.line(screen, (200, 200, 200), (0, y), (screen_size[0], y))
 
     def draw_agents():
-        for agent in world.get_agents():
-            pos = agent.get_current_position()
+        for agent in world.agents:
+            pos = agent.current_position
             center = (pos[0] * cell_size[0] + cell_size[0] // 2, pos[1] * cell_size[1] + cell_size[1] // 2)
             radius = min(cell_size) // 3
             pygame.draw.circle(screen, (0, 255, 0), center, radius)
 
     def draw_resources():
-        resource_map = world.get_resource_map()
+        resource_map = world.resource_map
         for x in range(resource_map.shape[0]):
             for y in range(resource_map.shape[1]):
                 resource_type, _ = resource_map.get((x, y))

@@ -45,7 +45,7 @@ class World:
         Update the environment 
         """
         # Get a working list of agents and shuffle them
-        agents = self.get_agents()
+        agents = self.agents
         self._update_movement(agents)
         self._update_agent_actuation(agents)
 
@@ -74,30 +74,30 @@ class World:
         self._time_step += 1
 
     def _get_world_state(self):
-        return self.get_presence_mask(self.get_agents())
+        return self.get_presence_mask(self.agents)
 
 
     def _update_movement(self, agents : list[Agent]):
         movement_mask = np.zeros(self._dims, dtype=bool)
 
         for agent in agents:
-            position = agent.get_current_position()
+            position = agent.current_position
             movement_mask[position[0]][position[1]] = True 
 
         for agent in agents: 
-            action : ActionInformation = agent.get_action()
-            old_position = agent.get_current_position()
+            action : ActionInformation = agent.action
+            old_position = agent.current_position
             if action.movement != None: 
                 dir_movement = Direction.get_direction_of_movement(action.movement)
-                new_position = agent.get_current_position()
+                new_position = agent.current_position
 
                 new_position[0] += dir_movement[0]
                 new_position[1] += dir_movement[1]
 
                 if not self.is_traversable(new_position) or not movement_mask[new_position[0]][new_position[1]] == False:
-                    new_position = agent.get_current_position()
+                    new_position = agent.current_position
             else: 
-                new_position = agent.get_current_position()
+                new_position = agent.current_position
 
             movement_mask[old_position[0]][old_position[1]] = False 
             movement_mask[new_position[0]][new_position[1]] = True 
@@ -105,9 +105,9 @@ class World:
 
     def _update_agent_actuation(self, agents : list[Agent]): 
         for agent in agents:
-            action : ActionInformation = agent.get_action()
+            action : ActionInformation = agent.action
             if action.pick_up != None: 
-                pos = agent.get_current_position()
+                pos = agent.current_position
                 dir_action = Direction.get_direction_of_movement(action.pick_up)
 
                 pos[0] += dir_action[0]
@@ -124,7 +124,7 @@ class World:
         """
         Gets all agents nearby using the visibility range. 
         """
-        agent_pos = agent.get_current_position()
+        agent_pos = agent.current_position
         x, y = agent_pos[0], agent_pos[1]
 
         # Calculate the boundaries of the observation grid (clipping to world bounds)
@@ -144,7 +144,7 @@ class World:
         """
         Gets all resources nearby using the visibility range. 
         """
-        agent_pos = agent.get_current_position()
+        agent_pos = agent.current_position
         x, y = agent_pos[0], agent_pos[1]
 
         # Calculate the boundaries of the observation grid (clipping to world bounds)
@@ -167,13 +167,13 @@ class World:
         """
         self._nagents += 1
         agent.bind_to_world(self._nagents)
-        self._agents[agent.get_id()] = agent
+        self._agents[agent.id] = agent
 
     def remove_agent(self, agent : Agent):
         """
         Removes `agent` from the environment. Assumes `agent` is in the environment
         """
-        self._agents.pop(agent.get_id())
+        self._agents.pop(agent.id)
 
     def is_in_bounds(self, position : np.ndarray) -> bool:
         """
@@ -193,25 +193,28 @@ class World:
         """
         presence_mask = np.zeros(self._dims, dtype=np.int32)
         for agent in agents: 
-            pos = agent.get_current_position()
+            pos = agent.current_position
             x, y = pos[0], pos[1]
-            presence_mask[x][y] = agent.get_id()
+            presence_mask[x][y] = agent.id
 
         return presence_mask
 
-    def get_agents(self) -> list[Agent]:
+    @property
+    def agents(self) -> list[Agent]:
         """
         Returnns a list of all agents in the world
         """
         return list(self._agents.values())
     
-    def get_resource_map(self) -> ResourceMap:
+    @property
+    def resource_map(self) -> ResourceMap:
         """
         Returns a copy of the resource map
         """
-        return self._resource_map.copy()
+        return self._resource_map.copy
     
-    def get_total_cell_count(self) -> int:
+    @property
+    def total_cell_count(self) -> int:
         """
         Returns the number of cells in the world
         """

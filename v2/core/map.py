@@ -93,7 +93,8 @@ class ResourceMap:
         Returns resource quantity at idx. Assumes `idx` is correct.
         """
         return self._resource_quantity_map[idx[0]][idx[1]]
-        
+    
+    @property
     def copy(self) -> ResourceMap:
         """
         Returns a copy of the resource map.

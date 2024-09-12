@@ -166,7 +166,8 @@ class Agent:
         """
         self._current_observation = observation
 
-    def get_observation(self) -> LocalObservation:
+    @property
+    def local_observation(self) -> LocalObservation:
         """
         Get local observation
         """
@@ -178,7 +179,8 @@ class Agent:
         """
         self._id = world_id
 
-    def get_id(self) -> int:
+    @property
+    def id(self) -> int:
         """
         Return the ID of this agent in the world
         """
@@ -190,8 +192,9 @@ class Agent:
         """
         self._previous_position = self._current_position
         self._current_position = position
-
-    def get_previous_position(self) -> np.ndarray | None :
+    
+    @property
+    def previous_position(self) -> np.ndarray | None :
         """
         Get a copy of the agent's previous position if it is defined
         """
@@ -199,18 +202,21 @@ class Agent:
             return None 
         return self._previous_position.copy()
 
-    def get_current_position(self) -> np.ndarray:
+    @property
+    def current_position(self) -> np.ndarray:
         """
         Get a copy of the agent's current position position
         """
         return self._current_position.copy()
     
-    def get_action(self) -> ActionInformation:
+    @property
+    def action(self) -> ActionInformation:
         """
         Return the current action of the agent 
         """
         return self._current_action
     
+    @property
     def has_moved(self) -> bool:
         """
         Return if the agent has been displaced
