@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Callable
 
 import numpy as np
 from .agent import Agent
@@ -10,6 +11,7 @@ from .models import *
 class World: 
     def __init__(self, 
                  dims : tuple[int, int],
+                 swarm_initialzier : Callable, 
                  resource_generator : MapGenerator,
                  energy_model : EnergyModel = None
         ):
@@ -23,6 +25,7 @@ class World:
         self._world_grid = np.zeros(dims, dtype = np.int32)
 
         self._agents : dict[int, Agent] = {}
+        self._swarm_initializer : Callable = swarm_initialzier
         self._resource_generator : MapGenerator = resource_generator
 
         self._energy_model : EnergyModel | None = energy_model
@@ -39,6 +42,8 @@ class World:
         # Generate a new resource map 
         self._resource_map : ResourceMap  = self._resource_generator.generate(self._dims)
         self._resource_grid = self._resource_map.type_map
+
+        self._swarm_initializer(self)
 
     def update(self):
         """
@@ -91,16 +96,15 @@ class World:
                 dir_movement = Direction.get_direction_of_movement(action.movement)
                 new_position = agent.current_position
 
-                new_position[0] += dir_movement[0]
-                new_position[1] += dir_movement[1]
+                new_position += dir_movement
 
-                if not self.is_traversable(new_position) or not movement_mask[new_position[0]][new_position[1]] == False:
+                if not self.is_traversable(new_position) or movement_mask[new_position[0], new_position[1]]:
                     new_position = agent.current_position
             else: 
                 new_position = agent.current_position
 
-            movement_mask[old_position[0]][old_position[1]] = False 
-            movement_mask[new_position[0]][new_position[1]] = True 
+            movement_mask[old_position[0], old_position[1]] = False 
+            movement_mask[new_position[0], new_position[1]] = True 
             agent.set_position(new_position)
 
     def _update_agent_actuation(self, agents : list[Agent]): 
@@ -110,8 +114,7 @@ class World:
                 pos = agent.current_position
                 dir_action = Direction.get_direction_of_movement(action.pick_up)
 
-                pos[0] += dir_action[0]
-                pos[1] += dir_action[1]
+                pos += dir_action
 
                 if self.is_in_bounds(pos):
                     resource : Resource = self._resource_map.subtract_resource(pos, 1)
@@ -195,7 +198,7 @@ class World:
         for agent in agents: 
             pos = agent.current_position
             x, y = pos[0], pos[1]
-            presence_mask[x][y] = agent.id
+            presence_mask[x, y] = agent.id
 
         return presence_mask
 

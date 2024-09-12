@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from enum import Enum
+import numpy as np
 
 class Direction(Enum):
     NORTH = 1
@@ -13,16 +14,16 @@ class Direction(Enum):
     def get_direction_of_movement(dir : Direction):
         match(dir.value):
             case Direction.NORTH.value: 
-                return (0, -1)
+                return np.array([0, -1])
 
             case Direction.SOUTH.value: 
-                return (0, 1)
+                return np.array([0, 1])
 
             case Direction.EAST.value: 
-                return (1, 0)
+                return np.array([1, 0])
             
             case Direction.WEST.value:
-                return (-1, 0)
+                return np.array([-1, 0])
 
             case _: 
                 raise Exception(f"Invalid direction specified {dir}")
