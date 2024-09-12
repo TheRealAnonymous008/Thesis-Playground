@@ -31,10 +31,12 @@ class ResourceMap():
         self._resource_type_map[idx[0]][idx[1]]  = type 
         self._resource_quantity_map[idx[0]][idx[1]] = quantity
 
-    def subtract_resource(self, idx : tuple[int, int], type : int, quantity : float):
+    def subtract_resource(self, idx : tuple[int, int], quantity : float):
         """
         Removes a resource from the map. If the final quantity is less than 0, the resource is removed entirely.
         If `quantity` <= 0, then subtraction is ignored. Assumes `idx` is correct.
+
+        Returns the type at the specified `idx`
         """
         if quantity <= 0:
             return 
@@ -42,11 +44,13 @@ class ResourceMap():
         q = self._resource_quantity_map[idx[0]][idx[1]]
         self._resource_quantity_map[idx[0]][idx[1]] = max(q - quantity, 0)
         q = self._resource_quantity_map[idx[0]][idx[1]]
+        r = self._resource_type_map[idx[0]][idx[1]]
 
         if q <= 0:
             self._resource_type_map[idx[0]][idx[1]] = 0
 
-
+        return r
+    
     def get(self, idx : tuple[int, int]):
         """
         Returns a tuple of the resource type and quantity. Assumes `idx` is correct.

@@ -104,8 +104,15 @@ class World:
         for agent in agents:
             action : ActionInformation = agent.get_action()
             if action.pick_up != None: 
+                pos = agent.get_current_position()
                 dir_action = Direction.get_direction_of_movement(action.pick_up)
 
+                pos[0] += dir_action[0]
+                pos[1] += dir_action[1]
+
+                if self.is_in_bounds(pos):
+                    # TODO: Add it to the agent's inventory
+                    self._resource_grid.subtract_resource(pos, 1)
 
 
     def _get_nearby_agents(self, agent: Agent, visibility_range: int) -> np.ndarray:
