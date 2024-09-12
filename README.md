@@ -1,7 +1,7 @@
 # Design TODOs
 1. What are the agents are doing
-* Resource Gathering
-
+* Resources can be used to make new materials 
+* TODO: Implement a more robust system to manage agent inventory
 2. What are the that things exist in the world that is being simulated
 3. Communication / Negotiation Pipeline
 

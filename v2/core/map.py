@@ -37,7 +37,7 @@ class ResourceMap:
         if quantity <= 0:
             return 
         
-        self._resource_type_map[idx[0]][idx[1]]  = type 
+        self._resource_type_map[idx[0]][idx[1]]  = int(type) 
         self._resource_quantity_map[idx[0]][idx[1]] = quantity
 
     def subtract_resource(self, idx : tuple[int, int], quantity : float):
@@ -99,7 +99,7 @@ class MapGenerator(ABC):
         self.resource_types = resource_types
     
     def generate(self, dims : tuple[int, int]) -> ResourceMap:
-        resource_type_map = np.zeros(dims)
+        resource_type_map = np.zeros(dims, dtype=np.int32)
         resource_quantity_map = np.zeros(dims)
 
         return ResourceMap(resource_type_map=resource_type_map, resource_quantity_map=resource_quantity_map)
