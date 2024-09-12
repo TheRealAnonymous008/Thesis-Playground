@@ -6,7 +6,7 @@ import numpy as np
 from abc import ABC 
 
 
-class ResourceGenerator(ABC):
+class MapGenerator(ABC):
     def __init__(self, resource_types = 5):
         self.resource_types = resource_types
     
@@ -15,7 +15,7 @@ class ResourceGenerator(ABC):
 
         return resource_map
     
-class RandomMapGenerator(ResourceGenerator):
+class RandomMapGenerator(MapGenerator):
     def generate(self, dims: tuple[int, int]) -> np.ndarray:
         resource_map = super().generate(dims)
         num_clumps = 10 

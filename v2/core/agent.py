@@ -16,6 +16,9 @@ class AgentSate:
     """
     current_energy : float = 0
 
+    def can_move(self):
+        return self.current_energy > 0
+
 class Agent:
     def __init__(self):
         """
@@ -40,18 +43,12 @@ class Agent:
         """
         self._current_state.current_energy = self._energy_capacity
 
-    def has_enough_energy(self):
-        """
-        Determine if the agent has enough energy to perform an action
-        """
-        return self._current_state.current_energy > 0 
-
     def move(self, dir : Direction | int):
         """
         Moves an agent along a specified direction. 
         The direction is either a Direction instance or an integer associated with a Direction value.
         """
-        if not self.has_enough_energy():
+        if not self._current_state.can_move():
             return 
 
         if type(dir) is Direction: 
@@ -74,6 +71,12 @@ class Agent:
 
             case _: 
                 raise Exception(f"Invalid direction specified {val}")
+
+    def pick_up(self): 
+        """
+        Pick up a resource adjacent to this agent 
+        """
+        pass
 
     def reset_for_next_action(self):
         """

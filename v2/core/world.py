@@ -4,13 +4,13 @@ import numpy as np
 from .agent import Agent
 from .observation import LocalObservation
 from .action import ActionInformation, Direction
-from .resource import ResourceGenerator
+from .map import MapGenerator
 from .models import *
 
 class World: 
     def __init__(self, 
                  dims : tuple[int, int],
-                 resource_generator : ResourceGenerator,
+                 resource_generator : MapGenerator,
                  energy_model : EnergyModel = None
         ):
         """
@@ -23,7 +23,7 @@ class World:
         self._world_grid = np.zeros(dims, dtype = np.int32)
 
         self._agents : dict[int, Agent] = {}
-        self._resource_generator : ResourceGenerator = resource_generator
+        self._resource_generator : MapGenerator = resource_generator
 
         self._energy_model : EnergyModel | None = energy_model
         self.reset()
