@@ -37,7 +37,8 @@ class World:
         self._nagents = 0
 
         # Generate a new resource map 
-        self._resource_grid : ResourceMap  = self._resource_generator.generate(self._dims)
+        self._resource_map : ResourceMap  = self._resource_generator.generate(self._dims)
+        self._resource_grid = self._resource_map.type_map
 
     def update(self):
         """
@@ -50,6 +51,7 @@ class World:
 
         # Get the current world state
         self._world_state = self._get_world_state()
+        self._resource_grid = self._resource_map._resource_type_map
 
         # Update any models that we have
         if self._energy_model != None: 
@@ -64,7 +66,8 @@ class World:
             # Give them the observations they can see in the environment
             visibility_range = agent._visibility_range  
             nearby_agents = self._get_nearby_agents(agent, visibility_range)
-            observation = LocalObservation(nearby_agents)
+            nearby_resources = self._get_nearby_resources(agent, visibility_range)
+            observation = LocalObservation(nearby_agents, nearby_resources)
 
             agent.set_observation(observation)
 
@@ -111,10 +114,10 @@ class World:
                 pos[1] += dir_action[1]
 
                 if self.is_in_bounds(pos):
-                    resource : Resource = self._resource_grid.subtract_resource(pos, 1)
+                    resource : Resource = self._resource_map.subtract_resource(pos, 1)
                     if resource.quantity != 0:
                         qty = agent.add_to_inventory(resource)
-                        self._resource_grid.add_resource(pos, resource.type, qty)
+                        self._resource_map.add_resource(pos, resource.type, qty)
 
 
     def _get_nearby_agents(self, agent: Agent, visibility_range: int) -> np.ndarray:
@@ -132,6 +135,26 @@ class World:
 
         # Get the sliced observation grid
         observation = np.array(self._world_state[x_min:x_max, y_min:y_max])
+
+        # Mask the agent's own position with 0
+        observation[x - x_min, y - y_min] = 0
+        return observation
+
+    def _get_nearby_resources(self, agent : Agent, visibility_range : int) -> np.ndarray:
+        """
+        Gets all resources nearby using the visibility range. 
+        """
+        agent_pos = agent.get_current_position()
+        x, y = agent_pos[0], agent_pos[1]
+
+        # Calculate the boundaries of the observation grid (clipping to world bounds)
+        x_min = max(0, x - visibility_range)
+        x_max = min(self._dims[0], x + visibility_range + 1)
+        y_min = max(0, y - visibility_range)
+        y_max = min(self._dims[1], y + visibility_range + 1)
+
+        # # Get the sliced resource map grid
+        observation = np.array(self._resource_grid[x_min:x_max, y_min:y_max])
 
         # Mask the agent's own position with 0
         observation[x - x_min, y - y_min] = 0
@@ -162,7 +185,7 @@ class World:
         """
         Check whether a position is traversable to any agent
         """
-        return self.is_in_bounds(position) and self._resource_grid.get_type((position[0], position[1])) == 0
+        return self.is_in_bounds(position) and self._resource_map.get_type((position[0], position[1])) == 0
     
     def get_presence_mask(self, agents : list[Agent]) -> np.ndarray:
         """
@@ -186,7 +209,7 @@ class World:
         """
         Returns a copy of the resource map
         """
-        return self._resource_grid.copy()
+        return self._resource_map.copy()
     
     def get_total_cell_count(self) -> int:
         """

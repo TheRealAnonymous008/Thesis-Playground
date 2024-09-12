@@ -62,13 +62,26 @@ class ResourceMap:
 
         return Resource(r, removed)
     
-    def get(self, idx : tuple[int, int]):
+    def get(self, idx : tuple[int, int]) -> tuple[int, float]:
         """
         Returns a tuple of the resource type and quantity. Assumes `idx` is correct.
         """
         return self._resource_type_map[idx[0]][idx[1]], self._resource_quantity_map[idx[0]][idx[1]]
     
+    @property
+    def type_map(self) -> np.ndarray: 
+        """
+        Returns a copy of the whole type map 
+        """
+        return self._resource_type_map.copy()
     
+    @property
+    def quantity_map(self) -> np.ndarray:
+        """
+        Returns a copy of the whole quantity map
+        """
+        return self._resource_quantity_map.copy()
+
     def get_type(self, idx : tuple[int, int]):
         """
         Returns resource type at idx. Assumes `idx` is correct.

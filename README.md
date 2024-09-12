@@ -5,7 +5,8 @@
 2. What are the that things exist in the world that is being simulated
 3. Communication / Negotiation Pipeline
 
-
+Model agent desires and preferences
+- Heterogeneity by adding preference functions (different for each agent) applied to the items that the agent currently owns. Take inspo from BDI 
 
 
 # (Unimplemented) Ideas for MARL solution
