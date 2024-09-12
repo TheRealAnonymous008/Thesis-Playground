@@ -35,13 +35,18 @@ class ActionInformation:
     If the value is None, then that action was not taken 
 
     `movement` - action correpsonding to motion on the world
+
+    `pick_up` - action corresponding to picking up an object in the world
+
+    `put_down` - action corresponding to putting an item in the inventory down 
     """
-    movement : Direction | Direction = None
+    movement : Direction = None
     moved_successfully : bool = False
+    pick_up : Direction = None 
+    put_down : Direction = None 
 
     def reset(self):
         self.movement = None
         self.moved_successfully = False
-
-    def mark_movement_successful(self):
-        self.moved_successfully = True 
+        self.pick_up = None 
+        self.put_down = None 

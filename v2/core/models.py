@@ -1,7 +1,6 @@
 import numpy as np
 from enum import Enum
 
-from .observation import LocalObservation
 from .agent import Agent
 from .action import *
 
@@ -18,7 +17,7 @@ class EnergyModel:
         action = agent.get_action() 
         total_energy_consumption = 0
         
-        if action.moved_successfully: 
+        if action.movement != None and agent.has_moved(): 
             e = np.random.normal(0.5, 0.25)
             total_energy_consumption += max(0.1, e)
 

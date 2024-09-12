@@ -4,7 +4,7 @@ import numpy as np
 from .agent import Agent
 from .observation import LocalObservation
 from .action import ActionInformation, Direction
-from .map import MapGenerator
+from .map import MapGenerator, ResourceMap
 from .models import *
 
 class World: 
@@ -37,7 +37,7 @@ class World:
         self._nagents = 0
 
         # Generate a new resource map 
-        self._resource_grid = self._resource_generator.generate(self._dims)
+        self._resource_grid : ResourceMap  = self._resource_generator.generate(self._dims)
 
     def update(self):
         """
@@ -46,6 +46,7 @@ class World:
         # Get a working list of agents and shuffle them
         agents = self.get_agents()
         self._update_movement(agents)
+        self._update_agent_actuation(agents)
 
         # Get the current world state
         self._world_state = self._get_world_state()
@@ -77,35 +78,41 @@ class World:
         movement_mask = np.zeros(self._dims, dtype=bool)
 
         for agent in agents:
-            position = agent.get_position()
+            position = agent.get_current_position()
             movement_mask[position[0]][position[1]] = True 
 
         for agent in agents: 
             action : ActionInformation = agent.get_action()
-            old_position = agent.get_position()
+            old_position = agent.get_current_position()
             if action.movement != None: 
                 dir_movement = Direction.get_direction_of_movement(action.movement)
-                new_position = agent.get_position()
+                new_position = agent.get_current_position()
 
                 new_position[0] += dir_movement[0]
                 new_position[1] += dir_movement[1]
 
                 if not self.is_traversable(new_position) or not movement_mask[new_position[0]][new_position[1]] == False:
-                    new_position = agent.get_position()
-                else:
-                    action.mark_movement_successful()
+                    new_position = agent.get_current_position()
             else: 
-                new_position = agent.get_position()
+                new_position = agent.get_current_position()
 
             movement_mask[old_position[0]][old_position[1]] = False 
             movement_mask[new_position[0]][new_position[1]] = True 
             agent.set_position(new_position)
 
+    def _update_agent_actuation(self, agents : list[Agent]): 
+        for agent in agents:
+            action : ActionInformation = agent.get_action()
+            if action.pick_up != None: 
+                dir_action = Direction.get_direction_of_movement(action.pick_up)
+
+
+
     def _get_nearby_agents(self, agent: Agent, visibility_range: int) -> np.ndarray:
         """
         Gets all agents nearby using the visibility range. 
         """
-        agent_pos = agent.get_position()
+        agent_pos = agent.get_current_position()
         x, y = agent_pos[0], agent_pos[1]
 
         # Calculate the boundaries of the observation grid (clipping to world bounds)
@@ -146,7 +153,7 @@ class World:
         """
         Check whether a position is traversable to any agent
         """
-        return self.is_in_bounds(position) and self._resource_grid[position[0]][position[1]] == 0
+        return self.is_in_bounds(position) and self._resource_grid.get_type((position[0], position[1])) == 0
     
     def get_presence_mask(self, agents : list[Agent]) -> np.ndarray:
         """
@@ -154,7 +161,7 @@ class World:
         """
         presence_mask = np.zeros(self._dims, dtype=np.int32)
         for agent in agents: 
-            pos = agent.get_position()
+            pos = agent.get_current_position()
             x, y = pos[0], pos[1]
             presence_mask[x][y] = agent.get_id()
 
@@ -166,7 +173,7 @@ class World:
         """
         return list(self._agents.values())
     
-    def get_resource_map(self) -> np.ndarray:
+    def get_resource_map(self) -> ResourceMap:
         """
         Returns a copy of the resource map
         """
