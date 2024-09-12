@@ -6,6 +6,9 @@ from enum import Enum
 from .observation import LocalObservation
 
 from .action import *
+from .map import Resource
+from dataclasses import dataclass, field
+
 
 @dataclass
 class AgentSate:
@@ -13,11 +16,19 @@ class AgentSate:
     Contains attributes and misc. information about an agent's internal state.
 
     `current_energy` - current energy of the agent
+    `inventory` - current agent inventory
     """
     current_energy : float = 0
-
+    inventory : list[Resource] = field(default_factory= lambda : [])
+    current_mass_carried : float = 0
+    
+    @property
     def can_move(self):
         return self.current_energy > 0
+    
+    def add_to_inventory(self, resource : Resource):
+        self.current_mass_carried += resource.quantity
+        self.inventory.append(resource)
 
 class Agent:
     def __init__(self):
@@ -52,7 +63,7 @@ class Agent:
         Moves an agent along a specified direction. 
         The direction is either a Direction instance or an integer associated with a Direction value.
         """
-        if not self._current_state.can_move():
+        if not self._current_state.can_move:
             return 
 
         if type(dir) is Direction: 
@@ -80,7 +91,7 @@ class Agent:
         """
         Pick up a resource adjacent to this agent 
         """
-        if not self._current_state.can_move():
+        if not self._current_state.can_move:
             return 
 
         if type(dir) is Direction: 
@@ -108,7 +119,7 @@ class Agent:
         """
         Put down the held resource to somewhere adjacent to the agent.
         """
-        if not self._current_state.can_move():
+        if not self._current_state.can_move:
             return 
 
         if type(dir) is Direction: 
@@ -131,7 +142,18 @@ class Agent:
 
             case _: 
                 raise Exception(f"Invalid direction specified {val}")
-            
+
+    def add_to_inventory(self, res : Resource) -> float:
+        """
+        Add resource to inventory, assuming it can be carried. Return excess mass.
+        """
+        current_carried = self._current_state.current_mass_carried
+        excess_mass = max(0, current_carried + res.quantity - self._carrying_capacity)
+        res.quantity = res.quantity - excess_mass
+
+        self._current_state.inventory.append(res)
+        return excess_mass
+
     def reset_for_next_action(self):
         """
         Resets the agent for a new action
@@ -139,9 +161,15 @@ class Agent:
         self._current_action.reset()
 
     def set_observation(self, observation : LocalObservation):
+        """
+        Set local observation
+        """
         self._current_observation = observation
 
     def get_observation(self) -> LocalObservation:
+        """
+        Get local observation
+        """
         return self._current_observation
 
     def bind_to_world(self, world_id : int):
@@ -184,6 +212,9 @@ class Agent:
         return self._current_action
     
     def has_moved(self) -> bool:
+        """
+        Return if the agent has been displaced
+        """
         if self._previous_position is None: 
             return False 
         return  np.all(self._previous_position == self._current_position)

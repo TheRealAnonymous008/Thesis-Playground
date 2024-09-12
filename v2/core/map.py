@@ -5,7 +5,16 @@ from enum import Enum
 import numpy as np
 from abc import ABC 
 
-class ResourceMap():
+@dataclass
+class Resource: 
+    """
+    Dataclass for resources. A resource holds a `type` andn `quantity`
+    """
+    type : int 
+    quantity : float
+
+
+class ResourceMap:
     """
     Class for holding information on the resources of a map
     
@@ -43,13 +52,15 @@ class ResourceMap():
         
         q = self._resource_quantity_map[idx[0]][idx[1]]
         self._resource_quantity_map[idx[0]][idx[1]] = max(q - quantity, 0)
-        q = self._resource_quantity_map[idx[0]][idx[1]]
+        
+        removed = q - self._resource_quantity_map[idx[0]][idx[1]]
         r = self._resource_type_map[idx[0]][idx[1]]
+        q = self._resource_quantity_map[idx[0]][idx[1]]
 
         if q <= 0:
             self._resource_type_map[idx[0]][idx[1]] = 0
 
-        return r
+        return Resource(r, removed)
     
     def get(self, idx : tuple[int, int]):
         """

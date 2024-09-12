@@ -4,7 +4,7 @@ import numpy as np
 from .agent import Agent
 from .observation import LocalObservation
 from .action import ActionInformation, Direction
-from .map import MapGenerator, ResourceMap
+from .map import MapGenerator, ResourceMap, Resource
 from .models import *
 
 class World: 
@@ -111,8 +111,10 @@ class World:
                 pos[1] += dir_action[1]
 
                 if self.is_in_bounds(pos):
-                    # TODO: Add it to the agent's inventory
-                    self._resource_grid.subtract_resource(pos, 1)
+                    resource : Resource = self._resource_grid.subtract_resource(pos, 1)
+                    if resource.quantity != 0:
+                        qty = agent.add_to_inventory(resource)
+                        self._resource_grid.add_resource(pos, resource.type, qty)
 
 
     def _get_nearby_agents(self, agent: Agent, visibility_range: int) -> np.ndarray:
