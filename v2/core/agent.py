@@ -275,10 +275,17 @@ class Agent:
     @property
     def current_position(self) -> np.ndarray:
         """
-        Get a copy of the agent's current position position
+        Get the agent's current position
         """
         return self._current_position.copy()
     
+    @property
+    def current_position_const(self) -> np.ndarray:
+        """
+        Get the agent's current position. Does not return a copy! Never mutate the output of this function
+        """
+        return self._current_position
+
     @property
     def action(self) -> ActionInformation:
         """

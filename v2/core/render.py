@@ -24,8 +24,8 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
 
     def draw_agents():
         for agent in world.agents:
-            pos = agent.current_position
-            center = (pos[0] * cell_size[0] + cell_size[0] // 2, pos[1] * cell_size[1] + cell_size[1] // 2)
+            pos_const = agent.current_position_const
+            center = (pos_const[0] * cell_size[0] + cell_size[0] // 2, pos_const[1] * cell_size[1] + cell_size[1] // 2)
             radius = min(cell_size) // 3
             pygame.draw.circle(screen, (0, 255, 0), center, radius)
 

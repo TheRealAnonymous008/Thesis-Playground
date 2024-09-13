@@ -89,26 +89,23 @@ class World:
         movement_mask = np.zeros(self._dims, dtype=bool)
 
         for agent in agents:
-            position = agent.current_position
-            movement_mask[position[0]][position[1]] = True 
+            position_const = agent.current_position_const
+            movement_mask[position_const[0]][position_const[1]] = True 
 
         for agent in agents: 
             action : ActionInformation = agent.action
-            old_position = agent.current_position
+            current_position = agent.current_position
+            movement_mask[current_position[0], current_position[1]] = False 
+
             if action.movement != None: 
                 dir_movement = Direction.get_direction_of_movement(action.movement)
-                new_position = agent.current_position
+                current_position += dir_movement
 
-                new_position += dir_movement
+                if not self.is_traversable(current_position) or movement_mask[current_position[0], current_position[1]]:
+                    current_position -= dir_movement
 
-                if not self.is_traversable(new_position) or movement_mask[new_position[0], new_position[1]]:
-                    new_position = agent.current_position
-            else: 
-                new_position = agent.current_position
-
-            movement_mask[old_position[0], old_position[1]] = False 
-            movement_mask[new_position[0], new_position[1]] = True 
-            agent.set_position(new_position)
+            movement_mask[current_position[0], current_position[1]] = True 
+            agent.set_position(current_position)
 
     def _update_agent_actuation(self, agents : list[Agent]): 
         for agent in agents:
@@ -130,8 +127,8 @@ class World:
         """
         Gets all agents nearby using the visibility range. 
         """
-        agent_pos = agent.current_position
-        x, y = agent_pos[0], agent_pos[1]
+        agent_pos_const = agent.current_position_const
+        x, y = agent_pos_const[0], agent_pos_const[1]
 
         # Calculate the boundaries of the observation grid (clipping to world bounds)
         x_min = max(0, x - visibility_range)
@@ -150,8 +147,8 @@ class World:
         """
         Gets all resources nearby using the visibility range. 
         """
-        agent_pos = agent.current_position
-        x, y = agent_pos[0], agent_pos[1]
+        agent_pos_const = agent.current_position_const
+        x, y = agent_pos_const[0], agent_pos_const[1]
 
         # Calculate the boundaries of the observation grid (clipping to world bounds)
         x_min = max(0, x - visibility_range)
