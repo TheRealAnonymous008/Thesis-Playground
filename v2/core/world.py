@@ -45,6 +45,9 @@ class World:
 
         self._swarm_initializer(self)
 
+        for agent in self.agents: 
+            agent.reset()
+
     def update(self):
         """
         Update the environment 
@@ -171,6 +174,12 @@ class World:
         self._nagents += 1
         agent.bind_to_world(self._nagents)
         self._agents[agent.id] = agent
+
+    def get_agent(self, id : int) -> Agent:
+        """
+        Returns the agent with the given `id`
+        """
+        return self._agents[id]
 
     def remove_agent(self, agent : Agent):
         """

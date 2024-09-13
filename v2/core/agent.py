@@ -9,6 +9,10 @@ from .action import *
 from .map import Resource
 from dataclasses import dataclass, field
 
+@dataclass
+class Message: 
+    sender : int = 0
+    message : int = 0
 
 @dataclass
 class AgentSate:
@@ -17,9 +21,15 @@ class AgentSate:
 
     `current_energy` - current energy of the agent
     `inventory` - current agent inventory
+    `relations` - dictionary mapping agent ids to agent relations
+    `msgs` - the current message buffer
+    `current_mass+_carried` = the total mass being carried by the agent at the moment .
     """
+
     current_energy : float = 0
     inventory : list[Resource] = field(default_factory= lambda : [])
+    relations : dict[int, int] = field(default_factory= lambda : {})
+    msgs: list[Message] = field(default_factory=lambda : [])
     current_mass_carried : float = 0
     
     @property
@@ -29,6 +39,24 @@ class AgentSate:
     def add_to_inventory(self, resource : Resource):
         self.current_mass_carried += resource.quantity
         self.inventory.append(resource)
+
+    def add_message(self, message : Message) : 
+        self.msgs.append(message)
+
+    def clear_messages(self):
+        self.msgs.clear()
+
+    def set_relation(self, agent : int, weight : float): 
+        self.relations[agent] = weight
+
+    def remove_relatioon(self, agent : int) : 
+        self.relations.pop(agent)
+
+    def reset(self):
+        self.inventory.clear()
+        self.relations.clear()
+        self.msgs.clear()
+        self.current_mass_carried = 0
 
 class Agent:
     def __init__(self):
@@ -56,6 +84,7 @@ class Agent:
         Reset the agent
         """
         self._previous_position = None 
+        self._current_state. reset()
         self._current_state.current_energy = self._energy_capacity
 
     def move(self, dir : Direction | int):
@@ -143,6 +172,31 @@ class Agent:
             case _: 
                 raise Exception(f"Invalid direction specified {val}")
 
+    def talk_to(self, agent : Agent):
+        """
+        Communicate with the agent. Construct a message to send to this agent 
+        """
+        self.send_message(agent, Message(self._id, 1))
+    
+    def send_message(self, agent : Agent, message : Message):
+        """
+        Send a message to the target agent
+        """
+        agent._current_state.msgs.append(message)
+
+    def get_messages(self) -> list[Message]:
+        """
+        Return all messages 
+        """
+        return self._current_state.msgs
+
+    def clear_messages(self):
+        """
+        Clear all messages 
+        """
+        self._current_state.clear_messages() 
+    
+
     def add_to_inventory(self, res : Resource) -> float:
         """
         Add resource to inventory, assuming it can be carried. Return excess mass.
@@ -153,6 +207,12 @@ class Agent:
 
         self._current_state.inventory.append(res)
         return excess_mass
+
+    def add_relation(self, agent_id : int, weight : float):
+        """
+        Add a social relation between this agent and the one specified
+        """
+        self._current_state.set_relation(agent_id, weight)
 
     def reset_for_next_action(self):
         """
@@ -165,6 +225,13 @@ class Agent:
         Set local observation
         """
         self._current_observation = observation
+
+    @property
+    def agents_in_range(self) -> list[int]:
+        """
+        Returns a list of id's of all visible agents.
+        """
+        return self._current_observation.neighbors
 
     @property
     def local_observation(self) -> LocalObservation:
@@ -185,6 +252,9 @@ class Agent:
         Return the ID of this agent in the world
         """
         return self._id 
+
+    def __hash__(self) -> int:
+        return self._id
 
     def set_position(self, position : np.array):
         """

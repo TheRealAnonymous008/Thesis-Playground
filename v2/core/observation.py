@@ -17,4 +17,9 @@ class LocalObservation:
     nearby_agents : np.ndarray
     resource_types : np.ndarray 
     
-    
+    @property
+    def neighbors(self) -> list[int]:
+        """
+        Returns a list of id's of all visible agents.
+        """
+        return self.nearby_agents[self.nearby_agents != 0].flatten().tolist()
