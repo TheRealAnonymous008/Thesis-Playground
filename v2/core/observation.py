@@ -18,8 +18,10 @@ class LocalObservation:
     resource_types : np.ndarray 
     
     @property
-    def neighbors(self) -> list[int]:
+    def neighbors(self) -> np.ndarray[int]:
         """
-        Returns a list of id's of all visible agents.
+        Returns a list of id's of all communicable agents 
         """
-        return self.nearby_agents[self.nearby_agents != 0].flatten().tolist()
+        center_x, center_y = self.nearby_agents.shape[0] // 2, self.nearby_agents.shape[1] // 2
+        surrounding = self.nearby_agents[center_x-1:center_x+2, center_y-1:center_y+2]
+        return surrounding[surrounding != 0].flatten().tolist()
