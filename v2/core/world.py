@@ -94,7 +94,8 @@ class World:
 
         for agent in agents: 
             action : ActionInformation = agent.action
-            current_position = agent.current_position
+            # Note: We are being careful here to perfectly undo the current position. That way, we maintain invariants in the world.
+            current_position = agent.current_position_const
             movement_mask[current_position[0], current_position[1]] = False 
 
             if action.movement != None: 
@@ -127,19 +128,12 @@ class World:
         """
         Gets all agents nearby using the visibility range. 
         """
-        agent_pos_const = agent.current_position_const
-        x, y = agent_pos_const[0], agent_pos_const[1]
+        x, y = agent.current_position_const
+        x_min, x_max = max(0, x - visibility_range), min(self._dims[0], x + visibility_range + 1)
+        y_min, y_max = max(0, y - visibility_range), min(self._dims[1], y + visibility_range + 1)
 
-        # Calculate the boundaries of the observation grid (clipping to world bounds)
-        x_min = max(0, x - visibility_range)
-        x_max = min(self._dims[0], x + visibility_range + 1)
-        y_min = max(0, y - visibility_range)
-        y_max = min(self._dims[1], y + visibility_range + 1)
-
-        # Get the sliced observation grid
-        observation = np.array(self._world_state[x_min:x_max, y_min:y_max])
-
-        # Mask the agent's own position with 0
+        # We assume the world state is final and will not change 
+        observation = self._world_state[x_min:x_max, y_min:y_max]
         observation[x - x_min, y - y_min] = 0
         return observation
 
@@ -147,19 +141,12 @@ class World:
         """
         Gets all resources nearby using the visibility range. 
         """
-        agent_pos_const = agent.current_position_const
-        x, y = agent_pos_const[0], agent_pos_const[1]
+        x, y = agent.current_position_const
+        x_min, x_max = max(0, x - visibility_range), min(self._dims[0], x + visibility_range + 1)
+        y_min, y_max = max(0, y - visibility_range), min(self._dims[1], y + visibility_range + 1)
 
-        # Calculate the boundaries of the observation grid (clipping to world bounds)
-        x_min = max(0, x - visibility_range)
-        x_max = min(self._dims[0], x + visibility_range + 1)
-        y_min = max(0, y - visibility_range)
-        y_max = min(self._dims[1], y + visibility_range + 1)
-
-        # # Get the sliced resource map grid
-        observation = np.array(self._resource_grid[x_min:x_max, y_min:y_max])
-
-        # Mask the agent's own position with 0
+        # We assume the resource grid is final and will not change 
+        observation = self._resource_grid[x_min:x_max, y_min:y_max]
         observation[x - x_min, y - y_min] = 0
         return observation
 
@@ -202,8 +189,8 @@ class World:
         """
         presence_mask = np.zeros(self._dims, dtype=np.int32)
         for agent in agents: 
-            pos = agent.current_position
-            x, y = pos[0], pos[1]
+            pos_const = agent.current_position_const
+            x, y = pos_const[0], pos_const[1]
             presence_mask[x, y] = agent.id
 
         return presence_mask

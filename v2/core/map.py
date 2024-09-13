@@ -37,8 +37,8 @@ class ResourceMap:
         if quantity <= 0:
             return 
         
-        self._resource_type_map[idx[0]][idx[1]]  = int(type) 
-        self._resource_quantity_map[idx[0]][idx[1]] = quantity
+        self._resource_type_map[idx[0], idx[1]]  = int(type) 
+        self._resource_quantity_map[idx[0], idx[1]] = quantity
 
     def subtract_resource(self, idx : tuple[int, int], quantity : float):
         """
@@ -50,15 +50,15 @@ class ResourceMap:
         if quantity <= 0:
             return 
         
-        q = self._resource_quantity_map[idx[0]][idx[1]]
-        self._resource_quantity_map[idx[0]][idx[1]] = max(q - quantity, 0)
+        q = self._resource_quantity_map[idx[0], idx[1]]
+        self._resource_quantity_map[idx[0], idx[1]] = max(q - quantity, 0)
         
-        removed = q - self._resource_quantity_map[idx[0]][idx[1]]
-        r = self._resource_type_map[idx[0]][idx[1]]
-        q = self._resource_quantity_map[idx[0]][idx[1]]
+        removed = q - self._resource_quantity_map[idx[0], idx[1]]
+        r = self._resource_type_map[idx[0], idx[1]]
+        q = self._resource_quantity_map[idx[0],idx[1]]
 
         if q <= 0:
-            self._resource_type_map[idx[0]][idx[1]] = 0
+            self._resource_type_map[idx[0], idx[1]] = 0
 
         return Resource(r, removed)
     
@@ -66,7 +66,7 @@ class ResourceMap:
         """
         Returns a tuple of the resource type and quantity. Assumes `idx` is correct.
         """
-        return self._resource_type_map[idx[0]][idx[1]], self._resource_quantity_map[idx[0]][idx[1]]
+        return self._resource_type_map[idx[0], idx[1]], self._resource_quantity_map[idx[0], idx[1]]
     
     @property
     def type_map(self) -> np.ndarray: 
