@@ -5,13 +5,15 @@ from enum import Enum
 import numpy as np
 from abc import ABC 
 
+_QuantityType = int
+
 @dataclass
 class Resource: 
     """
     Dataclass for resources. A resource holds a `type` andn `quantity`
     """
     type : int 
-    quantity : float
+    quantity : _QuantityType
 
 
 class ResourceMap:
@@ -22,14 +24,14 @@ class ResourceMap:
 
     `resource_quantity` - holds the quantity of resource in a tile.
     """
-    def __init__(self, resource_type_map : np.ndarray[int], resource_quantity_map : np.ndarray[float]):
+    def __init__(self, resource_type_map : np.ndarray[int], resource_quantity_map : np.ndarray[_QuantityType]):
         if resource_quantity_map.shape != resource_quantity_map.shape:
             raise Exception(f"Error: Resource Type and Quantity Maps should have the same shape. Got {resource_type_map.shape} and {resource_quantity_map.shape} respectively")
         
         self._resource_type_map : np.ndarray[int]  = resource_type_map
-        self._resource_quantity_map : np.ndarray[float] = resource_quantity_map
+        self._resource_quantity_map : np.ndarray[_QuantityType] = resource_quantity_map
 
-    def add_resource(self, idx : tuple[int, int], type : int, quantity : float):
+    def add_resource(self, idx : tuple[int, int], type : int, quantity : _QuantityType):
         """
         Adds a resource to the map. If the quantity is less than or equal to 0, then addition is ignored.
         Assumes `idx` is correct.
@@ -41,7 +43,7 @@ class ResourceMap:
         self._resource_type_map[x, y]  = int(type) 
         self._resource_quantity_map[x, y] = quantity
 
-    def subtract_resource(self, idx : tuple[int, int], quantity : float):
+    def subtract_resource(self, idx : tuple[int, int], quantity : _QuantityType):
         """
         Removes a resource from the map. If the final quantity is less than 0, the resource is removed entirely.
         If `quantity` <= 0, then subtraction is ignored. Assumes `idx` is correct.
@@ -60,7 +62,7 @@ class ResourceMap:
 
         return Resource(r, q - new_q)
     
-    def get(self, idx : tuple[int, int]) -> tuple[int, float]:
+    def get(self, idx : tuple[int, int]) -> tuple[int, _QuantityType]:
         """
         Returns a tuple of the resource type and quantity. Assumes `idx` is correct.
         """
@@ -80,13 +82,13 @@ class ResourceMap:
         """
         return self._resource_quantity_map.copy()
 
-    def get_type(self, idx : tuple[int, int]):
+    def get_type(self, idx : tuple[int, int]) -> int:
         """
         Returns resource type at idx. Assumes `idx` is correct.
         """
         return self._resource_type_map[idx[0]][idx[1]]
 
-    def get_quantity(self, idx : tuple[int, int]):
+    def get_quantity(self, idx : tuple[int, int]) -> _QuantityType:
         """
         Returns resource quantity at idx. Assumes `idx` is correct.
         """
@@ -112,7 +114,7 @@ class MapGenerator(ABC):
     
     def generate(self, dims : tuple[int, int]) -> ResourceMap:
         resource_type_map = np.zeros(dims, dtype=np.int32)
-        resource_quantity_map = np.zeros(dims)
+        resource_quantity_map = np.zeros(dims, dtype = _QuantityType)
 
         return ResourceMap(resource_type_map=resource_type_map, resource_quantity_map=resource_quantity_map)
     
@@ -130,7 +132,7 @@ class RandomMapGenerator(MapGenerator):
                 for i in range(-clump_size, clump_size + 1):
                     for j in range(-clump_size, clump_size + 1):
                         if 0 <= x + i < dims[0] and 0 <= y + j < dims[1]:
-                            qty = max(np.random.normal(5, 2), 1)
+                            qty = _QuantityType(max(np.random.normal(5, 2), 1))
                             resource_map.add_resource((x + i, y + j), resource_type, qty)
 
         return resource_map
