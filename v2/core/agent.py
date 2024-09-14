@@ -61,20 +61,23 @@ class AgentSate:
         """
         Gets resources from the inventory. Mutates the inventory
         """
-        if resource_type in self.inventory: 
-            if self.inventory[resource_type] < qty: 
-                return 0 
+
+        if resource_type not in self.inventory: 
+            return 0
+        if self.inventory[resource_type] < qty: 
+            return 0 
             
-        self.inventory[resource_type] - qty  
+        self.inventory[resource_type] -= qty
         return qty
     
     def has_in_inventory(self, resource_type : _ResourceType, qty : _QuantityType ) -> bool:
         """
         Gets resources from the inventory.
         """
-        if resource_type in self.inventory: 
-            if self.inventory[resource_type] < qty: 
-                return False 
+        if resource_type not in self.inventory: 
+            return False 
+        if self.inventory[resource_type] < qty: 
+            return False 
             
         return True 
  
