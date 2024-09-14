@@ -32,31 +32,59 @@ class AgentSate:
     msgs: list[Message] = field(default_factory=lambda : [])
     current_mass_carried : float = 0
     
+    def reset(self):
+        """
+        Reset the state
+        """
+        self.current_energy = 0
+        self.inventory.clear()
+        self.relations.clear()
+        self.msgs.clear()
+        self.current_mass_carried = 0
+
     @property
     def can_move(self):
         return self.current_energy > 0
     
     def add_to_inventory(self, resource : Resource):
+        """
+        Add a resource to the inventory
+        """
         self.current_mass_carried += resource.quantity
         self.inventory.append(resource)
 
     def add_message(self, message : Message) : 
+        """
+        Add a message to the message buffer
+        """
         self.msgs.append(message)
 
     def clear_messages(self):
+        """
+        Clear all messages
+        """
         self.msgs.clear()
 
     def set_relation(self, agent : int, weight : float): 
+        """
+        Set the relation between this agent and the specified `agent`  to `weight`
+        """
         self.relations[agent] = weight
 
+    def get_relation(self, agent : int) -> float:
+        """
+        Get the relation between this agent and the specified `agent`. Defaults to 0
+        """
+        if agent in self.relations:
+            return self.relations[agent]
+        return 0
+
     def remove_relatioon(self, agent : int) : 
+        """
+        Remove a relation 
+        """
         self.relations.pop(agent)
 
-    def reset(self):
-        self.inventory.clear()
-        self.relations.clear()
-        self.msgs.clear()
-        self.current_mass_carried = 0
 
 class Agent:
     def __init__(self):
@@ -84,7 +112,7 @@ class Agent:
         Reset the agent
         """
         self._previous_position = None 
-        self._current_state. reset()
+        self._current_state.reset()
         self._current_state.current_energy = self._energy_capacity
 
     def move(self, dir : Direction | int):
@@ -212,7 +240,7 @@ class Agent:
         """
         Add a social relation between this agent and the one specified
         """
-        self._current_state.set_relation(agent_id, weight)
+        self._current_state.set_relation(agent_id, weight  + self._current_state.get_relation(agent_id))
 
     def reset_for_next_action(self):
         """
