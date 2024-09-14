@@ -7,4 +7,5 @@ from .message import *
 from .models import * 
 from .observation import *
 from .render import *
+from .resource import * 
 from .world import *

@@ -10,6 +10,8 @@ from .map import Resource
 from .message import * 
 from dataclasses import dataclass, field
 
+from .resource import Resource, _QuantityType, _ResourceType
+
 @dataclass
 class AgentSate:
     """
@@ -25,7 +27,7 @@ class AgentSate:
 
     current_energy : float = 0
     current_mass_carried : float = 0
-    inventory : list[Resource] = field(default_factory= lambda : [])
+    inventory : dict[_ResourceType, _QuantityType] = field(default_factory= lambda : {})
     relations : dict[int, int] = field(default_factory= lambda : {})
     msgs: list[Message] = field(default_factory=lambda : [])
     skills : np.ndarray | None = None 
@@ -50,8 +52,32 @@ class AgentSate:
         Add a resource to the inventory
         """
         self.current_mass_carried += resource.quantity
-        self.inventory.append(resource)
+        if resource.type in self.inventory:
+            self.inventory[resource.type] += resource.quantity
+        else: 
+            self.inventory[resource.type] = resource.quantity
 
+    def get_from_inventory(self, resource_type : _ResourceType, qty : _QuantityType ) -> _QuantityType:
+        """
+        Gets resources from the inventory. Mutates the inventory
+        """
+        if resource_type in self.inventory: 
+            if self.inventory[resource_type] < qty: 
+                return 0 
+            
+        self.inventory[resource_type] - qty  
+        return qty
+    
+    def has_in_inventory(self, resource_type : _ResourceType, qty : _QuantityType ) -> bool:
+        """
+        Gets resources from the inventory.
+        """
+        if resource_type in self.inventory: 
+            if self.inventory[resource_type] < qty: 
+                return False 
+            
+        return True 
+ 
     def add_message(self, message : Message) : 
         """
         Add a message to the message buffer
@@ -223,6 +249,17 @@ class Agent:
         """
         self._current_state.clear_messages() 
     
+    def add_relation(self, agent_id : int, weight : float):
+        """
+        Add a social relation between this agent and the one specified
+        """
+        self._current_state.set_relation(agent_id, weight  + self._current_state.get_relation(agent_id))
+
+    def make(self, prod : _ResourceType): 
+        """
+        Choose to make a product 
+        """
+        self._current_action.production_job = prod 
 
     def add_to_inventory(self, res : Resource) -> float:
         """
@@ -232,18 +269,22 @@ class Agent:
         excess_mass = max(0, current_carried + res.quantity - self._carrying_capacity)
         res.quantity = res.quantity - excess_mass
 
-        self._current_state.inventory.append(res)
+        self._current_state.add_to_inventory(res)
         return excess_mass
     
 
-    def get_inventory(self) -> list[Resource]:
-        return self._current_state.inventory
+    def get_from_inventory(self, type : _ResourceType, qty : _QuantityType) -> _QuantityType:
+        """
+        Get a product from the inventory. Update the inventory.
+        """
+        return self._current_state.get_from_inventory(type, qty)
+    
+    def has_in_inventory(self, type : _ResourceType, qty : _QuantityType) -> bool: 
+        """
+        Check if the agent has the specified product in the specified amount
+        """
+        return self._current_state.has_in_inventory(type, qty)
 
-    def add_relation(self, agent_id : int, weight : float):
-        """
-        Add a social relation between this agent and the one specified
-        """
-        self._current_state.set_relation(agent_id, weight  + self._current_state.get_relation(agent_id))
 
     def reset_for_next_action(self):
         """

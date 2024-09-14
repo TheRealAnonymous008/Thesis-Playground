@@ -13,7 +13,8 @@ class World:
                  dims : tuple[int, int],
                  swarm_initialzier : Callable, 
                  resource_generator : MapGenerator,
-                 energy_model : EnergyModel = None
+                 energy_model : EnergyModel = None,
+                 chemistry_model : ChemistryModel = None,
         ):
         """
         `dims`: Dimensions of the world (x, y) form.
@@ -29,6 +30,7 @@ class World:
         self._resource_generator : MapGenerator = resource_generator
 
         self._energy_model : EnergyModel | None = energy_model
+        self._chemistry_model : ChemistryModel | None = chemistry_model
         self.reset()
 
     def reset(self):
@@ -125,6 +127,9 @@ class World:
                         self._resource_map.add_resource(pos, resource.type, qty)
 
                 pos -= dir_action
+
+            elif action.production_job != None and self._chemistry_model != None: 
+                self._chemistry_model.forward(agent, action.production_job)
 
 
     def _get_nearby_agents(self, agent: Agent, visibility_range: int) -> np.ndarray:

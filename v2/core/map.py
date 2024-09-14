@@ -1,21 +1,11 @@
 from __future__ import annotations
-from dataclasses import dataclass
 
 from enum import Enum
 import numpy as np
 from abc import ABC 
 from .env_params import RESOURCE_TYPES
 
-_QuantityType = int
-
-@dataclass
-class Resource: 
-    """
-    Dataclass for resources. A resource holds a `type` andn `quantity`
-    """
-    type : int 
-    quantity : _QuantityType
-
+from .resource import Resource, _QuantityType, _ResourceType
 
 class ResourceMap:
     """
