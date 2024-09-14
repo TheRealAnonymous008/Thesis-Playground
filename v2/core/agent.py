@@ -234,6 +234,10 @@ class Agent:
 
         self._current_state.inventory.append(res)
         return excess_mass
+    
+
+    def get_inventory(self) -> list[Resource]:
+        return self._current_state.inventory
 
     def add_relation(self, agent_id : int, weight : float):
         """

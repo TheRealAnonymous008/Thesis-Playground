@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 import numpy as np
 from abc import ABC 
+from .env_params import RESOURCE_TYPES
 
 _QuantityType = int
 
@@ -109,7 +110,7 @@ class ResourceMap:
         return self._resource_type_map.shape
     
 class MapGenerator(ABC):
-    def __init__(self, resource_types = 5):
+    def __init__(self, resource_types = RESOURCE_TYPES):
         self.resource_types = resource_types
     
     def generate(self, dims : tuple[int, int]) -> ResourceMap:

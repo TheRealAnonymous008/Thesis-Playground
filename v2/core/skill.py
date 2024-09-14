@@ -1,11 +1,12 @@
 from __future__ import annotations
 from abc import ABC 
 from .agent import Agent
+from .env_params import * 
 
 import numpy as np 
 
 class BaseSkillInitializer(ABC):
-    def __init__(self, num_skills = 4): 
+    def __init__(self, num_skills = PRODUCT_TYPES): 
         self._num_skills =  num_skills
     
     def forward(self, agent : Agent ):
