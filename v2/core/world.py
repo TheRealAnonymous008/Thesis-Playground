@@ -112,7 +112,8 @@ class World:
         for agent in agents:
             action : ActionInformation = agent.action
             if action.pick_up != None: 
-                pos = agent.current_position
+                # Note: We carefully undo the adding of dir_action to pos
+                pos = agent.current_position_const 
                 dir_action = Direction.get_direction_of_movement(action.pick_up)
 
                 pos += dir_action
@@ -123,18 +124,19 @@ class World:
                         qty = agent.add_to_inventory(resource)
                         self._resource_map.add_resource(pos, resource.type, qty)
 
+                pos -= dir_action
+
 
     def _get_nearby_agents(self, agent: Agent, visibility_range: int) -> np.ndarray:
         """
         Gets all agents nearby using the visibility range. 
         """
         x, y = agent.current_position_const
-        x_min, x_max = max(0, x - visibility_range), min(self._dims[0], x + visibility_range + 1)
-        y_min, y_max = max(0, y - visibility_range), min(self._dims[1], y + visibility_range + 1)
+        x_min, x_max, y_min, y_max = max(0, x - visibility_range), min(self._dims[0], x + visibility_range + 1), \
+              max(0, y - visibility_range), min(self._dims[1], y + visibility_range + 1)
 
         # We assume the world state is final and will not change 
         observation = self._world_state[x_min:x_max, y_min:y_max]
-        observation[x - x_min, y - y_min] = 0
         return observation
 
     def _get_nearby_resources(self, agent : Agent, visibility_range : int) -> np.ndarray:
@@ -142,8 +144,8 @@ class World:
         Gets all resources nearby using the visibility range. 
         """
         x, y = agent.current_position_const
-        x_min, x_max = max(0, x - visibility_range), min(self._dims[0], x + visibility_range + 1)
-        y_min, y_max = max(0, y - visibility_range), min(self._dims[1], y + visibility_range + 1)
+        x_min, x_max, y_min, y_max = max(0, x - visibility_range), min(self._dims[0], x + visibility_range + 1), \
+              max(0, y - visibility_range), min(self._dims[1], y + visibility_range + 1)
 
         # We assume the resource grid is final and will not change 
         observation = self._resource_grid[x_min:x_max, y_min:y_max]

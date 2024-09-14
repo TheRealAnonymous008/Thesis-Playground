@@ -231,7 +231,7 @@ class Agent:
         """
         Returns a list of id's of all visible agents.
         """
-        return self._current_observation.neighbors
+        return self._current_observation.neighbors(self._id)
 
     @property
     def local_observation(self) -> LocalObservation:

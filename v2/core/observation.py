@@ -19,11 +19,10 @@ class LocalObservation:
     nearby_agents : np.ndarray
     resource_types : np.ndarray 
     
-    @property
-    def neighbors(self) -> np.ndarray[int]:
+    def neighbors(self, id : int) -> list[int]:
         """
-        Returns a list of id's of all communicable agents 
+        Returns a list of id's of all communicable agents (defined as being adjacent to the agent)
         """
-        center_x, center_y = self.nearby_agents.shape[0] // 2, self.nearby_agents.shape[1] // 2
-        surrounding = self.nearby_agents[center_x-1:center_x+2, center_y-1:center_y+2]
-        return surrounding[surrounding != 0].flatten().tolist()
+        center_x, center_y = (s // 2 for s in self.nearby_agents.shape)
+        surrounding = self.nearby_agents[center_x-1:center_x+2, center_y-1:center_y+2].ravel()
+        return [val for val in surrounding if val != 0 and val != id]

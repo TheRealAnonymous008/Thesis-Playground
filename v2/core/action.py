@@ -12,21 +12,17 @@ class Direction(Enum):
 
     @staticmethod
     def get_direction_of_movement(dir : Direction):
-        match(dir.value):
-            case Direction.NORTH.value: 
-                return np.array([0, -1])
+        try:
+            return np.array(DIRECTION_MAP[dir])
+        except KeyError:
+            raise ValueError(f"Invalid direction specified: {dir}")
 
-            case Direction.SOUTH.value: 
-                return np.array([0, 1])
-
-            case Direction.EAST.value: 
-                return np.array([1, 0])
-            
-            case Direction.WEST.value:
-                return np.array([-1, 0])
-
-            case _: 
-                raise Exception(f"Invalid direction specified {dir}")
+DIRECTION_MAP = {
+    Direction.NORTH: [0, -1],
+    Direction.SOUTH: [0, 1],
+    Direction.EAST: [1, 0],
+    Direction.WEST: [-1, 0]
+}
 
 @dataclass
 class ActionInformation:
@@ -41,10 +37,10 @@ class ActionInformation:
 
     `put_down` - action corresponding to putting an item in the inventory down 
     """
-    movement : Direction = None
+    movement : Direction | None = None
     moved_successfully : bool = False
-    pick_up : Direction = None 
-    put_down : Direction = None 
+    pick_up : Direction | None = None 
+    put_down : Direction | None = None 
 
     def reset(self):
         self.movement = None
