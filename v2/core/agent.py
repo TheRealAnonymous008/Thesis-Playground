@@ -7,12 +7,8 @@ from .observation import LocalObservation
 
 from .action import *
 from .map import Resource
+from .message import * 
 from dataclasses import dataclass, field
-
-@dataclass
-class Message: 
-    sender : int = 0
-    message : int = 0
 
 @dataclass
 class AgentSate:
@@ -20,17 +16,19 @@ class AgentSate:
     Contains attributes and misc. information about an agent's internal state.
 
     `current_energy` - current energy of the agent
+    `current_mass_carried` = the total mass being carried by the agent at the moment .
     `inventory` - current agent inventory
     `relations` - dictionary mapping agent ids to agent relations
     `msgs` - the current message buffer
-    `current_mass+_carried` = the total mass being carried by the agent at the moment .
+    `skill` - the vector representing the skill of the agent. Must be initialized.
     """
 
     current_energy : float = 0
+    current_mass_carried : float = 0
     inventory : list[Resource] = field(default_factory= lambda : [])
     relations : dict[int, int] = field(default_factory= lambda : {})
     msgs: list[Message] = field(default_factory=lambda : [])
-    current_mass_carried : float = 0
+    skills : np.ndarray | None = None 
     
     def reset(self):
         """
@@ -41,6 +39,7 @@ class AgentSate:
         self.relations.clear()
         self.msgs.clear()
         self.current_mass_carried = 0
+        self.skills  = None 
 
     @property
     def can_move(self):
