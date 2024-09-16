@@ -2,6 +2,7 @@ import numpy as np
 from enum import Enum
 
 from .agent import Agent
+from .utility import UtilityFunction
 from .action import *
 
 from .env_params import * 
@@ -100,3 +101,14 @@ class ChemistryModel:
         for t, q in recipe.requirements.items():
             agent.get_from_inventory(t, q)
         agent.add_to_inventory(Resource(recipe.tgt_prod, recipe.tgt_qty))
+
+
+
+TOTAL_FEATURES = PRODUCT_TYPES + RESOURCE_TYPES
+class UtilitySampler:
+    def __init__(self, dims = TOTAL_FEATURES ):
+        self.dims = dims 
+    
+    def forward(self, agent : Agent): 
+        params = np.random.normal(0, 1, self.dims)
+        agent.set_utility(UtilityFunction(params))
