@@ -111,4 +111,5 @@ class UtilitySampler:
     
     def forward(self, agent : Agent): 
         params = np.random.normal(0, 1, self.dims)
-        agent.set_utility(UtilityFunction(params))
+        bias = np.random.normal(-2, 2)
+        agent.set_utility(UtilityFunction(params, bias))
