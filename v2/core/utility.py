@@ -11,7 +11,7 @@ class UtilityFunction:
     Models the utility function of a specific agent
     """
     def __init__(self, params : np.ndarray): 
-        self.params =  np.ndarray = params 
+        self.params : np.ndarray = params 
 
     def forward(self, state : AgentState) -> _UtilityType:
         """
