@@ -15,12 +15,11 @@ class UtilityFunction:
 
     def forward(self, state : AgentState) -> _UtilityType:
         """
-        Calculates the utility given the current agent state
+        Calculates the utility given the current agent state. Mutates the agent's current utility 
         """
-        u : float = 0
-        for i in range(self.params.shape[0]): 
-            u += state.get_qty_in_inventory(i)
-        state.current_utility = u        
+        utility = np.zeros_like(self.params)
+        utility[list(state.inventory.keys())] = list(state.inventory.values())
+        state.current_utility = self.params.dot(utility)
 
     def update(self):
         """

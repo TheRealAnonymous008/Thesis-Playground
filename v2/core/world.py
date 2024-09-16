@@ -154,7 +154,6 @@ class World:
 
         # We assume the resource grid is final and will not change 
         observation = self._resource_grid[x_min:x_max, y_min:y_max]
-        observation[x - x_min, y - y_min] = 0
         return observation
 
     # Functionalities  

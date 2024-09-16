@@ -33,6 +33,7 @@ class AgentState:
     msgs: list[Message] = field(default_factory=lambda : [])
     skills : np.ndarray | None = None 
     
+    
     def reset(self):
         """
         Reset the state

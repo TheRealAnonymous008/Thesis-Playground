@@ -42,6 +42,12 @@ class Agent:
         self._current_state.reset()
         self._current_state.current_energy = self._energy_capacity
 
+    def update(self):
+        """
+        Update the agent's state
+        """
+        pass 
+
     def move(self, dir : Direction | int):
         """
         Moves an agent along a specified direction. 
