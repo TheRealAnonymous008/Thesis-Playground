@@ -40,13 +40,14 @@ class CustomGymEnviornment(ParallelEnv):
         self._world = world
         self._time_step_upper = time_step_upper
 
-    def reset(self, seed):
+    def reset(self, seed = 42, options = None):
         """
         Reset the environemnt. Returns observation and infos
         """
         np.random.seed(seed)
         self._world.reset()
-        self.agents : list[int] = self._world.agent_aliases
+        self.agents : list[Agent] = self._world.agents
+        self.possible_agents = copy(self.agents)
         
         # Observations
         self._world.update()
@@ -65,20 +66,21 @@ class CustomGymEnviornment(ParallelEnv):
         `action` key, values correspond to agent ids and action codes.
         """
         for agent_id, action in actions.items():
-            agent = self._world.get_agent(agent_id)
+            # agent = self._world.get_agent(agent_id)
+            agent = agent_id
             take_action(action, agent)
         
         self._world.update()
         terminations = {a: False for a in self.agents}
         rewards = {a: 0 for a in self.agents}           # TODO: Modify this 
+        observations = self.get_observations()
+        infos = {a : {} for a in self.agents}
 
         if self._world._time_step > self._time_step_upper:
             truncations = {a : True for a in self.agents}
+            self.agents= []
         else: 
             truncations = {a: False for a in self.agents}
-
-        observations = self.get_observations()
-        infos = {a : {} for a in self.agents}
 
         return observations, rewards, terminations, truncations, infos
 
@@ -90,13 +92,13 @@ class CustomGymEnviornment(ParallelEnv):
         render_world(self._world, (800, 800), update_fn=update, delay_s=0)
 
     @functools.lru_cache(maxsize=None)
-    def observation_space(self, agent : Agent) -> Space:
+    def observation_space(self, agent_id : int) -> Space:
         """
         Return the observation space of the agent 
         """
         
         # Each agent should know its agent state in some way 
-        
+        agent = agent_id
         return Dict({
             "vision" : Box(0, self._world.total_resource_types, (2 * agent._visibility_range + 1, 2 * agent._visibility_range + 1))
         })
@@ -109,16 +111,16 @@ class CustomGymEnviornment(ParallelEnv):
         }
         return observations
 
-    def get_observation(self, agent : int): 
+    def get_observation(self, agent : Agent): 
         """
         Returns a dictionary of agent observations
         """
         return {
-            "vision" : self._world.get_agent(agent).local_observation.resource_types
+            "vision" : agent.local_observation.resource_types
         }
     
     @functools.lru_cache(maxsize=None)
-    def action_space(self, agent : Agent):
+    def action_space(self, agent : int):
         """
         Return the action space of the agent 
         """
