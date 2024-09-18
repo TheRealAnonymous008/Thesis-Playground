@@ -6,6 +6,7 @@ from .agent import Agent
 from .observation import LocalObservation
 from .action import ActionInformation, Direction
 from .map import MapGenerator, ResourceMap, Resource
+from .env_params import MAX_VISIBILITY
 from .models import *
 
 class World: 
@@ -15,6 +16,7 @@ class World:
                  resource_generator : MapGenerator,
                  energy_model : EnergyModel = None,
                  chemistry_model : ChemistryModel = None,
+                 max_Visibility  : int = MAX_VISIBILITY,
         ):
         """
         `dims`: Dimensions of the world (x, y) form.
@@ -31,6 +33,7 @@ class World:
 
         self._energy_model : EnergyModel | None = energy_model
         self._chemistry_model : ChemistryModel | None = chemistry_model
+        self._max_visibility : int = max_Visibility
         self.reset()
 
     def reset(self):
@@ -42,9 +45,9 @@ class World:
         self._nagents = 0
 
         # Generate a new resource map 
-        self._resource_map : ResourceMap  = self._resource_generator.generate(self._dims)
-        self._resource_grid = self._resource_map.type_map
-
+        self._resource_map, self._lower_extents, self._upper_extents = self._resource_generator.generate(self._dims)
+        # Apply padding to the resource grid on all axes
+        
         self._swarm_initializer(self)
 
         for agent in self.agents: 
@@ -62,7 +65,6 @@ class World:
         # Get the current world state
         self._world_state = self._get_world_state()
         self._resource_grid = self._resource_map._resource_type_map
-
         # Update any models that we have
         if self._energy_model != None: 
             for agent in agents:
@@ -137,23 +139,23 @@ class World:
         Gets all agents nearby using the visibility range. 
         """
         x, y = agent.current_position_const
-        x_min, x_max, y_min, y_max = max(0, x - visibility_range), min(self._dims[0], x + visibility_range + 1), \
-              max(0, y - visibility_range), min(self._dims[1], y + visibility_range + 1)
+        x_min, x_max = max(0, x - visibility_range), min(self._dims[0], x + visibility_range + 1)
+        y_min, y_max = max(0, y - visibility_range), min(self._dims[1], y + visibility_range + 1)
 
-        # We assume the world state is final and will not change 
+        # We assume the resource grid is final and will not change 
         observation = self._world_state[x_min:x_max, y_min:y_max]
+
         return observation
 
     def _get_nearby_resources(self, agent : Agent, visibility_range : int) -> np.ndarray:
         """
         Gets all resources nearby using the visibility range. 
         """
-        x, y = agent.current_position_const
-        x_min, x_max, y_min, y_max = max(0, x - visibility_range), min(self._dims[0], x + visibility_range + 1), \
-              max(0, y - visibility_range), min(self._dims[1], y + visibility_range + 1)
+        x, y = self._resource_map.translate_idx(agent.current_position_const)
 
         # We assume the resource grid is final and will not change 
-        observation = self._resource_grid[x_min:x_max, y_min:y_max]
+        observation = self._resource_grid[x - visibility_range: x + visibility_range + 1, y - visibility_range : y + visibility_range + 1]
+
         return observation
 
     # Functionalities  
@@ -221,6 +223,10 @@ class World:
         Returns the number of cells in the world
         """
         return self._dims[0] * self._dims[1]
+    
+    @property
+    def total_resource_types(self) -> int: 
+        return self._resource_generator.resource_types
     
 def initialize_positions_randomly(world: World, swarm: list[Agent]):
     positions : list[tuple[int, int]] = []

@@ -31,8 +31,9 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
 
     def draw_resources():
         resource_map = world.resource_map
-        for x in range(resource_map.shape[0]):
-            for y in range(resource_map.shape[1]):
+        x0, y0 = resource_map.shape
+        for x in range(0, x0):
+            for y in range(0, y0):
                 resource_type, _ = resource_map.get((x, y))
                 if resource_type > 0:
                     color = (resource_type * 40, 100, 100)  # Assign color based on resource type
