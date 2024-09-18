@@ -38,7 +38,12 @@ class CustomGymEnviornment(ParallelEnv):
         """
 
         self._world = world
-        self._time_step_upper = time_step_upper
+        self._max_time_steps = time_step_upper
+        
+        self.render_mode = None
+        self.metadata = {
+            "name" : "thesis"
+        }
 
     def reset(self, seed = 42, options = None):
         """
@@ -46,7 +51,7 @@ class CustomGymEnviornment(ParallelEnv):
         """
         np.random.seed(seed)
         self._world.reset()
-        self.agents : list[Agent] = self._world.agents
+        self.agents : list[str] = self._world.agent_aliases
         self.possible_agents = copy(self.agents)
         
         # Observations
@@ -66,8 +71,7 @@ class CustomGymEnviornment(ParallelEnv):
         `action` key, values correspond to agent ids and action codes.
         """
         for agent_id, action in actions.items():
-            # agent = self._world.get_agent(agent_id)
-            agent = agent_id
+            agent = self._world.get_agent(agent_id)
             take_action(action, agent)
         
         self._world.update()
@@ -76,7 +80,7 @@ class CustomGymEnviornment(ParallelEnv):
         observations = self.get_observations()
         infos = {a : {} for a in self.agents}
 
-        if self._world._time_step > self._time_step_upper:
+        if self.is_finished:
             truncations = {a : True for a in self.agents}
             self.agents= []
         else: 
@@ -98,7 +102,7 @@ class CustomGymEnviornment(ParallelEnv):
         """
         
         # Each agent should know its agent state in some way 
-        agent = agent_id
+        agent = self._world.get_agent(agent_id)
         return Dict({
             "vision" : Box(0, self._world.total_resource_types, (2 * agent._visibility_range + 1, 2 * agent._visibility_range + 1))
         })
@@ -111,10 +115,11 @@ class CustomGymEnviornment(ParallelEnv):
         }
         return observations
 
-    def get_observation(self, agent : Agent): 
+    def get_observation(self, agent_id : int): 
         """
         Returns a dictionary of agent observations
         """
+        agent = self._world.get_agent(agent_id)
         return {
             "vision" : agent.local_observation.resource_types
         }
@@ -131,3 +136,7 @@ class CustomGymEnviornment(ParallelEnv):
         # 8 - 11 - PUT_DOWN  N / S / E / W
 
         return Discrete(12)
+    
+    @property
+    def is_finished(self):
+        return self._world._time_step > self._max_time_steps

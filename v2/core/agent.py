@@ -223,7 +223,7 @@ class Agent:
         """
         Returns a list of id's of all visible agents.
         """
-        return self._current_observation.neighbors(self._id)
+        return self._current_observation.neighbors(self.id)
 
     @property
     def local_observation(self) -> LocalObservation:
@@ -236,10 +236,10 @@ class Agent:
         """
         Set the agent's ID to be that of the ID assigned to it by the world
         """
-        self._id = world_id
+        self._id = str(world_id)
 
     @property
-    def id(self) -> int:
+    def id(self) -> str:
         """
         Return the ID of this agent in the world
         """

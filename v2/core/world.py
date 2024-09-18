@@ -211,7 +211,7 @@ class World:
         return list(self._agents.values())
     
     @property 
-    def agent_aliases(self) -> list[Agent]: 
+    def agent_aliases(self) -> list[int]: 
         """
         Returns a list of all the agent ids
         """
