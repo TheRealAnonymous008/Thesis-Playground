@@ -29,24 +29,59 @@ def take_action(action_code : int, agent : Agent):
         case _ : pass # Do nothing, placeholder for now.
 
 class CustomGymEnviornment(ParallelEnv):
-    def __init__(self, world : World):
+    def __init__(self, world : World, time_step_upper = 100):
         """
         Define the initial parameters of the environment
 
         `world` is an instance of the environment simulation
+        `time_step_upper` dictates the truncation time step
         """
 
         self._world = world
+        self._time_step_upper = time_step_upper
 
     def reset(self, seed):
         """
-        Reset the environemnt
+        Reset the environemnt. Returns observation and infos
         """
+        np.random.seed(seed)
+        self._world.reset()
+        self.agents : list[int] = self._world.agent_aliases
+        
+        # Observations
+        self._world.update()
+        observations = self.get_observations()
+        infos = {
+            a : {}
+            for a in self.agents 
+        }
+
+        return observations, infos
     
-    def step(self, action):
+    def step(self, actions : dict[int, int]):
         """
         Take an action for the current agent 
+
+        `action` key, values correspond to agent ids and action codes.
         """
+        for agent_id, action in actions.items():
+            agent = self._world.get_agent(agent_id)
+            take_action(action, agent)
+        
+        self._world.update()
+        terminations = {a: False for a in self.agents}
+        rewards = {a: 0 for a in self.agents}           # TODO: Modify this 
+
+        if self._world._time_step > self._time_step_upper:
+            truncations = {a : True for a in self.agents}
+        else: 
+            truncations = {a: False for a in self.agents}
+
+        observations = self.get_observations()
+        infos = {a : {} for a in self.agents}
+
+        return observations, rewards, terminations, truncations, infos
+
 
     def render(self, update : callable):
         """
@@ -66,6 +101,21 @@ class CustomGymEnviornment(ParallelEnv):
             "vision" : Box(0, self._world.total_resource_types, (2 * agent._visibility_range + 1, 2 * agent._visibility_range + 1))
         })
 
+    
+    def get_observations(self):
+        observations = { 
+            a : self.get_observation(a)
+            for a in self.agents 
+        }
+        return observations
+
+    def get_observation(self, agent : int): 
+        """
+        Returns a dictionary of agent observations
+        """
+        return {
+            "vision" : self._world.get_agent(agent).local_observation.resource_types
+        }
     
     @functools.lru_cache(maxsize=None)
     def action_space(self, agent : Agent):

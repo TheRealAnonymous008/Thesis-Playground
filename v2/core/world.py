@@ -210,6 +210,13 @@ class World:
         """
         return list(self._agents.values())
     
+    @property 
+    def agent_aliases(self) -> list[Agent]: 
+        """
+        Returns a list of all the agent ids
+        """
+        return list(self._agents.keys())
+    
     @property
     def resource_map(self) -> ResourceMap:
         """
