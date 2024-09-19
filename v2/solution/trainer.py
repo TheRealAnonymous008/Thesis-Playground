@@ -16,8 +16,7 @@ def train_loop(_env : CustomGymEnviornment, games : int = 100, seed : int = 0):
     Train an agent for run_count number of games (no. of iters per game is dictated by env)
     """
     env = copy.deepcopy(_env)
-    print("This ran")
-    print(f"Starting training on {str(env.metadata['name'])}.")
+    print(f"Training on {str(env.metadata['name'])}.")
     env.reset(seed=seed)
     env = ss.pad_action_space_v0(env)
     env = ss.pettingzoo_env_to_vec_env_v1(env)
@@ -30,7 +29,6 @@ def train_loop(_env : CustomGymEnviornment, games : int = 100, seed : int = 0):
         batch_size=256,
     )
     steps = games * _env._max_time_steps
-    print(steps)
     steps_per_checkpt = 100
     checkpts = int(steps / steps_per_checkpt)
 

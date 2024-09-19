@@ -12,12 +12,14 @@ from .resource import Resource, _QuantityType, _ResourceType
 from .utility import UtilityFunction
 from .agent_state import AgentState
 
+_IdType = str
+
 class Agent:
     def __init__(self):
         """
         Initializes a simple agent 
         """
-        self._id = -1
+        self._id : _IdType = "-1"
 
         self._previous_position : np.ndarray[int] | None = None 
         self._current_position : np.ndarray[int] | None =  None 
@@ -157,7 +159,7 @@ class Agent:
         """
         self._current_state.clear_messages() 
     
-    def add_relation(self, agent_id : int, weight : float):
+    def add_relation(self, agent_id : _IdType, weight : float):
         """
         Add a social relation between this agent and the one specified
         """
@@ -219,7 +221,7 @@ class Agent:
         self._utility_function.forward(self._current_state)
 
     @property
-    def agents_in_range(self) -> list[int]:
+    def agents_in_range(self) -> list[_IdType]:
         """
         Returns a list of id's of all visible agents.
         """
@@ -239,14 +241,14 @@ class Agent:
         self._id = str(world_id)
 
     @property
-    def id(self) -> str:
+    def id(self) -> _IdType:
         """
         Return the ID of this agent in the world
         """
         return self._id 
 
     def __hash__(self) -> int:
-        return self._id
+        return int(self._id)
 
     def set_position(self, position : np.array):
         """
