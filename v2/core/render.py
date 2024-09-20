@@ -5,6 +5,9 @@ from typing import Callable
 from .world import World
 
 def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update_fn: Callable | None = None, delay_s: float = 1):
+    """
+    Renders a given scenario
+    """
     pygame.init()
 
     screen = pygame.display.set_mode(screen_size)

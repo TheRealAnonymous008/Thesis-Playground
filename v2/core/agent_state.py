@@ -16,13 +16,13 @@ class AgentState:
     """
     Contains attributes and misc. information about an agent's internal state.
 
-    `current_energy` - current energy of the agent
-    `current_utility` - currently calculated utility. If None, utility was not calculated. 
-    `current_mass_carried` = the total mass being carried by the agent at the moment .
-    `inventory` - current agent inventory
-    `relations` - dictionary mapping agent ids to agent relations
-    `msgs` - the current message buffer
-    `skill` - the vector representing the skill of the agent. Must be initialized.
+    :param current_energy: Current energy of the agent
+    :param current_utility:  Currently calculated utility. If None, utility was not calculated. 
+    :param current_mass_carried: The total mass being carried by the agent at the moment .
+    :param inventory:  Current agent inventory
+    :param relations:  Dictionary mapping agent ids to agent relations
+    :param msgs:  The current message buffer
+    :param skill: The vector representing the skill of the agent. Must be initialized.
     """
 
     current_energy : float = 0

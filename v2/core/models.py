@@ -39,10 +39,10 @@ class Recipe:
     """
     Data class holding info about how products can be made
 
-    `tgt_prod` - what is being made
-    `tgt_qty` - how much will be made
-    `time` - how long will it take
-    `requirements` - what are needed to make the product
+    :param tgt_prod: What is being made
+    :param tgt_qty: How much will be made
+    :param time: How long will it take
+    :param requirements: What are needed to make the product
     """
     tgt_prod : _ResourceType = 0 
     tgt_qty : _QuantityType = 1
@@ -58,6 +58,9 @@ class ChemistryModel:
         Model for making products. 
 
         Note that we treat products as another form of resource
+
+        :param resource_types: Number of resource types possible in the environment
+        :param product_types: Number of possible products in the environment 
         """
         self.resource_types = resource_types
         self.product_types = product_types

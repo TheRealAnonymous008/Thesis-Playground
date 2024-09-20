@@ -10,16 +10,24 @@ from .env_params import MAX_VISIBILITY
 from .models import *
 
 class World: 
+    """
+    Class responsible for simulating the environemnt .
+    """
     def __init__(self, 
                  dims : tuple[int, int],
                  swarm_initialzier : Callable, 
                  resource_generator : MapGenerator,
                  energy_model : EnergyModel = None,
                  chemistry_model : ChemistryModel = None,
-                 max_Visibility  : int = MAX_VISIBILITY,
+                 max_visibility  : int = MAX_VISIBILITY,
         ):
         """
-        `dims`: Dimensions of the world (x, y) form.
+        :param dims: The dimensions of the world.
+        :param swarm_initializer: A function to initialize a swarm of agents.
+        :param resource_generator: A generator for resources.
+        :param energy_model: A model for energy consumption and emission for each agent.
+        :param chemistry_model: A model for how products are made.
+        :param max_visibilityL At most how far can agents see.
         """
         if dims[0] <= 0 or dims[1] <= 0:
             raise Exception(f"Incorrect dimensions {dims}")
@@ -33,7 +41,7 @@ class World:
 
         self._energy_model : EnergyModel | None = energy_model
         self._chemistry_model : ChemistryModel | None = chemistry_model
-        self._max_visibility : int = max_Visibility
+        self._max_visibility : int = max_visibility
         self.reset()
 
     def reset(self):

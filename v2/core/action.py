@@ -44,13 +44,10 @@ class ActionInformation:
 
     If the value is None, then that action was not taken 
 
-    `movement` - action correpsonding to motion on the world
-
-    `pick_up` - action corresponding to picking up an object in the world
-
-    `put_down` - action corresponding to putting an item in the inventory down 
-
-    `production_job` - product to make at the moment
+    :param movement: Action correpsonding to motion on the world
+    :pick_up: Action corresponding to picking up an object in the world
+    :put_down:  Action corresponding to putting an item in the inventory down 
+    :production_job:  Product to make at the moment
     """
     movement : Direction | None = None
     moved_successfully : bool = False

@@ -10,12 +10,13 @@ from .resource import Resource, _QuantityType, _ResourceType
 class ResourceMap:
     """
     Class for holding information on the resources of a map
-    
-    `resource_type` - holds resource type information.
-
-    `resource_quantity` - holds the quantity of resource in a tile.
     """
     def __init__(self, resource_type_map : np.ndarray[int], resource_quantity_map : np.ndarray[_QuantityType], padding : int):
+        """    
+        :param resource_type:  Holds resource type information.
+        :param resource_quantity:  Holds the quantity of resource in a tile.
+        :param padding: How much padding to place on each side. It is recommended to match the padding with the maximum visible range of the agents in the environment
+        """
         if resource_quantity_map.shape != resource_quantity_map.shape:
             raise Exception(f"Error: Resource Type and Quantity Maps should have the same shape. Got {resource_type_map.shape} and {resource_quantity_map.shape} respectively")
         
@@ -112,11 +113,21 @@ class ResourceMap:
     
 
 class MapGenerator(ABC):
+    """
+    Base class for generating resource maps.
+    """
     def __init__(self, resource_types = RESOURCE_TYPES, padding = MAX_VISIBILITY):
+        """
+        :param resource_types: How many resource types to place in the world.
+        :param padding: How much padding to place on each side. It is recommended to match the padding with the maximum visible range of the agents in the environment
+        """
         self.resource_types = resource_types
         self.padding = padding
     
     def generate(self, dims : tuple[int, int]) -> tuple[ResourceMap, tuple[int, int], tuple[int, int]]:
+        """
+        Generate a resource map. Derived classes should extend this method.
+        """
         resource_type_map = np.zeros(dims, dtype=np.int32)
         resource_quantity_map = np.zeros(dims, dtype = _QuantityType)
         resource_type_map = np.pad(resource_type_map, ((self.padding, self.padding), (self.padding, self.padding)), mode = "constant", constant_values=0 )
