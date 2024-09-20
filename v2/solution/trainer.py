@@ -22,7 +22,7 @@ def train_loop(env : CustomGymEnviornment, model : BaseModel, games : int = 100,
     checkpts = int(steps / steps_per_checkpt)
 
     for i in range(checkpts):
-        model = model.learn(total_timesteps=steps_per_checkpt)
+        model.learn(total_timesteps=steps_per_checkpt)
         model.save(f"{env.unwrapped.metadata.get('name')}_{time.strftime('%Y%m%d-%H%M%S')}")
         print("Model has been saved.")
 

@@ -92,12 +92,12 @@ class IDQN(BaseModel):
 
         for agent in agents : 
             # Compute Q(s_t, a)
-            state_action_values = self.policy_net(agent, states).gather(1, actions)
+            state_action_values = self.policy_net(agent, states).gather(1, actions[agent])
 
             # Compute V(s_{t+1}) using the target network
             with torch.no_grad():
-                next_state_values = self.target_net(next_states).max(1)[0].unsqueeze(1)
-                expected_state_action_values = (next_state_values * self.gamma * (1 - dones)) + rewards
+                next_state_values = self.target_net(agent, next_states).max(1)[0].unsqueeze(1)
+                expected_state_action_values = (next_state_values * self.gamma * (1 - dones[agent])) + rewards[agent]
 
             # Compute loss
             loss = self.loss_fn(state_action_values, expected_state_action_values)
@@ -108,7 +108,7 @@ class IDQN(BaseModel):
             self.optimizer.step()
 
         # Soft update the target network
-        self.soft_update(self.policy_net, self.target_net, self.tau)
+        self.soft_update()
 
     def soft_update(self):
         """

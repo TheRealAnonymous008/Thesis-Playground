@@ -24,7 +24,7 @@ class PolicyNet(nn.Module):
         self.fc1 = nn.Linear(conv_output_size, 128)
         self.fc2 = nn.Linear(128, num_actions)
 
-    def forward(self, idx : int, obs : dict[int, torch.Tensor]):
+    def forward(self, idx : int, obs : dict[int, torch.Tensor]) -> torch.Tensor:
         """
         Forward pass for the policy network.
 
@@ -34,7 +34,6 @@ class PolicyNet(nn.Module):
         :return: Q-values for each action
         """
         x = obs[idx]
-        
         # Pass through the convolutional layers
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
