@@ -130,8 +130,8 @@ class MapGenerator(ABC):
         """
         resource_type_map = np.zeros(dims, dtype=np.int32)
         resource_quantity_map = np.zeros(dims, dtype = _QuantityType)
-        resource_type_map = np.pad(resource_type_map, ((self.padding, self.padding), (self.padding, self.padding)), mode = "constant", constant_values=0 )
-        resource_quantity_map = np.pad(resource_quantity_map, ((self.padding, self.padding), (self.padding, self.padding)), mode = "constant", constant_values=0 )
+        resource_type_map = np.pad(resource_type_map, ((self.padding, self.padding), (self.padding, self.padding)), mode = "constant", constant_values=-1)
+        resource_quantity_map = np.pad(resource_quantity_map, ((self.padding, self.padding), (self.padding, self.padding)), mode = "constant", constant_values=-1)
 
         lower_extent = (self.padding ,self.padding)
         upper_extent = (dims[0] + self.padding, dims[1] + self.padding)

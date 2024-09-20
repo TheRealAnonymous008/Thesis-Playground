@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Callable
 
 import numpy as np
-from .agent import Agent
+from .agent import Agent, _IdType
 from .observation import LocalObservation
 from .action import ActionInformation, Direction
 from .map import MapGenerator, ResourceMap, Resource
@@ -175,7 +175,7 @@ class World:
         agent.bind_to_world(self._nagents)
         self._agents[agent.id] = agent
 
-    def get_agent(self, id : int) -> Agent:
+    def get_agent(self, id : _IdType) -> Agent:
         """
         Returns the agent with the given `id`
         """
