@@ -33,19 +33,23 @@ class PolicyNet(nn.Module):
 
         :return: Q-values for each action
         """
-        x = obs[idx]
-        # Pass through the convolutional layers
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
+        try: 
+            x = obs[idx]
+            # Pass through the convolutional layers
+            x = F.relu(self.conv1(x))
+            x = F.relu(self.conv2(x))
 
-        # Flatten the output from conv layers
-        x = x.view(x.size(0), -1)
+            # Flatten the output from conv layers
+            x = x.view(x.size(0), -1)
 
-        # Pass through fully connected layers
-        x = F.relu(self.fc1(x))
-        x = self.fc2(x)
+            # Pass through fully connected layers
+            x = F.relu(self.fc1(x))
+            x = self.fc2(x)
 
-        return x
+            return x
+        except:
+            print(obs.shape)
+            raise Exception("There's something wrong here")
 
 
 import torch

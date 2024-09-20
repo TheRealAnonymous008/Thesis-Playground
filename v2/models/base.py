@@ -64,7 +64,7 @@ class BaseModel:
         state, _ = self.env.reset()
         state = self.feature_extractor(state)
 
-        for _ in range(total_timesteps):
+        for t in range(total_timesteps):
             action = self.select_joint_action(state)
             next_state, reward, terminated, truncated, _ = self.env.step(action)
 
@@ -73,7 +73,7 @@ class BaseModel:
             next_state = self.feature_extractor(next_state)
             terminated = torch.tensor(list(terminated.values()), dtype = torch.bool)
             truncated = torch.tensor(list(truncated.values()), dtype = torch.bool) 
-            done = torch.logical_or(terminated, truncated).to(dtype = torch.int8)
+            done = torch.logical_or(terminated, truncated).to(dtype = torch.int8)       # Note that we need this to be int so that we can do some arithmetic with it.
 
             reward = torch.tensor(list(reward.values()), dtype = torch.float32)
 
@@ -87,6 +87,7 @@ class BaseModel:
             if done.all(): 
                 state, _ = self.env.reset()
                 state = self.feature_extractor(state)
+
         
 
     def select_joint_action(self, state : dict) -> dict:
@@ -97,8 +98,9 @@ class BaseModel:
         
         """
         actions = {}
+        state = self._flatten_agent_dict([state])
         for a, s in state.items():
-            action = self.select_action(a, s) 
+            action = self.select_action(a, state) 
             actions[a] = action
 
         return actions 
