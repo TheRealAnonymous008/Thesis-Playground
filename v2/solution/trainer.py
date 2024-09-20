@@ -10,7 +10,7 @@ import supersuit as ss
 from .custom_gym import CustomGymEnviornment
 import time
 
-from ..models.base import BaseModel
+from models.base import BaseModel
 
 def train_loop(_env : CustomGymEnviornment, model : BaseModel, games : int = 100, seed : int = 0):
     """

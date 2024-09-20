@@ -8,7 +8,9 @@ import torch.optim as optim
 import numpy as np
 import random
 
-T_Optimizer = optim.optimizer.Optimizer
+from typing import Type
+
+T_Optimizer = Type[optim.Optimizer]
 T_Loss = nn.modules.loss._Loss
 
 class BaseModel: 
@@ -22,7 +24,7 @@ class BaseModel:
                  buffer_size : int = 100000, 
                  batch_size : int = 64, 
                  gamma: float = 0.99, 
-                 optimizer : T_Optimizer = torch.optim.adam.Adam,
+                 optimizer : T_Optimizer = torch.optim.Adam,
                  loss_fn : T_Loss = nn.MSELoss(),
                  lr : float = 1e-3,
                  ):
@@ -55,6 +57,7 @@ class BaseModel:
         Learn for the specified number of time steps
         """
         state, _ = self.env.reset()
+        print(state)
         state = torch.tensor(state, dtype = torch.float32).unsqueeze(0) # Add batch dimension
 
         for t in range(total_timesteps):

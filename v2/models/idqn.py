@@ -1,7 +1,7 @@
 # Custom Implementation of the IDQN network 
 
 from torch._tensor import Tensor
-from base import *
+from .base import *
 
 class IDQN(BaseModel): 
     """
@@ -15,7 +15,7 @@ class IDQN(BaseModel):
                  buffer_size : int = 100000, 
                  batch_size : int = 64, 
                  gamma: float = 0.99, 
-                 optimizer : optim.optimizer.Optimizer = torch.optim.adam.Adam,
+                 optimizer : T_Optimizer = optim.Adam,
                  loss_fn : T_Loss = nn.MSELoss(),
                  lr : float = 1e-3,
                  tau: float = 1e-3,
