@@ -12,7 +12,7 @@ from .resource import Resource, _QuantityType, _ResourceType
 from .utility import UtilityFunction
 from .agent_state import AgentState
 
-_IdType = str
+_IdType = int
 
 class Agent:
     def __init__(self):
@@ -238,7 +238,7 @@ class Agent:
         """
         Set the agent's ID to be that of the ID assigned to it by the world
         """
-        self._id = str(world_id)
+        self._id = _IdType(world_id)
 
     @property
     def id(self) -> _IdType:

@@ -116,13 +116,30 @@ class BaseModel:
         experience_idxs = np.random.choice(len(self.rollout_buffer), size=self.batch_size)
 
         states = [self.rollout_buffer[e][0] for e in experience_idxs]
+        next_states = [self.rollout_buffer[e][3] for e in experience_idxs]
+
+        # Note that it is more appropriate to have the state dict such that it is keyed on agents and eeach value is an entire batch.
+        states = self._flatten_state_dict(states)
+        next_stats = self._flatten_state_dict(next_states)
+
         actions = [self.rollout_buffer[e][1] for e in experience_idxs]
         rewards = [self.rollout_buffer[e][2] for e in experience_idxs]
-        next_states = [self.rollout_buffer[e][3] for e in experience_idxs]
         dones = [self.rollout_buffer[e][4] for e in experience_idxs]
 
         return states, actions, rewards, next_states, dones
 
+    @staticmethod
+    def _flatten_state_dict(states : list[dict]):
+        """
+        Given a batch of states (in list form), returns a dictionary of states keyed on the agents
+        """
+        flattened_states = {}
+        for agent_id in states[0].keys():
+            agent_states = [state[agent_id] for state in states]
+            flattened_states[agent_id] = torch.stack(agent_states, dim=0)
+
+        return flattened_states
+    
     def optimize_model(self, experiences):
         """
         Perform a learning step: update the policy network using a batch of experiences.
