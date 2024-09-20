@@ -35,7 +35,7 @@ class World:
         self._dims : tuple[int, int] = dims
         self._world_grid = np.zeros(dims, dtype = np.int32)
 
-        self._agents : dict[int, Agent] = {}
+        self._agents : dict[_IdType, Agent] = {}
         self._swarm_initializer : Callable = swarm_initialzier
         self._resource_generator : MapGenerator = resource_generator
 
@@ -219,7 +219,7 @@ class World:
         return list(self._agents.values())
     
     @property 
-    def agent_aliases(self) -> list[int]: 
+    def agent_aliases(self) -> list[_IdType]: 
         """
         Returns a list of all the agent ids
         """

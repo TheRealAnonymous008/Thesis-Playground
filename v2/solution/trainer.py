@@ -12,18 +12,12 @@ import time
 
 from models.base import BaseModel
 
-def train_loop(_env : CustomGymEnviornment, model : BaseModel, games : int = 100, seed : int = 0):
+def train_loop(env : CustomGymEnviornment, model : BaseModel, games : int = 100, seed : int = 0):
     """
     Train an agent for run_count number of games (no. of iters per game is dictated by env)
     """
-    env = copy.deepcopy(_env)
     print(f"Training on {str(env.metadata['name'])}.")
-    env.reset(seed=seed)
-    env = ss.pad_action_space_v0(env)
-    env = ss.pettingzoo_env_to_vec_env_v1(env)
-    env = ss.concat_vec_envs_v1(env, 20, num_cpus=4, base_class="stable_baselines3")
-    env.reset()
-    steps = games * _env._max_time_steps
+    steps = games * env._max_time_steps
     steps_per_checkpt = 100
     checkpts = int(steps / steps_per_checkpt)
 

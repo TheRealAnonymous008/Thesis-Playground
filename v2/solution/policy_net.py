@@ -24,13 +24,17 @@ class PolicyNet(nn.Module):
         self.fc1 = nn.Linear(conv_output_size, 128)
         self.fc2 = nn.Linear(128, num_actions)
 
-    def forward(self, x):
+    def forward(self, idx : int, x : dict):
         """
         Forward pass for the policy network.
 
-        :param x: Input tensor of shape (batch_size, channels, grid_size, grid_size)
+        :param idx: the idx of the agent.
+        :param x: dictionary representing the joint observation
+
         :return: Q-values for each action
         """
+        x = torch.tensor(x[0][idx]["vision"], dtype = torch.float).unsqueeze(0)
+        
         # Pass through the convolutional layers
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))

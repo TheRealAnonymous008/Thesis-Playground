@@ -9,7 +9,7 @@ class IDQN(BaseModel):
     """
 
     def __init__(self, 
-                 env : Env, 
+                 env : CustomGymEnviornment, 
                  policy_net : nn.Module,
                  target_net : nn.Module,
                  buffer_size : int = 100000, 
@@ -67,18 +67,17 @@ class IDQN(BaseModel):
         self.epsilon = max(self.epsilon_end, self.epsilon_decay * self.epsilon)
 
 
-    def select_action(self, state) -> Tensor:
+    def select_action(self, agent_id : int, state : dict) -> Tensor:
         """
         Select an action following an epsilon greedy policy
         """
         sample = random.random()
-        eps_threshold = self.epsilon
-        if sample > eps_threshold:
+        if sample > self.epsilon:
             with torch.no_grad():
-                action_values = self.policy_net(state)
+                action_values = self.policy_net.forward(state)
                 return torch.argmax(action_values, dim=1)
         else:
-            return torch.tensor([self.env.action_space.sample()], dtype=torch.long)
+            return torch.tensor([self.env.action_space(agent_id).sample()], dtype=torch.long)
 
     def optimize_model(self, experiences):
         """
@@ -86,21 +85,24 @@ class IDQN(BaseModel):
         """
         states, actions, rewards, next_states, dones = experiences
 
-        # Compute Q(s_t, a)
-        state_action_values = self.policy_net(states).gather(1, actions)
+        agents = self.env.agents
 
-        # Compute V(s_{t+1}) using the target network
-        with torch.no_grad():
-            next_state_values = self.target_net(next_states).max(1)[0].unsqueeze(1)
-            expected_state_action_values = (next_state_values * self.gamma * (1 - dones)) + rewards
+        for agent in agents : 
+            # Compute Q(s_t, a)
+            state_action_values = self.policy_net(agent, states).gather(1, actions)
 
-        # Compute loss
-        loss = self.loss_fn(state_action_values, expected_state_action_values)
+            # Compute V(s_{t+1}) using the target network
+            with torch.no_grad():
+                next_state_values = self.target_net(next_states).max(1)[0].unsqueeze(1)
+                expected_state_action_values = (next_state_values * self.gamma * (1 - dones)) + rewards
 
-        # Optimize the model
-        self.optimizer.zero_grad()
-        loss.backward
-        self.optimizer.step()
+            # Compute loss
+            loss = self.loss_fn(state_action_values, expected_state_action_values)
+
+            # Optimize the model
+            self.optimizer.zero_grad()
+            loss.backward
+            self.optimizer.step()
 
         # Soft update the target network
         self.soft_update(self.policy_net, self.target_net, self.tau)

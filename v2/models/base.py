@@ -7,11 +7,13 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 import random
-
-from typing import Type
+from solution.custom_gym import CustomGymEnviornment
+from typing import Type, Callable, Dict
 
 T_Optimizer = Type[optim.Optimizer]
 T_Loss = nn.modules.loss._Loss
+
+
 
 class BaseModel: 
     """
@@ -19,7 +21,7 @@ class BaseModel:
     """
 
     def __init__(self, 
-                 env : Env, 
+                 env : CustomGymEnviornment, 
                  policy_net : nn.Module,
                  buffer_size : int = 100000, 
                  batch_size : int = 64, 
@@ -32,6 +34,7 @@ class BaseModel:
         Initialize the model 
 
         :param env: The environment to learn from
+        :param feature_extractor: The feature extractor to apply to each state. Note that it must return a tensor with a batch dimension already defined.
         :param policy_net:  The policy network. 
         :param buffer_size: The size of the experience replay buffer
         :param batch_size: Learning batch size
@@ -57,15 +60,18 @@ class BaseModel:
         Learn for the specified number of time steps
         """
         state, _ = self.env.reset()
-        print(state)
-        state = torch.tensor(state, dtype = torch.float32).unsqueeze(0) # Add batch dimension
 
-        for t in range(total_timesteps):
-            action = self.select_action(state)
-            next_state, reward, terminated, truncated, _ = self.env.step(action.item())
-            done = torch.tensor([terminated or truncated], dtype = torch.float32) 
-            reward = torch.tensor([reward], type = torch.float32)
-            next_state = torch.tensor(next_state, dtype = torch.float32).unsqueeze(0) # Add batch dimension
+        for _ in range(total_timesteps):
+            action = self.select_joint_action(state)
+            next_state, reward, terminated, truncated, _ = self.env.step(action)
+
+            # TODO: Potentially refactor this? 
+
+            terminated = torch.tensor(list(terminated.values()), dtype = torch.bool)
+            truncated = torch.tensor(list(truncated.values()), dtype = torch.bool) 
+            done = torch.logical_or(terminated, truncated)
+            reward = torch.tensor(list(reward.values()), dtype = torch.float32)
+
 
             self.rollout_buffer.append(
                 (state, action, reward, next_state, done)
@@ -73,29 +79,42 @@ class BaseModel:
 
             state = next_state
 
-            if done: 
+            if done.all(): 
                 state, _ = self.env.reset()
-                state = torch.tensor(state, dtype = torch.float32).unsqueeze(0) # Add batch dimension
+                state = next_state
 
         
 
-    def select_action(self, state) -> torch.Tensor:
+    def select_joint_action(self, state : dict) -> dict:
         """
-        Select an action. Derived classes should overwrite this
+        Select a joint action
+        
+        `state` is assumed to be a dictionary keyed with agent ids. 
+        
         """
-        raise NotImplementedError 
+        actions = {}
+        for a, s in state.items():
+            action = self.select_action(a, s) 
+            actions[a] = action
+        return actions 
+    
+    def select_action(self, agent : int, state : dict) -> torch.Tensor:
+        """
+        Select an action for the specified agent. Derived classes should override this.
+        """
+        raise NotImplementedError
     
     def sample_experiences(self) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Randomly sample a batch of experiences from memory.
         """
-        experiences = np.random.sample(self.rollout_buffer, k=self.batch_size)
+        experience_idxs = np.random.choice(len(self.rollout_buffer), size=self.batch_size)
 
-        states = torch.cat([e[0] for e in experiences])
-        actions = torch.cat([e[1] for e in experiences]).unsqueeze(1)
-        rewards = torch.cat([e[2] for e in experiences]).unsqueeze(1)
-        next_states = torch.cat([e[3] for e in experiences])
-        dones = torch.cat([e[4] for e in experiences]).unsqueeze(1)
+        states = [self.rollout_buffer[e][0] for e in experience_idxs]
+        actions = [self.rollout_buffer[e][1] for e in experience_idxs]
+        rewards = [self.rollout_buffer[e][2] for e in experience_idxs]
+        next_states = [self.rollout_buffer[e][3] for e in experience_idxs]
+        dones = [self.rollout_buffer[e][4] for e in experience_idxs]
 
         return states, actions, rewards, next_states, dones
 
