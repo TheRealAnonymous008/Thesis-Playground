@@ -12,6 +12,7 @@ from typing import Type, Callable, Dict
 
 T_Optimizer = Type[optim.Optimizer]
 T_Loss = nn.modules.loss._Loss
+T_FeatureExtractor = Callable[[dict], dict[torch.Tensor]]
 
 
 
@@ -23,6 +24,7 @@ class BaseModel:
     def __init__(self, 
                  env : CustomGymEnviornment, 
                  policy_net : nn.Module,
+                 feature_extractor : T_FeatureExtractor,
                  buffer_size : int = 100000, 
                  batch_size : int = 64, 
                  gamma: float = 0.99, 
@@ -51,7 +53,7 @@ class BaseModel:
         self.gamma : float = gamma 
         self.loss_fn : T_Loss = loss_fn
         self.optimizer : T_Optimizer = optimizer(self.policy_net.parameters(), lr = lr)
-
+        self.feature_extractor = feature_extractor
         self.t_step = 0
 
 
@@ -60,6 +62,7 @@ class BaseModel:
         Learn for the specified number of time steps
         """
         state, _ = self.env.reset()
+        state = self.feature_extractor(state)
 
         for _ in range(total_timesteps):
             action = self.select_joint_action(state)
@@ -67,9 +70,11 @@ class BaseModel:
 
             # TODO: Potentially refactor this? 
 
+            next_state = self.feature_extractor(next_state)
             terminated = torch.tensor(list(terminated.values()), dtype = torch.bool)
             truncated = torch.tensor(list(truncated.values()), dtype = torch.bool) 
             done = torch.logical_or(terminated, truncated)
+
             reward = torch.tensor(list(reward.values()), dtype = torch.float32)
 
 
@@ -81,8 +86,7 @@ class BaseModel:
 
             if done.all(): 
                 state, _ = self.env.reset()
-                state = next_state
-
+                state = self.feature_extractor(state)
         
 
     def select_joint_action(self, state : dict) -> dict:
@@ -96,6 +100,7 @@ class BaseModel:
         for a, s in state.items():
             action = self.select_action(a, s) 
             actions[a] = action
+
         return actions 
     
     def select_action(self, agent : int, state : dict) -> torch.Tensor:

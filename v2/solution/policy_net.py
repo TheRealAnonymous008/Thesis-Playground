@@ -33,7 +33,8 @@ class PolicyNet(nn.Module):
 
         :return: Q-values for each action
         """
-        x = torch.tensor(x[0][idx]["vision"], dtype = torch.float).unsqueeze(0)
+        print("Yahallo")
+        print(x)
         
         # Pass through the convolutional layers
         x = F.relu(self.conv1(x))
@@ -47,3 +48,28 @@ class PolicyNet(nn.Module):
         x = self.fc2(x)
 
         return x
+
+
+import torch
+def feature_extractor(obs : dict) -> dict:
+    """
+    Extracts features from the environment observations for each agent.
+    
+    :param obs: Dictionary where keys are agent IDs and values are dictionaries containing the 'vision' grid.
+    :return: A dictionary where keys are agent IDs and values are PyTorch tensors representing the features.
+    """
+    features = {}
+
+    for agent_id, agent_obs in obs.items():
+        # Extract the vision grid from the agent's observation
+        vision_grid = agent_obs['vision']
+
+        
+        # Convert the vision grid (numpy array) into a PyTorch tensor
+        # Adding an extra dimension (1) to indicate the channel (for compatibility with ConvNets)
+        vision_tensor = torch.tensor(vision_grid, dtype=torch.float32).unsqueeze(0)
+        
+        # Add the tensor to the features dictionary, keyed by agent ID
+        features[agent_id] = vision_tensor
+
+    return features

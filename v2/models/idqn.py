@@ -11,6 +11,7 @@ class IDQN(BaseModel):
     def __init__(self, 
                  env : CustomGymEnviornment, 
                  policy_net : nn.Module,
+                 feature_extractor : T_FeatureExtractor,
                  target_net : nn.Module,
                  buffer_size : int = 100000, 
                  batch_size : int = 64, 
@@ -28,6 +29,7 @@ class IDQN(BaseModel):
 
         :param env: The environment to learn from
         :param policy_net:  The policy network. 
+        :param feature_extractor: The feature extractor to apply to each state. Note that it must return a tensor with a batch dimension already defined.
         :param buffer_size: The size of the experience replay buffer
         :param batch_size: Learning batch size
         :param gamma: Discount factor for future rewards.
@@ -43,6 +45,7 @@ class IDQN(BaseModel):
         """
         super().__init__(env = env, 
                          policy_net = policy_net, 
+                         feature_extractor= feature_extractor,
                          buffer_size = buffer_size, 
                          batch_size= batch_size, 
                          gamma = gamma, 
@@ -74,7 +77,7 @@ class IDQN(BaseModel):
         sample = random.random()
         if sample > self.epsilon:
             with torch.no_grad():
-                action_values = self.policy_net.forward(state)
+                action_values = self.policy_net.forward(agent_id, state)
                 return torch.argmax(action_values, dim=1)
         else:
             return torch.tensor([self.env.action_space(agent_id).sample()], dtype=torch.long)
