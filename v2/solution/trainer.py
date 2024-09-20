@@ -10,8 +10,9 @@ import supersuit as ss
 from .custom_gym import CustomGymEnviornment
 import time
 
+from ..models.base import BaseModel
 
-def train_loop(_env : CustomGymEnviornment, games : int = 100, seed : int = 0):
+def train_loop(_env : CustomGymEnviornment, model : BaseModel, games : int = 100, seed : int = 0):
     """
     Train an agent for run_count number of games (no. of iters per game is dictated by env)
     """
@@ -22,12 +23,6 @@ def train_loop(_env : CustomGymEnviornment, games : int = 100, seed : int = 0):
     env = ss.pettingzoo_env_to_vec_env_v1(env)
     env = ss.concat_vec_envs_v1(env, 20, num_cpus=4, base_class="stable_baselines3")
     env.reset()
-    model = PPO(
-        MultiInputPolicy,
-        env,
-        verbose=3,
-        batch_size=256,
-    )
     steps = games * _env._max_time_steps
     steps_per_checkpt = 100
     checkpts = int(steps / steps_per_checkpt)
@@ -44,7 +39,7 @@ def train_loop(_env : CustomGymEnviornment, games : int = 100, seed : int = 0):
     env.close()
 
 
-def test_agents(env : CustomGymEnviornment, games : int = 100, seed : int = 0):
+def test_agents(env : CustomGymEnviornment, model : BaseModel, games : int = 100, seed : int = 0):
     print(
         f"\nStarting evaluation on {str(env.metadata['name'])} (num_games={games})"
     )
@@ -57,7 +52,7 @@ def test_agents(env : CustomGymEnviornment, games : int = 100, seed : int = 0):
         print("Policy not found.")
         exit(0)
 
-    model = PPO.load(latest_policy)
+    model.load(latest_policy)
 
     env.reset()
     rewards = {agent: 0 for agent in env.possible_agents}
