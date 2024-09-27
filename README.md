@@ -1,6 +1,10 @@
 # Design TODOs
 
-Model agent desires and preferences
+- Make the model learn for a specified number of iterations after sampling
+- Refactor metric visualization to its own file / functions
+
+
+- Model agent desires and preferences
 - Add action masks
 - Add crafting time in the recipe.
 - Need to refactor the agent detection as well so that it uses the same logic as that of the resource map.
