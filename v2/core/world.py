@@ -5,7 +5,7 @@ import numpy as np
 from .agent import Agent, _IdType
 from .observation import LocalObservation
 from .action import ActionInformation, Direction
-from .map import MapGenerator, ResourceMap, Resource
+from .map import ResourceMapGenerator, ResourceMap, Resource
 from .env_params import MAX_VISIBILITY
 from .models import *
 
@@ -16,7 +16,7 @@ class World:
     def __init__(self, 
                  dims : tuple[int, int],
                  swarm_initialzier : Callable, 
-                 resource_generator : MapGenerator,
+                 resource_generator : ResourceMapGenerator,
                  energy_model : EnergyModel = None,
                  chemistry_model : ChemistryModel = None,
                  max_visibility  : int = MAX_VISIBILITY,
@@ -37,7 +37,7 @@ class World:
 
         self._agents : dict[_IdType, Agent] = {}
         self._swarm_initializer : Callable = swarm_initialzier
-        self._resource_generator : MapGenerator = resource_generator
+        self._resource_generator : ResourceMapGenerator = resource_generator
 
         self._energy_model : EnergyModel | None = energy_model
         self._chemistry_model : ChemistryModel | None = chemistry_model

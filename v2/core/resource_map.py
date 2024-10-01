@@ -112,7 +112,7 @@ class ResourceMap:
         return self._dims
     
 
-class MapGenerator(ABC):
+class ResourceMapGenerator(ABC):
     """
     Base class for generating resource maps.
     """
@@ -137,7 +137,7 @@ class MapGenerator(ABC):
         upper_extent = (dims[0] + self.padding, dims[1] + self.padding)
         return ResourceMap(resource_type_map=resource_type_map, resource_quantity_map=resource_quantity_map, padding=self.padding), lower_extent, upper_extent
     
-class RandomMapGenerator(MapGenerator):
+class RandomMapGenerator(ResourceMapGenerator):
     def generate(self, dims: tuple[int, int]) -> tuple[ResourceMap, tuple[int, int], tuple[int, int]]:
         resource_map, lower_extent, upper_extent = super().generate(dims)
         num_clumps = 10 
@@ -155,3 +155,5 @@ class RandomMapGenerator(MapGenerator):
                             resource_map.add_resource((x + i, y + j), resource_type, qty)
 
         return resource_map, lower_extent, upper_extent
+    
+
