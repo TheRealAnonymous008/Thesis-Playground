@@ -33,45 +33,45 @@ class TerrainMap:
         At the boundary (i.e., if the agent moving would end up going out of bounds), the gradient should be infinity.
         """
         length, width = self._height_map.shape
-        self.height_map_gradient = np.full((length, width, 5), np.inf) 
+        self._height_map_gradient = np.full((length, width, 5), np.inf) 
 
         for i in range(self._padding, length - self._padding):
             for j in range(self._padding, width - self._padding):
                 current_height = self._height_map[i, j]
 
-                self.height_map_gradient[i, j, 0] = 0
+                self._height_map_gradient[i, j, 0] = 0
 
                 # North direction
                 if i > self._padding:
-                    self.height_map_gradient[i, j, Direction.NORTH.value] = self._height_map[i - 1, j] - current_height
+                    self._height_map_gradient[i, j, Direction.NORTH.value] = self._height_map[i - 1, j] - current_height
                 else:
-                    self.height_map_gradient[i, j, Direction.NORTH.value] = np.inf  # Boundary case
+                    self._height_map_gradient[i, j, Direction.NORTH.value] = np.inf  # Boundary case
 
                 # South direction
                 if i < length - self._padding - 1:
-                    self.height_map_gradient[i, j, Direction.SOUTH.value] = self._height_map[i + 1, j] - current_height
+                    self._height_map_gradient[i, j, Direction.SOUTH.value] = self._height_map[i + 1, j] - current_height
                 else:
-                    self.height_map_gradient[i, j, Direction.SOUTH.value] = np.inf  # Boundary case
+                    self._height_map_gradient[i, j, Direction.SOUTH.value] = np.inf  # Boundary case
 
                 # East direction
                 if j > self._padding:
-                    self.height_map_gradient[i, j, Direction.WEST.value] = self._height_map[i, j - 1] - current_height
+                    self._height_map_gradient[i, j, Direction.WEST.value] = self._height_map[i, j - 1] - current_height
                 else:
-                    self.height_map_gradient[i, j, Direction.WEST.value] = np.inf  # Boundary case
+                    self._height_map_gradient[i, j, Direction.WEST.value] = np.inf  # Boundary case
 
                 # West direction
                 if j < width - self._padding - 1:
-                    self.height_map_gradient[i, j, Direction.EAST.value] = self._height_map[i, j + 1] - current_height
+                    self._height_map_gradient[i, j, Direction.EAST.value] = self._height_map[i, j + 1] - current_height
                 else:
-                    self.height_map_gradient[i, j, Direction.EAST.value] = np.inf  # Boundary case
+                    self._height_map_gradient[i, j, Direction.EAST.value] = np.inf  # Boundary case
 
     def get_gradient(self, idx : tuple[int, int], direction : Direction):
         idx = self.translate_idx(idx)
-        return self.height_map_gradient[idx[0], idx[1], direction.value]
+        return self._height_map_gradient[idx[0], idx[1], direction.value]
     
     def get_height(self, idx : tuple[int, int]):
         idx = self.translate_idx(idx)
-        return self.height_map[idx[0], idx[1]]
+        return self._height_map[idx[0], idx[1]]
 
     @property
     def copy(self) -> TerrainMap:
@@ -92,7 +92,7 @@ class TerrainMap:
         """
         Returns a copy of the whole type map 
         """
-        return self.height_map.copy()
+        return self._height_map.copy()
 
 
 class TerrainMapGenerator(ABC):
