@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 from .action import *
-from .map import Resource
+from .resource_map import Resource
 from .message import * 
 from dataclasses import dataclass, field
 

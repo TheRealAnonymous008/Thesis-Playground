@@ -5,9 +5,11 @@ import numpy as np
 from .agent import Agent, _IdType
 from .observation import LocalObservation
 from .action import ActionInformation, Direction
-from .map import ResourceMapGenerator, ResourceMap, Resource
+from .resource_map import ResourceMapGenerator, ResourceMap, Resource
 from .env_params import MAX_VISIBILITY
 from .models import *
+from .terrain_map import *
+
 
 class World: 
     """
@@ -16,7 +18,8 @@ class World:
     def __init__(self, 
                  dims : tuple[int, int],
                  swarm_initialzier : Callable, 
-                 resource_generator : ResourceMapGenerator,
+                 resource_generator : ResourceMapGenerator = None,
+                 terrain_generatoor : TerrainMapGenerator = None,
                  energy_model : EnergyModel = None,
                  chemistry_model : ChemistryModel = None,
                  max_visibility  : int = MAX_VISIBILITY,
@@ -37,7 +40,8 @@ class World:
 
         self._agents : dict[_IdType, Agent] = {}
         self._swarm_initializer : Callable = swarm_initialzier
-        self._resource_generator : ResourceMapGenerator = resource_generator
+        self._resource_generator : ResourceMapGenerator | None = resource_generator
+        self._terrain_generator : TerrainMapGenerator | None  = terrain_generatoor
 
         self._energy_model : EnergyModel | None = energy_model
         self._chemistry_model : ChemistryModel | None = chemistry_model
@@ -53,9 +57,12 @@ class World:
         self._nagents = 0
 
         # Generate a new resource map 
-        self._resource_map, self._lower_extents, self._upper_extents = self._resource_generator.generate(self._dims)
-        # Apply padding to the resource grid on all axes
-        
+        if self._resource_generator: 
+            self._resource_map, self._lower_extents, self._upper_extents = self._resource_generator.generate(self._dims)
+        if self._terrain_generator:
+            self._terrain_map, _, _, = self._terrain_generator.generate(self._dims)
+
+
         self._swarm_initializer(self)
 
         for agent in self.agents: 
