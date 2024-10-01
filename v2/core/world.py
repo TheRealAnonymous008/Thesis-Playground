@@ -18,8 +18,8 @@ class World:
     def __init__(self, 
                  dims : tuple[int, int],
                  swarm_initialzier : Callable, 
-                 resource_generator : ResourceMapGenerator = None,
-                 terrain_generatoor : TerrainMapGenerator = None,
+                 resource_generator : ResourceMapGenerator = ResourceMapGenerator(1, MAX_VISIBILITY),
+                 terrain_generatoor : TerrainMapGenerator = TerrainMapGenerator(-1, 1, MAX_VISIBILITY),
                  energy_model : EnergyModel = None,
                  chemistry_model : ChemistryModel = None,
                  max_visibility  : int = MAX_VISIBILITY,
@@ -57,10 +57,8 @@ class World:
         self._nagents = 0
 
         # Generate a new resource map 
-        if self._resource_generator: 
-            self._resource_map, self._lower_extents, self._upper_extents = self._resource_generator.generate(self._dims)
-        if self._terrain_generator:
-            self._terrain_map, _, _, = self._terrain_generator.generate(self._dims)
+        self._resource_map, self._lower_extents, self._upper_extents = self._resource_generator.generate(self._dims)
+        self._terrain_map, _, _, = self._terrain_generator.generate(self._dims)
 
 
         self._swarm_initializer(self)
@@ -80,6 +78,7 @@ class World:
         # Get the current world state
         self._world_state = self._get_world_state()
         self._resource_grid = self._resource_map._resource_type_map
+        
         # Update any models that we have
         if self._energy_model != None: 
             for agent in agents:
@@ -238,6 +237,13 @@ class World:
         Returns a copy of the resource map
         """
         return self._resource_map.copy
+    
+    @property
+    def terrain_map(self) -> TerrainMap:
+        """
+        Returns a copy of the terrain map
+        """ 
+        return self._terrain_map.copy
     
     @property
     def total_cell_count(self) -> int:

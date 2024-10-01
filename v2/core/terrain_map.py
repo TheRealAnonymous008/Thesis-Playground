@@ -69,6 +69,9 @@ class TerrainMap:
         idx = self.translate_idx(idx)
         return self.height_map_gradient[idx[0], idx[1], direction.value]
     
+    def get_height(self, idx : tuple[int, int]):
+        idx = self.translate_idx(idx)
+        return self.height_map[idx[0], idx[1]]
 
     @property
     def copy(self) -> TerrainMap:
