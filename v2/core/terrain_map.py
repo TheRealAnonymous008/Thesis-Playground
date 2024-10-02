@@ -76,21 +76,21 @@ class TerrainMap:
     @property
     def copy(self) -> TerrainMap:
         """
-        Returns a copy of the resource map.
+        Returns a copy of the terrain map.
         """
         return TerrainMap(self._height_map, self._padding)
     
     @property
     def shape(self) -> np._Shape:
         """
-        Returns the shape of the resource map
+        Returns the shape of the terrain map
         """
         return self._dims
     
     @property
     def height_map(self) -> np.ndarray: 
         """
-        Returns a copy of the whole type map 
+        Returns a copy of the height map 
         """
         return self._height_map.copy()
 
