@@ -20,7 +20,7 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
     font = pygame.font.SysFont("Arial", 18)
 
     # Height map rendering toggle state
-    render_height_map = False
+    render_height_map = True 
 
     def draw_grid():
         for x in range(0, screen_size[0], cell_size[0]):

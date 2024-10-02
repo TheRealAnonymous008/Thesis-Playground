@@ -128,53 +128,82 @@ class TerrainMapGenerator(ABC):
         lower_extent = (self.padding ,self.padding)
         upper_extent = (dims[0] + self.padding, dims[1] + self.padding)
         return terrain_map, lower_extent, upper_extent
-    
-class CityTerrainMapGenerator(TerrainMapGenerator):
+
+from noise import snoise2
+
+class UrbanTerrainMapGenerator(TerrainMapGenerator):
     """
-    Derived class for generating a terrain map that resembles a city.
+    Derived class for generating a realistic urban area terrain map.
     """
+    def __init__(self, base_height_range : tuple[int, int] = (-10, 10), padding=MAX_VISIBILITY):
+        self.base_height_range : base_height_range
+
+        min_height = base_height_range[0]
+        max_height = base_height_range[1]
+        super().__init__(min_height, max_height, padding)
+
     def generate(self, dims: tuple[int, int]) -> tuple[TerrainMap, tuple[int, int], tuple[int, int]]:
         """
-        Generate a terrain map similar to a city, with flat areas and various building heights.
+        Generate a realistic urban terrain map with roads and buildings.
         """
-        height_map = np.zeros(dims)  # Start with a flat terrain
+        height_map = np.full((dims[0], dims[1]), (self.min_height + self.max_height) / 2, dtype=np.float32)
 
-        # Define central city zone (skyscraper area)
-        central_zone_size = (dims[0] // 3, dims[1] // 3)
-        central_start = (dims[0] // 3, dims[1] // 3)
-        central_end = (central_start[0] + central_zone_size[0], central_start[1] + central_zone_size[1])
+        self.create_underlying_terrain(height_map)
+        self.get_road_mask(height_map)
 
-        # Skyscrapers in the central zone
-        height_map[central_start[0]:central_end[0], central_start[1]:central_end[1]] = np.random.uniform(
-            self.max_height * 0.7, self.max_height, central_zone_size)
-
-        # Lower buildings in the surrounding zone (transition from central to outskirts)
-        transition_zone_size = (dims[0] // 2, dims[1] // 2)
-        transition_start = (dims[0] // 4, dims[1] // 4)
-        transition_end = (transition_start[0] + transition_zone_size[0], transition_start[1] + transition_zone_size[1])
-
-        height_map[transition_start[0]:transition_end[0], transition_start[1]:transition_end[1]] = np.random.uniform(
-            self.max_height * 0.3, self.max_height * 0.6, transition_zone_size)
-
-        # Flat areas for streets and parks (outer zones)
-        height_map[:self.padding, :] = np.random.uniform(self.min_height, self.min_height + 0.1, (self.padding, dims[1]))
-        height_map[-self.padding:, :] = np.random.uniform(self.min_height, self.min_height + 0.1, (self.padding, dims[1]))
-        height_map[:, :self.padding] = np.random.uniform(self.min_height, self.min_height + 0.1, (dims[0], self.padding))
-        height_map[:, -self.padding:] = np.random.uniform(self.min_height, self.min_height + 0.1, (dims[0], self.padding))
-
-        # Pad the terrain map for boundary conditions
+        # Step 4: Pad the height map with infinity
         padded_height_map = np.pad(
             height_map,
             pad_width=((self.padding, self.padding), (self.padding, self.padding)),
             mode='constant',
-            constant_values=0
+            constant_values=np.inf  # Pad with infinity
         )
 
         # Create the TerrainMap object
         terrain_map = TerrainMap(padded_height_map, self.padding)
-
-        # Define the extents
         lower_extent = (self.padding, self.padding)
         upper_extent = (dims[0] + self.padding, dims[1] + self.padding)
 
         return terrain_map, lower_extent, upper_extent
+    
+    def create_underlying_terrain(self, height_map : np.ndarray):
+        length, width = height_map.shape 
+
+        # Set parameters for Perlin noise
+        scale = 0.1  # Scale affects how "zoomed in" the noise is
+        octaves = 6  # More octaves means more detail
+        persistence = 0.5  # Controls the amplitude of each octave
+        lacunarity = 2.0  # Controls the frequency of each octave
+        
+        # Generate height values using Perlin noise
+        for x in range(length):
+            for y in range(width):
+                # Generate a height value using Perlin noise
+                noise_value = snoise2(x * scale, 
+                                    y * scale, 
+                                    octaves=octaves, 
+                                    persistence=persistence, 
+                                    lacunarity=lacunarity)
+                
+                # Scale noise_value to the desired height range
+                # Normalize noise_value from (-1, 1) to (min_height, max_height)
+                height = self.min_height + (noise_value + 1) * 0.5 * (self.max_height - self.min_height)
+
+                # Ensure the height is within the specified range
+                height = np.clip(height, self.min_height, self.max_height)
+
+                # Set the height in the height map
+                height_map[x, y] = height
+
+        return height_map
+    
+    def get_road_mask(self, height_map : np.ndarray) -> np.ndarray: 
+        length, width = height_map.shape   
+        road_mask = np.zeros_like(height_map, dtype=bool)
+        
+        # First, sample a list of junction points in the world These act as our vertices. Each junction has an assoiated 
+        # elevation in the range 
+
+        # THen, connect the junctions. These act as our edges. Connect them by filling the area in the mask. 
+
+        return road_mask 
