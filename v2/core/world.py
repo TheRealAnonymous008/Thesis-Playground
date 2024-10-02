@@ -119,7 +119,9 @@ class World:
                 dir_movement = Direction.get_direction_of_movement(action.movement)
                 current_position += dir_movement
 
-                if not self.is_traversable(current_position) or movement_mask[current_position[0], current_position[1]]:
+                if not self.is_traversable(current_position) or \
+                    movement_mask[current_position[0], current_position[1]] or \
+                    self._terrain_map.get_gradient(current_position, action.movement) > agent._max_slope:
                     current_position -= dir_movement
 
             movement_mask[current_position[0], current_position[1]] = True 

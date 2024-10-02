@@ -35,6 +35,7 @@ class Agent:
         self._energy_capacity : float = 100.0
         self._carrying_capacity : float = 100.0
         self._utility_function : UtilityFunction = None 
+        self._max_slope : float = 1
 
         self.reset()
         
