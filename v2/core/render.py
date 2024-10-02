@@ -56,7 +56,6 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
                 height_value = terrain_map.get_height((i, j))
                 brightness = int(((height_value - min_height) /(max_height - min_height)) * 255)  
                 color = (brightness, brightness, brightness)
-                print((i, j), brightness)
                 rect = pygame.Rect(i * cell_size[0], j * cell_size[1], cell_size[0], cell_size[1])
                 pygame.draw.rect(screen, color, rect)
 
