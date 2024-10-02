@@ -130,16 +130,21 @@ class TerrainMapGenerator(ABC):
         return terrain_map, lower_extent, upper_extent
 
 from noise import snoise2
-
+from utils.line import *
 class UrbanTerrainMapGenerator(TerrainMapGenerator):
     """
     Derived class for generating a realistic urban area terrain map.
     """
-    def __init__(self, base_height_range : tuple[int, int] = (-10, 10), padding=MAX_VISIBILITY):
-        self.base_height_range : base_height_range
+    def __init__(self, 
+                    base_height_range : tuple[int, int] = (-10, 10),
+                    building_height_range : tuple[int, int] = (500, 550),
+                    padding=MAX_VISIBILITY
+                ):
+        self.base_height_range =  base_height_range
+        self.building_height_range = building_height_range
 
-        min_height = base_height_range[0]
-        max_height = base_height_range[1]
+        min_height = base_height_range[0] 
+        max_height = base_height_range[1] + building_height_range[1]
         super().__init__(min_height, max_height, padding)
 
     def generate(self, dims: tuple[int, int]) -> tuple[TerrainMap, tuple[int, int], tuple[int, int]]:
@@ -149,7 +154,8 @@ class UrbanTerrainMapGenerator(TerrainMapGenerator):
         height_map = np.full((dims[0], dims[1]), (self.min_height + self.max_height) / 2, dtype=np.float32)
 
         self.create_underlying_terrain(height_map)
-        self.get_road_mask(height_map)
+        road_mask = self.get_road_mask(height_map)
+        height_map = self.generate_buildings(height_map, road_mask)
 
         # Step 4: Pad the height map with infinity
         padded_height_map = np.pad(
@@ -187,10 +193,10 @@ class UrbanTerrainMapGenerator(TerrainMapGenerator):
                 
                 # Scale noise_value to the desired height range
                 # Normalize noise_value from (-1, 1) to (min_height, max_height)
-                height = self.min_height + (noise_value + 1) * 0.5 * (self.max_height - self.min_height)
+                height = self.base_height_range[0] + (noise_value + 1) * 0.5 * (self.base_height_range[1] - self.base_height_range[0])
 
                 # Ensure the height is within the specified range
-                height = np.clip(height, self.min_height, self.max_height)
+                height = np.clip(height, self.base_height_range[0], self.base_height_range[1])
 
                 # Set the height in the height map
                 height_map[x, y] = height
@@ -201,9 +207,34 @@ class UrbanTerrainMapGenerator(TerrainMapGenerator):
         length, width = height_map.shape   
         road_mask = np.zeros_like(height_map, dtype=bool)
         
-        # First, sample a list of junction points in the world These act as our vertices. Each junction has an assoiated 
-        # elevation in the range 
+        # Parameters for junctions
+        num_junctions = np.random.randint(5, 15)  # Randomly decide the number of junctions
+        junctions = []
 
-        # THen, connect the junctions. These act as our edges. Connect them by filling the area in the mask. 
+        # Sample random junction points in the world
+        for _ in range(num_junctions):
+            x = np.random.randint(0, length - 1)
+            y = np.random.randint(0, width - 1)
+            junctions.append((x, y))
+
+        # Connect junctions with roads
+        for i in range(len(junctions)):
+            for j in range(i + 1, len(junctions)):
+                start = junctions[i]
+                end = junctions[j]
+
+                # Use Bresenham's line algorithm to draw a line between two junctions
+                bresenham_line(road_mask, start, end)
 
         return road_mask 
+    
+    def generate_buildings(self, height_map : np.ndarray, road_mask : np.ndarray):
+        length, width = height_map.shape 
+
+        for x in range(length):
+            for y in range(width):
+                if not road_mask[x, y]:
+                    height_map[x, y] += np.random.uniform(self.building_height_range[0], self.building_height_range[1])
+                
+
+        return height_map
