@@ -61,6 +61,9 @@ class UrbanTerrainMapGenerator(TerrainMapGenerator):
         Generate a realistic urban terrain map with roads and buildings.
         """
 
+        # Generate the population density 
+        population_density = self.generate_population_density(dims)
+
         # Generate a road network
         road_network = self.generate_road_network(dims)
         # Discretize with the height map
@@ -70,8 +73,25 @@ class UrbanTerrainMapGenerator(TerrainMapGenerator):
                 bresenham_line(height_map, start, end)
 
         # Create the TerrainMap object
-        terrain_map = TerrainMap(height_map, self.padding)
+        terrain_map = TerrainMap(height_map=height_map, padding=self.padding, density_map = population_density)
         return terrain_map
+    
+
+    def generate_population_density(self, dims: tuple[int, int], scale: float = 100.0, octaves: int = 6, persistence: float = 0.5, lacunarity: float = 2.0) -> np.ndarray:
+        """
+        Generate a population density map using Perlin noise.
+        """
+        density_map = np.zeros(dims)
+        for i in range(dims[0]):
+            for j in range(dims[1]):
+                # Generate Perlin noise value at (i, j)
+                noise_value = snoise2(i / scale, j / scale, octaves=octaves, persistence=persistence, lacunarity=lacunarity)
+                
+                # Normalize noise_value to range 0.0 to 1.0
+                noise_value = (noise_value + 1) / 2.0
+                density_map[i, j] = noise_value
+        
+        return density_map
     
     def generate_road_network(self, dims: tuple[int, int]) -> RoadNetwork:
         """

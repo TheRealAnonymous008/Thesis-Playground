@@ -1,6 +1,7 @@
 import pygame
 import numpy as np
 
+from enum import Enum 
 from typing import Callable
 from .world import World
 
@@ -20,7 +21,12 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
     font = pygame.font.SysFont("Arial", 18)
 
     # Height map rendering toggle state
-    render_height_map = True 
+    class RenderMode(Enum) : 
+        DEFAULT = 1
+        HEIGHT_MAP = 2
+        POPULATION_MAP = 3
+    
+    render_mode : RenderMode = RenderMode.DEFAULT
 
     def draw_grid():
         for x in range(0, screen_size[0], cell_size[0]):
@@ -59,6 +65,18 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
                 rect = pygame.Rect(i * cell_size[0], j * cell_size[1], cell_size[0], cell_size[1])
                 pygame.draw.rect(screen, color, rect)
 
+    def draw_population_map():
+        terrain_map = world.terrain_map
+        min_val = 0
+        max_val = 1
+        x0, y0 = terrain_map.shape
+        for i in range(0, x0):
+            for j in range(0, y0):
+                val = terrain_map.get_density((i, j))
+                brightness = int(((val - min_val) /(max_val - min_val)) * 255)  
+                color = (brightness, brightness, brightness)
+                rect = pygame.Rect(i * cell_size[0], j * cell_size[1], cell_size[0], cell_size[1])
+                pygame.draw.rect(screen, color, rect)
 
     running = True
     while running:
@@ -66,8 +84,12 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_m:
-                    render_height_map = not render_height_map  # Toggle the height map view
+                if event.key == pygame.K_d: 
+                    render_mode = RenderMode.DEFAULT
+                if event.key == pygame.K_h:
+                    render_mode = RenderMode.HEIGHT_MAP # Toggle the height map view
+                if event.key == pygame.K_p: 
+                    render_mode = RenderMode.POPULATION_MAP 
 
         if update_fn is not None:
             update_fn()
@@ -75,11 +97,15 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
         screen.fill((0, 0, 0))
 
         # Draw the height map if toggled on
-        if render_height_map:
-            draw_height_map()
-        else:
-            draw_resources()
-            draw_agents()
+        match(render_mode): 
+            case RenderMode.DEFAULT: 
+                draw_resources()
+                draw_agents()
+
+            case RenderMode.HEIGHT_MAP: 
+                draw_height_map() 
+            case RenderMode.POPULATION_MAP:
+                draw_population_map()
 
         # Display the FPS
         fps = str(int(clock.get_fps()))

@@ -25,13 +25,15 @@ class TerrainMap:
             mode='constant', 
             constant_values=0
         )
-        if density_map != None: 
-            self.density_map : np.ndarray[float] = np.pad(
+        if density_map is not None: 
+            self._density_map : np.ndarray[float] = np.pad(
                 density_map, 
                 pad_width=((self._padding, self._padding), (self._padding, self._padding)), 
                 mode='constant', 
                 constant_values=-np.inf
             )
+        else:  
+            self._density_map = None
 
         self.compute_gradient_map()
         self._dims = (height_map.shape[0], height_map.shape[1])
@@ -89,6 +91,14 @@ class TerrainMap:
         idx = self.translate_idx(idx)
         return self._height_map[idx[0], idx[1]]
 
+    def get_density(self, idx : tuple[int, int]):
+        if self._density_map is None: 
+            return 0
+        
+        idx = self.translate_idx(idx)
+        return self._density_map[idx[0], idx[1]]
+
+
     @property
     def copy(self) -> TerrainMap:
         """
@@ -97,7 +107,10 @@ class TerrainMap:
         x0, y0 = self.translate_idx((0, 0))
         x1, y1 = self.translate_idx((self._dims[0], self._dims[1]))
         h = self._height_map[x0 : x1, y0 : y1]
-        return TerrainMap(h, self._padding)
+        d = None 
+        if self._density_map is not None: 
+            d = self._density_map[x0 : x1, y0 : y1]
+        return TerrainMap(h, self._padding, d)
     
     @property
     def shape(self) -> np._Shape:
