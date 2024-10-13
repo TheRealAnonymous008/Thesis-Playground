@@ -19,11 +19,20 @@ class ResourceMap:
         """
         if resource_quantity_map.shape != resource_quantity_map.shape:
             raise Exception(f"Error: Resource Type and Quantity Maps should have the same shape. Got {resource_type_map.shape} and {resource_quantity_map.shape} respectively")
+        self._padding = padding
         
         self._resource_type_map : np.ndarray[int]  = resource_type_map
         self._resource_quantity_map : np.ndarray[_QuantityType] = resource_quantity_map
-        self._padding = padding
-        self._dims = (resource_type_map.shape[0] - 2 * self._padding, resource_type_map.shape[1] - 2 * self._padding)
+
+        self._resource_type_map : np.ndarray[int] = np.pad(resource_type_map, 
+                                   ((self._padding, self._padding), (self._padding, self._padding)),
+                                   mode = "constant", 
+                                   constant_values=-1)
+        self._resource_quantity_map : np.ndarray[_QuantityType] = np.pad(resource_quantity_map, 
+                                       ((self._padding, self._padding), (self._padding, self._padding)), 
+                                       mode = "constant", 
+                                       constant_values=-1)
+        self._dims = (resource_type_map.shape[0], resource_type_map.shape[1])
 
     def translate_idx(self, idx : tuple[int, int]) -> tuple[int, int]:
         """
@@ -124,28 +133,28 @@ class ResourceMapGenerator(ABC):
         self.resource_types = resource_types
         self.padding = padding
     
-    def generate(self, dims : tuple[int, int]) -> tuple[ResourceMap, tuple[int, int], tuple[int, int]]:
+    def generate(self, dims : tuple[int, int]) -> ResourceMap:
         """
         Generate a resource map. Derived classes should extend this method.
         """
         resource_type_map = np.zeros(dims, dtype=np.int32)
         resource_quantity_map = np.zeros(dims, dtype = _QuantityType)
-        resource_type_map = np.pad(resource_type_map, ((self.padding, self.padding), (self.padding, self.padding)), mode = "constant", constant_values=-1)
-        resource_quantity_map = np.pad(resource_quantity_map, ((self.padding, self.padding), (self.padding, self.padding)), mode = "constant", constant_values=-1)
 
-        lower_extent = (self.padding ,self.padding)
-        upper_extent = (dims[0] + self.padding, dims[1] + self.padding)
-        return ResourceMap(resource_type_map=resource_type_map, resource_quantity_map=resource_quantity_map, padding=self.padding), lower_extent, upper_extent
+        return ResourceMap(resource_type_map=resource_type_map, resource_quantity_map=resource_quantity_map, padding=self.padding)
     
 class RandomResourceMapGenerator(ResourceMapGenerator):
     def generate(self, dims: tuple[int, int]) -> tuple[ResourceMap, tuple[int, int], tuple[int, int]]:
-        resource_map, lower_extent, upper_extent = super().generate(dims)
+        resource_type_map = np.zeros(dims, dtype=np.int32)
+        resource_quantity_map = np.zeros(dims, dtype = _QuantityType)
+        resource_map = ResourceMap(resource_type_map=resource_type_map, 
+                                   resource_quantity_map=resource_quantity_map,
+                                   padding=self.padding)
         num_clumps = 10 
 
         # Generate Clumps of Resources
         for resource_type in range(1, self.resource_types + 1):
             for _ in range(num_clumps):
-                x, y = np.random.randint(lower_extent[0], upper_extent[0]), np.random.randint(lower_extent[1], upper_extent[1])
+                x, y = np.random.randint(0, resource_map._dims[0]), np.random.randint(0, resource_map._dims[1])
                 clump_size = np.random.randint(1, 6)
                 
                 for i in range(-clump_size, clump_size + 1):
@@ -154,6 +163,6 @@ class RandomResourceMapGenerator(ResourceMapGenerator):
                             qty = _QuantityType(max(np.random.normal(5, 2), 1))
                             resource_map.add_resource((x + i, y + j), resource_type, qty)
 
-        return resource_map, lower_extent, upper_extent
+        return resource_map
     
 

@@ -65,26 +65,13 @@ class UrbanTerrainMapGenerator(TerrainMapGenerator):
         road_network = self.generate_road_network(dims)
         # Discretize with the height map
         height_map = np.full((dims[0], dims[1]), (self.min_height + self.max_height) / 2, dtype=np.float32)
-
         for (start ,v) in road_network.graph.items():
-            print(start, v)
             for end in v: 
                 bresenham_line(height_map, start, end)
 
-        # Step 4: Pad the height map with infinity
-        padded_height_map = np.pad(
-            height_map,
-            pad_width=((self.padding, self.padding), (self.padding, self.padding)),
-            mode='constant',
-            constant_values=np.inf  # Pad with infinity
-        )
-
         # Create the TerrainMap object
-        terrain_map = TerrainMap(padded_height_map, self.padding)
-        lower_extent = (self.padding, self.padding)
-        upper_extent = (dims[0] + self.padding, dims[1] + self.padding)
-
-        return terrain_map, lower_extent, upper_extent
+        terrain_map = TerrainMap(height_map, self.padding)
+        return terrain_map
     
     def generate_road_network(self, dims: tuple[int, int]) -> RoadNetwork:
         """

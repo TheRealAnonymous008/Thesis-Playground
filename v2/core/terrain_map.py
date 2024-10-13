@@ -11,15 +11,30 @@ class TerrainMap:
     """
     Class for holding information on the terrain of the map. 
     """
-    def __init__(self, height_map : np.ndarray[float], padding : int):
+    def __init__(self, height_map : np.ndarray[float], padding : int, density_map : np.ndarray[float] = None) :
         """    
         :param height_map: Information about the terrain height at the sampled point
+        :param padding: Padding added to all sides.
+        :param density_map: Miscellaneous information
         """
-        
-        self._height_map : np.ndarray[float]  = height_map
-        self._padding = padding
+
+        self._padding = padding        
+        self._height_map : np.ndarray[float] = np.pad(
+            height_map, 
+            pad_width=((self._padding, self._padding), (self._padding, self._padding)), 
+            mode='constant', 
+            constant_values=0
+        )
+        if density_map != None: 
+            self.density_map : np.ndarray[float] = np.pad(
+                density_map, 
+                pad_width=((self._padding, self._padding), (self._padding, self._padding)), 
+                mode='constant', 
+                constant_values=-np.inf
+            )
+
         self.compute_gradient_map()
-        self._dims = (height_map.shape[0] - 2 * self._padding, height_map.shape[1] - 2 * self._padding)
+        self._dims = (height_map.shape[0], height_map.shape[1])
 
     def translate_idx(self, idx : tuple[int, int]) -> tuple[int, int]:
         """
@@ -79,7 +94,10 @@ class TerrainMap:
         """
         Returns a copy of the terrain map.
         """
-        return TerrainMap(self._height_map, self._padding)
+        x0, y0 = self.translate_idx((0, 0))
+        x1, y1 = self.translate_idx((self._dims[0], self._dims[1]))
+        h = self._height_map[x0 : x1, y0 : y1]
+        return TerrainMap(h, self._padding)
     
     @property
     def shape(self) -> np._Shape:
@@ -112,20 +130,11 @@ class TerrainMapGenerator(ABC):
         self.max_height = max_height 
         self.padding = padding
     
-    def generate(self, dims : tuple[int, int]) -> tuple[TerrainMap, tuple[int, int], tuple[int, int]]:
+    def generate(self, dims : tuple[int, int]) -> TerrainMap:
         """
         Generate a resource map. Derived classes should extend this method.
         """
         height_map = np.ones((dims[0], dims[1]), dtype = np.float32) * (self.min_height + self.max_height) / 2 
 
-        padded_height_map = np.pad(
-            height_map, 
-            pad_width=((self.padding, self.padding), (self.padding, self.padding)), 
-            mode='constant', 
-            constant_values=0
-        )
-
-        terrain_map = TerrainMap(padded_height_map, self.padding)
-        lower_extent = (self.padding ,self.padding)
-        upper_extent = (dims[0] + self.padding, dims[1] + self.padding)
-        return terrain_map, lower_extent, upper_extent
+        terrain_map = TerrainMap(height_map, self.padding)
+        return terrain_map

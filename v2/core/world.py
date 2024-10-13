@@ -57,8 +57,8 @@ class World:
         self._nagents = 0
 
         # Generate a new resource map 
-        self._resource_map, self._lower_extents, self._upper_extents = self._resource_generator.generate(self._dims)
-        self._terrain_map, _, _, = self._terrain_generator.generate(self._dims)
+        self._resource_map = self._resource_generator.generate(self._dims)
+        self._terrain_map = self._terrain_generator.generate(self._dims)
 
         self._swarm_initializer(self)
 
