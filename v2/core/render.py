@@ -21,12 +21,13 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
     font = pygame.font.SysFont("Arial", 18)
 
     # Height map rendering toggle state
-    class RenderMode(Enum) : 
+    class RenderMode(Enum):
         DEFAULT = 1
         HEIGHT_MAP = 2
         POPULATION_MAP = 3
-    
-    render_mode : RenderMode = RenderMode.DEFAULT
+        BLENDED_MAP = 4  # New mode for blending height and population density
+
+    render_mode: RenderMode = RenderMode.DEFAULT
 
     def draw_grid():
         for x in range(0, screen_size[0], cell_size[0]):
@@ -60,7 +61,7 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
         for i in range(0, x0):
             for j in range(0, y0):
                 height_value = terrain_map.get_height((i, j))
-                brightness = int(((height_value - min_height) /(max_height - min_height)) * 255)  
+                brightness = int(((height_value - min_height) / (max_height - min_height)) * 255)
                 color = (brightness, brightness, brightness)
                 rect = pygame.Rect(i * cell_size[0], j * cell_size[1], cell_size[0], cell_size[1])
                 pygame.draw.rect(screen, color, rect)
@@ -73,8 +74,36 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
         for i in range(0, x0):
             for j in range(0, y0):
                 val = terrain_map.get_density((i, j))
-                brightness = int(((val - min_val) /(max_val - min_val)) * 255)  
+                brightness = int(((val - min_val) / (max_val - min_val)) * 255)
                 color = (brightness, brightness, brightness)
+                rect = pygame.Rect(i * cell_size[0], j * cell_size[1], cell_size[0], cell_size[1])
+                pygame.draw.rect(screen, color, rect)
+
+    def draw_blended_map():
+        """Blends both height map and population density on top of each other."""
+        terrain_map = world.terrain_map
+        min_height = world._terrain_generator.min_height
+        max_height = world._terrain_generator.max_height
+        min_density = 0
+        max_density = 1
+
+        x0, y0 = terrain_map.shape
+        for i in range(0, x0):
+            for j in range(0, y0):
+                # Get height and population density
+                height_value = terrain_map.get_height((i, j))
+                density_value = terrain_map.get_density((i, j))
+
+                # Calculate brightness for height and density
+                height_brightness = int(((height_value - min_height) / (max_height - min_height)) * 255)
+                density_brightness = int(((density_value - min_density) / (max_density - min_density)) * 255)
+
+                # Blend the two values (50% height, 50% density, modify alpha as desired)
+                blended_r = int(height_brightness * 0.5 + density_brightness * 0.5)
+                blended_g = int(height_brightness * 0.5)  # Height will have more greenish tint
+                blended_b = int(density_brightness * 0.5)  # Density will add bluish tint
+
+                color = (blended_r, blended_g, blended_b)
                 rect = pygame.Rect(i * cell_size[0], j * cell_size[1], cell_size[0], cell_size[1])
                 pygame.draw.rect(screen, color, rect)
 
@@ -84,28 +113,34 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_d: 
+                if event.key == pygame.K_d:
                     render_mode = RenderMode.DEFAULT
                 if event.key == pygame.K_h:
-                    render_mode = RenderMode.HEIGHT_MAP # Toggle the height map view
-                if event.key == pygame.K_p: 
-                    render_mode = RenderMode.POPULATION_MAP 
+                    render_mode = RenderMode.HEIGHT_MAP  # Toggle the height map view
+                if event.key == pygame.K_p:
+                    render_mode = RenderMode.POPULATION_MAP
+                if event.key == pygame.K_b:  # New key to toggle the blended map
+                    render_mode = RenderMode.BLENDED_MAP
 
         if update_fn is not None:
             update_fn()
 
         screen.fill((0, 0, 0))
 
-        # Draw the height map if toggled on
-        match(render_mode): 
-            case RenderMode.DEFAULT: 
+        # Draw according to the selected render mode
+        match render_mode:
+            case RenderMode.DEFAULT:
                 draw_resources()
                 draw_agents()
 
-            case RenderMode.HEIGHT_MAP: 
-                draw_height_map() 
+            case RenderMode.HEIGHT_MAP:
+                draw_height_map()
+
             case RenderMode.POPULATION_MAP:
                 draw_population_map()
+
+            case RenderMode.BLENDED_MAP:
+                draw_blended_map()  # Draw blended map
 
         # Display the FPS
         fps = str(int(clock.get_fps()))

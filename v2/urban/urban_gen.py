@@ -65,7 +65,7 @@ class UrbanTerrainMapGenerator(TerrainMapGenerator):
         population_density = self.generate_population_density(dims)
 
         # Generate a road network
-        road_network = self.generate_road_network(dims)
+        road_network = self.generate_road_network(dims, population_density)
         # Discretize with the height map
         height_map = np.full((dims[0], dims[1]), (self.min_height + self.max_height) / 2, dtype=np.float32)
         for (start ,v) in road_network.graph.items():
@@ -77,11 +77,16 @@ class UrbanTerrainMapGenerator(TerrainMapGenerator):
         return terrain_map
     
 
-    def generate_population_density(self, dims: tuple[int, int], scale: float = 100.0, octaves: int = 6, persistence: float = 0.5, lacunarity: float = 2.0) -> np.ndarray:
+    def generate_population_density(self, dims: tuple[int, int]) -> np.ndarray:
         """
         Generate a population density map using Perlin noise.
         """
         density_map = np.zeros(dims)
+                               
+        scale: float = 50.0 
+        octaves: int = 2
+        persistence: float = 0.5 
+        lacunarity: float = 2.0
         for i in range(dims[0]):
             for j in range(dims[1]):
                 # Generate Perlin noise value at (i, j)
@@ -93,7 +98,7 @@ class UrbanTerrainMapGenerator(TerrainMapGenerator):
         
         return density_map
     
-    def generate_road_network(self, dims: tuple[int, int]) -> RoadNetwork:
+    def generate_road_network(self, dims: tuple[int, int], population_density : np.ndarray) -> RoadNetwork:
         """
         Generate a road network
         """
@@ -105,7 +110,7 @@ class UrbanTerrainMapGenerator(TerrainMapGenerator):
 
         # Step 1: Generate initial roads using an L-system or some growth rule
         start_point = (dims[0] // 2, dims[1] // 2)  # Start road from center
-        self.grow_roads(dims, road_network, start_point, max_iterations)
+        self.grow_roads(dims, road_network, start_point, population_density, max_iterations)
 
         # Step 2: Mark intersections as nodes
         self.mark_intersections_as_nodes(road_network)
@@ -116,8 +121,10 @@ class UrbanTerrainMapGenerator(TerrainMapGenerator):
         # Return the road network
         return road_network
 
-    def grow_roads(self, dims : tuple[int, int], road_network: RoadNetwork, start_point: RoadNode, max_iterations: int):
-        """Grow roads from a starting point with a simple L-system-like process."""
+    def grow_roads(self, dims: tuple[int, int], road_network: RoadNetwork, start_point: RoadNode, population_density: np.ndarray, max_iterations: int):
+        """
+        Grow roads from a starting point, influenced by population density.
+        """
         directions = [
             (0, 1), 
             (1, 0), 
@@ -128,23 +135,48 @@ class UrbanTerrainMapGenerator(TerrainMapGenerator):
             (-1, 1),
             (-1, -1)
         ] 
-        vertex_list : list[RoadNode] = []
-        vertex_list.append(start_point)
-        
+        vertex_list: List[RoadNode] = [start_point]
+
         for _ in range(max_iterations):
-            P0 = vertex_list[np.random.choice(len(vertex_list))]
-            direction = directions[np.random.choice(len(directions))]
-            length = np.random.randint(1, 6) * 5
+            P0 = vertex_list[np.random.choice(len(vertex_list))]  # Randomly pick a start point from existing vertices
 
-            x = P0[0] + direction[0] * length
-            y = P0[1] + direction[1] * length
-            
-            x = min(max(x, 0), dims[0] - 1)
-            y = min(max(y, 0), dims[1] - 1)
-            P1 = (x, y)
+            # Bias road growth towards denser population areas
+            direction_weights = []
+            for direction in directions:
+                new_x = P0[0] + direction[0]
+                new_y = P0[1] + direction[1]
 
+                # Ensure the new point is within bounds
+                if 0 <= new_x < dims[0] and 0 <= new_y < dims[1]:
+                    # Sample population density at this new point
+                    density_value = population_density[new_x, new_y]
+                    # Favor directions with higher population density
+                    direction_weights.append(density_value)
+                else:
+                    direction_weights.append(0)  # Out of bounds, set weight to 0
+
+            # Normalize weights and pick a direction biased by population density
+            direction_weights = np.array(direction_weights)
+            if direction_weights.sum() == 0:
+                direction_weights = np.ones(len(directions))  # If all weights are zero, make them uniform
+            direction_weights /= direction_weights.sum()
+
+            # Pick a direction based on the weighted probabilities
+            chosen_direction = directions[np.random.choice(len(directions), p=direction_weights)]
+            length = np.random.randint(1, 6) * 5  # Random road segment length
+
+            # Calculate new endpoint
+            new_x = P0[0] + chosen_direction[0] * length
+            new_y = P0[1] + chosen_direction[1] * length
+
+            # Ensure the new endpoint is within bounds
+            new_x = min(max(new_x, 0), dims[0] - 1)
+            new_y = min(max(new_y, 0), dims[1] - 1)
+            P1 = (new_x, new_y)
+
+            # Add the new road segment
             vertex_list.append(P1)
-            road_segment = RoadSegment(start=P0, end = P1)
+            road_segment = RoadSegment(start=P0, end=P1)
             road_network.add_road_segment(road_segment)
 
     def mark_intersections_as_nodes(self, road_network: RoadNetwork):
