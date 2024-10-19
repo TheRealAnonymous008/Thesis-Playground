@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 
 import numpy as np
 from .agent import Agent, _IdType
@@ -7,7 +7,10 @@ from .observation import LocalObservation
 from .action import ActionInformation, Direction
 from .resource_map import ResourceMapGenerator, ResourceMap, Resource
 from .env_params import MAX_VISIBILITY
-from .models import *
+
+if TYPE_CHECKING: 
+    from .models import BaseDynamicsModel
+
 from .terrain_map import *
 
 
@@ -19,16 +22,10 @@ class World:
                  dims : tuple[int, int],
                  swarm_initialzier : Callable, 
                  terrain_generator : TerrainMapGenerator = TerrainMapGenerator(-1, 1, MAX_VISIBILITY),
-                 energy_model : EnergyModel = None,
-                 chemistry_model : ChemistryModel = None,
-                 max_visibility  : int = MAX_VISIBILITY,
         ):
         """
         :param dims: The dimensions of the world.
         :param swarm_initializer: A function to initialize a swarm of agents.
-        :param energy_model: A model for energy consumption and emission for each agent.
-        :param chemistry_model: A model for how products are made.
-        :param max_visibilityL At most how far can agents see.
         """
         if dims[0] <= 0 or dims[1] <= 0:
             raise Exception(f"Incorrect dimensions {dims}")
@@ -38,12 +35,13 @@ class World:
 
         self._agents : dict[_IdType, Agent] = {}
         self._swarm_initializer : Callable = swarm_initialzier
+        self._models : dict[str, BaseDynamicsModel] = {}
         self._terrain_generator : TerrainMapGenerator | None  = terrain_generator
-
-        self._energy_model : EnergyModel | None = energy_model
-        self._chemistry_model : ChemistryModel | None = chemistry_model
-        self._max_visibility : int = max_visibility
         self.reset()
+
+    def add_model(self, name : str, model : BaseDynamicsModel) -> World: 
+        self._models[name] = model
+        return self  
 
     def reset(self):
         """
@@ -123,9 +121,8 @@ class World:
         Perform any clean up after updating but before passing all information to agents.
         """
         # Update any models that we have
-        if self._energy_model != None: 
-            for agent in self.agents:
-                self._energy_model.forward(agent)
+        for model in self._models.values():
+            model.forward(self)
 
 
     def _update_agent_sensors(self, agent : Agent):
@@ -223,10 +220,6 @@ class World:
         Returns the number of cells in the world
         """
         return self._dims[0] * self._dims[1]
-    
-    @property
-    def total_resource_types(self) -> int: 
-        return self._resource_generator.resource_types
     
 def initialize_positions_randomly(world: World, swarm: list[Agent]):
     positions : list[tuple[int, int]] = []
