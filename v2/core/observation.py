@@ -17,7 +17,7 @@ class LocalObservation:
 
     """
     nearby_agents : np.ndarray
-    resource_types : np.ndarray 
+    # resource_types : np.ndarray 
     
     def neighbors(self, id : int) -> list[int]:
         """

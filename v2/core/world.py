@@ -18,8 +18,7 @@ class World:
     def __init__(self, 
                  dims : tuple[int, int],
                  swarm_initialzier : Callable, 
-                 resource_generator : ResourceMapGenerator = ResourceMapGenerator(1, MAX_VISIBILITY),
-                 terrain_generatoor : TerrainMapGenerator = TerrainMapGenerator(-1, 1, MAX_VISIBILITY),
+                 terrain_generator : TerrainMapGenerator = TerrainMapGenerator(-1, 1, MAX_VISIBILITY),
                  energy_model : EnergyModel = None,
                  chemistry_model : ChemistryModel = None,
                  max_visibility  : int = MAX_VISIBILITY,
@@ -27,7 +26,6 @@ class World:
         """
         :param dims: The dimensions of the world.
         :param swarm_initializer: A function to initialize a swarm of agents.
-        :param resource_generator: A generator for resources.
         :param energy_model: A model for energy consumption and emission for each agent.
         :param chemistry_model: A model for how products are made.
         :param max_visibilityL At most how far can agents see.
@@ -40,8 +38,7 @@ class World:
 
         self._agents : dict[_IdType, Agent] = {}
         self._swarm_initializer : Callable = swarm_initialzier
-        self._resource_generator : ResourceMapGenerator | None = resource_generator
-        self._terrain_generator : TerrainMapGenerator | None  = terrain_generatoor
+        self._terrain_generator : TerrainMapGenerator | None  = terrain_generator
 
         self._energy_model : EnergyModel | None = energy_model
         self._chemistry_model : ChemistryModel | None = chemistry_model
@@ -56,9 +53,8 @@ class World:
         self._time_step = 0 
         self._nagents = 0
 
-        # Generate a new resource map 
-        self._resource_map = self._resource_generator.generate(self._dims)
         self._terrain_map = self._terrain_generator.generate(self._dims)
+        self._movement_mask = np.zeros(self._dims, dtype=bool)
 
         self._swarm_initializer(self)
 
@@ -69,85 +65,78 @@ class World:
         """
         Update the environment 
         """
-        # Get a working list of agents and shuffle them
-        agents = self.agents
-        self._update_movement(agents)
-        self._update_agent_actuation(agents)
+        self._pre_update()
+        self._update_agent_actuation()
+        self._post_update()
 
         # Get the current world state
-        self._world_state = self._get_world_state()
-        self._resource_grid = self._resource_map._resource_type_map
-        
-        # Update any models that we have
-        if self._energy_model != None: 
-            for agent in agents:
-                self._energy_model.forward(agent)
+        self._world_state = self._get_world_state()        
 
-
-        for agent in agents:
+        for agent in self.agents:
             # Reset the agents
             agent.reset_for_next_action()
-
-            # Give them the observations they can see in the environment
-            visibility_range = agent._visibility_range  
-            nearby_agents = self._get_nearby_agents(agent, visibility_range)
-            nearby_resources = self._get_nearby_resources(agent, visibility_range)
-            observation = LocalObservation(nearby_agents, nearby_resources)
-
-            agent.set_observation(observation)
+            self._update_agent_sensors(agent)
 
         self._time_step += 1
 
     def _get_world_state(self):
         return self.get_presence_mask(self.agents)
 
+    def _pre_update(self):
+        """
+        Perform any initialization work
+        """
+        # First, pre-shuffle the agents
+        np.random.shuffle(self.agents)
 
-    def _update_movement(self, agents : list[Agent]):
-        movement_mask = np.zeros(self._dims, dtype=bool)
-
-        for agent in agents:
+        # Generate movement masks for the agents
+        self.movement_mask = np.zeros(self._dims, dtype=bool)
+        for agent in self.agents:
             position_const = agent.current_position_const
-            movement_mask[position_const[0]][position_const[1]] = True 
+            self.movement_mask[position_const[0]][position_const[1]] = True 
 
-        for agent in agents: 
-            action : ActionInformation = agent.action
-            # Note: We are being careful here to perfectly undo the current position. That way, we maintain invariants in the world.
-            current_position = agent.current_position_const
-            movement_mask[current_position[0], current_position[1]] = False 
+    def _update_agent_actuation(self): 
+        """
+        Resolve all agent actions here.
+        """
+        for agent in self.agents:
+            action : ActionInformation = agent.action 
 
+            # Do stuff with agent actions
             if action.movement != None: 
+                current_position = agent.current_position_const
+                self.movement_mask[current_position[0], current_position[1]] = False 
                 dir_movement = Direction.get_direction_of_movement(action.movement)
                 current_position += dir_movement
 
                 if not self.is_traversable(current_position) or \
-                    movement_mask[current_position[0], current_position[1]] or \
+                    self.movement_mask[current_position[0], current_position[1]] or \
                     self._terrain_map.get_gradient(current_position, action.movement) > agent._max_slope:
                     current_position -= dir_movement
 
-            movement_mask[current_position[0], current_position[1]] = True 
-            agent.set_position(current_position)
+                self.movement_mask[current_position[0], current_position[1]] = True 
+                agent.set_position(current_position)
 
-    def _update_agent_actuation(self, agents : list[Agent]): 
-        for agent in agents:
-            action : ActionInformation = agent.action
-            if action.pick_up != None: 
-                # Note: We carefully undo the adding of dir_action to pos
-                pos = agent.current_position_const 
-                dir_action = Direction.get_direction_of_movement(action.pick_up)
 
-                pos += dir_action
+    def _post_update(self):
+        """
+        Perform any clean up after updating but before passing all information to agents.
+        """
+        # Update any models that we have
+        if self._energy_model != None: 
+            for agent in self.agents:
+                self._energy_model.forward(agent)
 
-                if self.is_in_bounds(pos):
-                    resource : Resource = self._resource_map.subtract_resource(pos, 1)
-                    if resource.quantity != 0:
-                        qty = agent.add_to_inventory(resource)
-                        self._resource_map.add_resource(pos, resource.type, qty)
 
-                pos -= dir_action
+    def _update_agent_sensors(self, agent : Agent):
+        """
+        Gives the agent its observations
+        """
+        visibility_range = agent._visibility_range  
+        nearby_agents = self._get_nearby_agents(agent, visibility_range)
+        observation = LocalObservation(nearby_agents)
 
-            elif action.production_job != None and self._chemistry_model != None: 
-                self._chemistry_model.forward(agent, action.production_job)
-
+        agent.set_observation(observation)
 
     def _get_nearby_agents(self, agent: Agent, visibility_range: int) -> np.ndarray:
         """
@@ -159,17 +148,6 @@ class World:
 
         # We assume the resource grid is final and will not change 
         observation = self._world_state[x_min:x_max, y_min:y_max]
-
-        return observation
-
-    def _get_nearby_resources(self, agent : Agent, visibility_range : int) -> np.ndarray:
-        """
-        Gets all resources nearby using the visibility range. 
-        """
-        x, y = self._resource_map.translate_idx(agent.current_position_const)
-
-        # We assume the resource grid is final and will not change 
-        observation = self._resource_grid[x - visibility_range: x + visibility_range + 1, y - visibility_range : y + visibility_range + 1]
 
         return observation
 
@@ -204,7 +182,7 @@ class World:
         """
         Check whether a position is traversable to any agent
         """
-        return self.is_in_bounds(position) and self._resource_map.get_type((position[0], position[1])) == 0
+        return self.is_in_bounds(position)
     
     def get_presence_mask(self, agents : list[Agent]) -> np.ndarray:
         """
@@ -231,13 +209,6 @@ class World:
         Returns a list of all the agent ids
         """
         return list(self._agents.keys())
-    
-    @property
-    def resource_map(self) -> ResourceMap:
-        """
-        Returns a copy of the resource map
-        """
-        return self._resource_map.copy
     
     @property
     def terrain_map(self) -> TerrainMap:

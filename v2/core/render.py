@@ -7,7 +7,10 @@ from .world import World
 
 def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update_fn: Callable | None = None, delay_s: float = 1):
     """
-    Renders a given scenario
+    Renders a provided world on screen.
+
+    Note that for the framework itself, the render world function is assumed to be defined based on the user's specific need. This
+    code is to be treated as an example of how one might implement such a function.
     """
     pygame.init()
 
@@ -41,17 +44,6 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
             center = (pos_const[0] * cell_size[0] + cell_size[0] // 2, pos_const[1] * cell_size[1] + cell_size[1] // 2)
             radius = min(cell_size) // 3
             pygame.draw.circle(screen, (0, 255, 0), center, radius)
-
-    def draw_resources():
-        resource_map = world.resource_map
-        x0, y0 = resource_map.shape
-        for x in range(0, x0):
-            for y in range(0, y0):
-                resource_type, _ = resource_map.get((x, y))
-                if resource_type > 0:
-                    color = (resource_type * 40, 100, 100)  # Assign color based on resource type
-                    rect = pygame.Rect(x * cell_size[0], y * cell_size[1], cell_size[0], cell_size[1])
-                    pygame.draw.rect(screen, color, rect)
 
     def draw_height_map():
         terrain_map = world.terrain_map
@@ -130,7 +122,6 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
         # Draw according to the selected render mode
         match render_mode:
             case RenderMode.DEFAULT:
-                draw_resources()
                 draw_agents()
 
             case RenderMode.HEIGHT_MAP:
