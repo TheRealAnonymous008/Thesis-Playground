@@ -10,12 +10,15 @@ from .resource import Resource, _QuantityType, _ResourceType
 from .utility import UtilityFunction
 from .agent_state import *
 from .direction import Direction
+from .message import Message
 
 _IdType = int
 
 class Agent:
     """
-    Agent Class. Override or augment this class as needed
+    Agent Class. Override or augment this class as needed.
+
+    This is meant to be a wrapper that allows interfacing between actions and states.
     """
 
     def __init__(self):
@@ -77,12 +80,6 @@ class Agent:
             case _: 
                 raise Exception(f"Invalid direction specified {val}")
 
-    def talk_to(self, agent : Agent):
-        """
-        Communicate with the agent. Construct a message to send to this agent 
-        """
-        self.send_message(agent, Message(self._id, 1))
-    
     def send_message(self, agent : Agent, message : Message):
         """
         Send a message to the target agent
