@@ -52,7 +52,7 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
         x0, y0 = terrain_map.shape
         for i in range(0, x0):
             for j in range(0, y0):
-                height_value = terrain_map.get_height((i, j))
+                height_value = terrain_map.get((i, j))
                 brightness = int(((height_value - min_height) / (max_height - min_height)) * 255)
                 color = (brightness, brightness, brightness)
                 rect = pygame.Rect(i * cell_size[0], j * cell_size[1], cell_size[0], cell_size[1])
@@ -65,7 +65,7 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
         x0, y0 = terrain_map.shape
         for i in range(0, x0):
             for j in range(0, y0):
-                val = terrain_map.get_density((i, j))
+                val = terrain_map.get((i, j))
                 brightness = int(((val - min_val) / (max_val - min_val)) * 255)
                 color = (brightness, brightness, brightness)
                 rect = pygame.Rect(i * cell_size[0], j * cell_size[1], cell_size[0], cell_size[1])
@@ -83,8 +83,8 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
         for i in range(0, x0):
             for j in range(0, y0):
                 # Get height and population density
-                height_value = terrain_map.get_height((i, j))
-                density_value = terrain_map.get_density((i, j))
+                height_value = terrain_map.get((i, j))
+                density_value = terrain_map.get((i, j))
 
                 # Calculate brightness for height and density
                 height_brightness = int(((height_value - min_height) / (max_height - min_height)) * 255)

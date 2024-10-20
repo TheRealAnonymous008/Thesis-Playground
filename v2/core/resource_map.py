@@ -7,6 +7,7 @@ from .env_params import RESOURCE_TYPES, MAX_VISIBILITY
 
 from .resource import Resource, _QuantityType, _ResourceType
 
+# TODO: Refactor This to make use to the BaseMap Class. 
 class ResourceMap:
     """
     Class for holding information on the resources of a map

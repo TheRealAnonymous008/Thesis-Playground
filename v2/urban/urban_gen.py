@@ -7,7 +7,6 @@ from utils.line import *
 from core.env_params import MAX_VISIBILITY
 from core.terrain_map import *
 from typing import Dict, Tuple, List
-import heapq
 
  
 RoadNode = Tuple[int, int] 
@@ -39,7 +38,7 @@ class RoadNetwork:
         return self.graph.get(node, [])
 
 
-class UrbanTerrainMapGenerator(TerrainMapGenerator):
+class UrbanTerrainMapGenerator(BaseMapGenerator):
     """
     Derived class for generating a realistic urban area terrain map.
     """
@@ -56,7 +55,7 @@ class UrbanTerrainMapGenerator(TerrainMapGenerator):
         super().__init__(min_height, max_height, padding)
 
 
-    def generate(self, dims: tuple[int, int]) -> tuple[TerrainMap, tuple[int, int], tuple[int, int]]:
+    def generate(self, dims: tuple[int, int]) -> tuple[BaseMap, BaseMap]:
         """
         Generate a realistic urban terrain map with roads and buildings.
         """
@@ -73,8 +72,10 @@ class UrbanTerrainMapGenerator(TerrainMapGenerator):
                 bresenham_line(height_map, start, end)
 
         # Create the TerrainMap object
-        terrain_map = TerrainMap(height_map=height_map, padding=self.padding, density_map = population_density)
-        return terrain_map
+        terrain_map = TerrainMap(height_map=height_map, padding=self.padding)
+        # Create a population density object
+        population_density_map = BaseMap(population_density, padding=self.padding)
+        return terrain_map, population_density_map
     
 
     def generate_population_density(self, dims: tuple[int, int]) -> np.ndarray:

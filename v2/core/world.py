@@ -20,8 +20,8 @@ class World:
     """
     def __init__(self, 
                  dims : tuple[int, int],
-                 swarm_initialzier : Callable, 
-                 terrain_generator : TerrainMapGenerator = TerrainMapGenerator(-1, 1, MAX_VISIBILITY),
+                 swarm_initializer : Callable, 
+                 generation_pipeline : Callable,
         ):
         """
         :param dims: The dimensions of the world.
@@ -34,9 +34,12 @@ class World:
         self._world_grid = np.zeros(dims, dtype = np.int32)
 
         self._agents : dict[_IdType, Agent] = {}
-        self._swarm_initializer : Callable = swarm_initialzier
+        self._swarm_initializer : Callable = swarm_initializer
+        self._generation_pipeline : Callable = generation_pipeline
+        self._maps : BaseMapCollection = None
+
         self._models : dict[str, BaseDynamicsModel] = {}
-        self._terrain_generator : TerrainMapGenerator | None  = terrain_generator
+        
         self.reset()
 
     def add_model(self, name : str, model : BaseDynamicsModel) -> World: 
@@ -51,7 +54,7 @@ class World:
         self._time_step = 0 
         self._nagents = 0
 
-        self._terrain_map = self._terrain_generator.generate(self._dims)
+        self._maps = self._generation_pipeline(self)
         self._movement_mask = np.zeros(self._dims, dtype=bool)
 
         self._swarm_initializer(self)
@@ -106,10 +109,10 @@ class World:
                 self.movement_mask[current_position[0], current_position[1]] = False 
                 dir_movement = Direction.get_direction_of_movement(action.movement)
                 current_position += dir_movement
-
+                
                 if not self.is_traversable(current_position) or \
                     self.movement_mask[current_position[0], current_position[1]] or \
-                    self._terrain_map.get_gradient(current_position, action.movement) > agent._max_slope:
+                    self._maps.get("Terrain").get_gradient(current_position, action.movement) > agent._max_slope:
                     current_position -= dir_movement
 
                 self.movement_mask[current_position[0], current_position[1]] = True 
@@ -207,12 +210,8 @@ class World:
         """
         return list(self._agents.keys())
     
-    @property
-    def terrain_map(self) -> TerrainMap:
-        """
-        Returns a copy of the terrain map
-        """ 
-        return self._terrain_map.copy
+    def get_map(self, name : str) -> BaseMap | None: 
+        return self._maps.get(name).copy
     
     @property
     def total_cell_count(self) -> int:
