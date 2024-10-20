@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import numpy as np
-
-
 from .observation import LocalObservation
 
 from .action import *
@@ -16,6 +14,10 @@ from .direction import Direction
 _IdType = int
 
 class Agent:
+    """
+    Agent Class. Override or augment this class as needed
+    """
+
     def __init__(self):
         """
         Initializes a simple agent 
@@ -27,14 +29,9 @@ class Agent:
 
         self._current_observation : LocalObservation = None
         self._current_action : ActionInformation = ActionInformation()
+        self._traits : AgentTraits = AgentTraits()
         self._current_state :  AgentState = AgentState()
-
-        # Attributes of the agent. 
-        self._visibility_range : int = 3
-        self._energy_capacity : float = 100.0
-        self._carrying_capacity : float = 100.0
         self._utility_function : UtilityFunction = None 
-        self._max_slope : float = 1
 
         self.reset()
         
@@ -43,8 +40,7 @@ class Agent:
         Reset the agent
         """
         self._previous_position = None 
-        self._current_state.reset()
-        self._current_state.current_energy = self._energy_capacity
+        self._current_state.reset(self._traits)
 
     def update(self):
         """
@@ -77,62 +73,6 @@ class Agent:
             
             case Direction.WEST.value:
                 self._current_action.movement = Direction.WEST
-
-            case _: 
-                raise Exception(f"Invalid direction specified {val}")
-
-    def pick_up(self, dir : Direction | int ): 
-        """
-        Pick up a resource adjacent to this agent 
-        """
-        if not self._current_state.can_move:
-            return 
-
-        if type(dir) is Direction: 
-            val = dir.value
-        else: 
-            val = dir 
-
-        match(val):
-            case Direction.NORTH.value: 
-                self._current_action.pick_up = Direction.NORTH
-
-            case Direction.SOUTH.value: 
-                self._current_action.pick_up = Direction.SOUTH
-
-            case Direction.EAST.value: 
-                self._current_action.pick_up = Direction.EAST
-            
-            case Direction.WEST.value:
-                self._current_action.pick_up = Direction.WEST
-
-            case _: 
-                raise Exception(f"Invalid direction specified {val}")
-
-    def put_down(self, dir : Direction | int ): 
-        """
-        Put down the held resource to somewhere adjacent to the agent.
-        """
-        if not self._current_state.can_move:
-            return 
-
-        if type(dir) is Direction: 
-            val = dir.value
-        else: 
-            val = dir 
-
-        match(val):
-            case Direction.NORTH.value: 
-                self._current_action.pick_up = Direction.NORTH
-
-            case Direction.SOUTH.value: 
-                self._current_action.pick_up = Direction.SOUTH
-
-            case Direction.EAST.value: 
-                self._current_action.pick_up = Direction.EAST
-            
-            case Direction.WEST.value:
-                self._current_action.pick_up = Direction.WEST
 
             case _: 
                 raise Exception(f"Invalid direction specified {val}")

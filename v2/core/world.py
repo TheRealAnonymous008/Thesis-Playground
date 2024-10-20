@@ -111,7 +111,7 @@ class World:
                 
                 if not self.is_traversable(current_position) or \
                     self.movement_mask[current_position[0], current_position[1]] or \
-                    self._maps.get("Terrain").get_gradient(current_position, action.movement) > agent._max_slope:
+                    self._maps.get("Terrain").get_gradient(current_position, action.movement) > agent._traits._max_slope:
                     current_position -= dir_movement
 
                 self.movement_mask[current_position[0], current_position[1]] = True 
@@ -131,7 +131,7 @@ class World:
         """
         Gives the agent its observations
         """
-        visibility_range = agent._visibility_range  
+        visibility_range = agent._traits._visibility_range  
         nearby_agents = self._get_nearby_agents(agent, visibility_range)
         observation = LocalObservation(nearby_agents)
 

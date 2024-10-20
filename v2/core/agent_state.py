@@ -10,6 +10,16 @@ from .resource import Resource, _QuantityType, _ResourceType
 
 _UtilityType = float 
 
+@dataclass 
+class AgentTraits:
+    """
+    Data class containing fixed parameters / traits of the agent relevant to the simulation
+    """
+    _visibility_range : int = 3
+    _energy_capacity : float = 100.0
+    _carrying_capacity : float = 100.0
+    _max_slope : float = 1
+
 @dataclass
 class AgentState:
     """
@@ -33,11 +43,11 @@ class AgentState:
     skills : np.ndarray | None = None 
     
     
-    def reset(self):
+    def reset(self, traits : AgentTraits):
         """
         Reset the state
         """
-        self.current_energy = 0
+        self.current_energy = traits._energy_capacity
         self.current_utility = None
         self.inventory.clear()
         self.relations.clear()
