@@ -20,9 +20,9 @@ class BaseCommunicationProtocol(ABC):
 
     Child classes should only override the following methods and no more
     -> _choose_target
-    -> _formulate_message
-    -> _interpret_message 
-    
+    -> _formulate_message_contents
+    -> _interpret_message_contents
+
     """
     def __init__(self):
         pass 
@@ -35,7 +35,8 @@ class BaseCommunicationProtocol(ABC):
             choice = self._choose_target(agent)
             if choice != None: 
                 tgt_agent = world.get_agent(choice)
-                message = self._formulate_message(agent, tgt_agent)
+                message_contents = self._formulate_message_contents(agent, tgt_agent)
+                message = Message(agent, message_contents)
                 agent.send_message(tgt_agent, message)
 
     def _choose_target(self, sender : Agent) -> Agent | None:
@@ -49,11 +50,11 @@ class BaseCommunicationProtocol(ABC):
         else: 
             return  None 
 
-    def _formulate_message(self, sender : Agent, receiver : Agent) -> Message:
+    def _formulate_message_contents(self, sender : Agent, receiver : Agent):
         """
         Formulates a message between sender and receiver
         """
-        return Message(sender, 1)
+        return 1
 
 
     def receive_messages(self, world : World):
@@ -64,11 +65,11 @@ class BaseCommunicationProtocol(ABC):
         for agent in world.agents: 
             received_messages = agent.get_messages()
             for msg in received_messages: 
-                self._interpret_message(agent, msg)
+                self._interpret_message_contents(agent, msg)
             agent.clear_messages()
 
-    def _interpret_message(self, agent : Agent, message : Message): 
+    def _interpret_message_contents(self, agent : Agent, message : Message): 
         """
         Protocol for interpreting any received messages
         """
-        agent.add_relation(message.sender, message.message)
+        pass 

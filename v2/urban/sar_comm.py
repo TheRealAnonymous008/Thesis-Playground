@@ -2,6 +2,10 @@ from __future__ import annotations
 
 from core.message import * 
 
+@dataclass 
+class SARMessagePacket: 
+    location : np.ndarray = None 
+
 class SARCommunicationProtocol(BaseCommunicationProtocol):
     def __init__(self):
         super().__init__()
@@ -9,9 +13,12 @@ class SARCommunicationProtocol(BaseCommunicationProtocol):
     def _choose_target(self, sender : Agent) -> Agent :
         return super()._choose_target(sender)
     
-    def _formulate_message(self, sender : Agent , receiver : Agent) -> Message:
-        return super()._formulate_message(sender, receiver)
+    def _formulate_message_contents(self, sender : Agent , receiver : Agent) -> Message:
+        contents = SARMessagePacket( 
+            sender.current_position
+        )
+        return contents
     
-    def _interpret_message(self, agent : Agent, message : Message):
-        super()._interpret_message(agent, message)
+    def _interpret_message_contents(self, agent : Agent, message : Message):
+        super()._interpret_message_contents(agent, message)
     
