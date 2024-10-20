@@ -1,6 +1,6 @@
 gymnasium==0.29.1
 noise==1.2.2
-numpy==2.1.1
+numpy==2.1.2
 pettingzoo==1.24.3
 pygame_ce==2.4.1
 stable_baselines3==2.3.2
