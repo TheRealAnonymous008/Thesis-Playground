@@ -6,12 +6,11 @@ import numpy as np
 from .observation import LocalObservation
 
 from .action import *
-from .resource_map import Resource
 from .message import * 
 
 from .resource import Resource, _QuantityType, _ResourceType
 from .utility import UtilityFunction
-from .agent_state import AgentState
+from .agent_state import *
 from .direction import Direction
 
 _IdType = int

@@ -1,19 +1,23 @@
 from __future__ import annotations
 
-from .map import *
+from core.map import *
 
 class TerrainMap(BaseMap):
     """
     Class for holding information on the terrain of the map. 
     """
-    def __init__(self, height_map : np.ndarray[float], padding : int) :
+    def __init__(self, height_map : np.ndarray[float], padding : int, min_height : float , max_height : float ) :
         """    
         :param height_map: Information about the terrain height at the sampled point
         :param padding: Padding added to all sides.
+        :param min_height: Minimum height (not infinity)
+        :param max_height: Maximum height (not infinity)
         """
         super().__init__(height_map, padding)
         self._dims = (height_map.shape[0], height_map.shape[1])
         self._height_map_gradient = self.compute_gradient_map()
+        self._min_height = min_height
+        self._max_height = max_height
     
     def compute_gradient_map(self) -> BaseMap:
         """
@@ -66,6 +70,6 @@ class TerrainMap(BaseMap):
         Returns a copy of the terrain map.
         """
         h = self._copy()
-        return TerrainMap(h, self._padding)
+        return TerrainMap(h, self._padding, self._min_height, self._max_height)
 
 

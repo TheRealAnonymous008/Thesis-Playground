@@ -5,7 +5,7 @@ from math import dist
 from noise import snoise2
 from utils.line import *
 from core.env_params import MAX_VISIBILITY
-from core.terrain_map import *
+from dynamics.space.terrain_map import *
 from typing import Dict, Tuple, List
 
  
@@ -52,7 +52,12 @@ class UrbanTerrainMapGenerator(BaseMapGenerator):
 
         min_height = base_height_range[0] 
         max_height = base_height_range[1] + building_height_range[1]
-        super().__init__(min_height, max_height, padding)
+
+        assert min_height <= max_height
+        self._min_height = min_height
+        self._max_height = max_height
+
+        super().__init__(padding)
 
 
     def generate(self, dims: tuple[int, int]) -> tuple[BaseMap, BaseMap]:
@@ -66,15 +71,20 @@ class UrbanTerrainMapGenerator(BaseMapGenerator):
         # Generate a road network
         road_network = self.generate_road_network(dims, population_density)
         # Discretize with the height map
-        height_map = np.full((dims[0], dims[1]), (self.min_height + self.max_height) / 2, dtype=np.float32)
+        height_map = np.full((dims[0], dims[1]), (self._min_height + self._max_height) / 2, dtype=np.float32)
         for (start ,v) in road_network.graph.items():
             for end in v: 
                 bresenham_line(height_map, start, end)
 
         # Create the TerrainMap object
-        terrain_map = TerrainMap(height_map=height_map, padding=self.padding)
+        terrain_map = TerrainMap(
+            height_map=height_map, 
+            padding=self._padding, 
+            min_height= self._min_height,
+            max_height= self._max_height
+        )
         # Create a population density object
-        population_density_map = BaseMap(population_density, padding=self.padding)
+        population_density_map = BaseMap(population_density, padding=self._padding)
         return terrain_map, population_density_map
     
 

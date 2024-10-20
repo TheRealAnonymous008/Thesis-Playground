@@ -1,9 +1,10 @@
 import pygame
 import numpy as np
 
-from enum import Enum 
+from enum import Enum
 from typing import Callable
 from .world import World
+from dynamics.space.terrain_map import *
 
 def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update_fn: Callable | None = None, delay_s: float = 1):
     """
@@ -28,7 +29,8 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
         DEFAULT = 1
         HEIGHT_MAP = 2
         POPULATION_MAP = 3
-        BLENDED_MAP = 4  # New mode for blending height and population density
+        VICTIM_MAP = 4  
+        BLENDED_MAP = 5  # Blended height and population density
 
     render_mode: RenderMode = RenderMode.DEFAULT
 
@@ -46,9 +48,9 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
             pygame.draw.circle(screen, (0, 255, 0), center, radius)
 
     def draw_height_map():
-        terrain_map = world.terrain_map
-        min_height = world._terrain_generator.min_height
-        max_height = world._terrain_generator.max_height
+        terrain_map: TerrainMap = world.get_map("Terrain")
+        min_height = terrain_map._min_height
+        max_height = terrain_map._max_height
         x0, y0 = terrain_map.shape
         for i in range(0, x0):
             for j in range(0, y0):
@@ -59,23 +61,34 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
                 pygame.draw.rect(screen, color, rect)
 
     def draw_population_map():
-        terrain_map = world.terrain_map
+        pop_map: BaseMap = world.get_map("Population")
         min_val = 0
         max_val = 1
-        x0, y0 = terrain_map.shape
+        x0, y0 = pop_map.shape
         for i in range(0, x0):
             for j in range(0, y0):
-                val = terrain_map.get((i, j))
+                val = pop_map.get((i, j))
                 brightness = int(((val - min_val) / (max_val - min_val)) * 255)
                 color = (brightness, brightness, brightness)
                 rect = pygame.Rect(i * cell_size[0], j * cell_size[1], cell_size[0], cell_size[1])
                 pygame.draw.rect(screen, color, rect)
 
+    def draw_victim_map():
+        """Draws the cells that have victims on them."""
+        victim_map: BaseMap = world.get_map("Victims")  # Assuming the victim map is stored under "Victims"
+        x0, y0 = victim_map.shape
+        for i in range(0, x0):
+            for j in range(0, y0):
+                if victim_map.get((i, j)) == 1:  # Victim present at this location
+                    rect = pygame.Rect(i * cell_size[0], j * cell_size[1], cell_size[0], cell_size[1])
+                    pygame.draw.rect(screen, (255, 0, 0), rect)  # Draw victims in red
+
     def draw_blended_map():
         """Blends both height map and population density on top of each other."""
-        terrain_map = world.terrain_map
-        min_height = world._terrain_generator.min_height
-        max_height = world._terrain_generator.max_height
+        terrain_map: TerrainMap = world.get_map("Terrain")
+        pop_map: BaseMap = world.get_map("Population")
+        min_height = terrain_map._min_height
+        max_height = terrain_map._max_height
         min_density = 0
         max_density = 1
 
@@ -84,7 +97,7 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
             for j in range(0, y0):
                 # Get height and population density
                 height_value = terrain_map.get((i, j))
-                density_value = terrain_map.get((i, j))
+                density_value = pop_map.get((i, j))
 
                 # Calculate brightness for height and density
                 height_brightness = int(((height_value - min_height) / (max_height - min_height)) * 255)
@@ -111,6 +124,8 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
                     render_mode = RenderMode.HEIGHT_MAP  # Toggle the height map view
                 if event.key == pygame.K_p:
                     render_mode = RenderMode.POPULATION_MAP
+                if event.key == pygame.K_v:  # New key to toggle the victim map view
+                    render_mode = RenderMode.VICTIM_MAP
                 if event.key == pygame.K_b:  # New key to toggle the blended map
                     render_mode = RenderMode.BLENDED_MAP
 
@@ -129,6 +144,9 @@ def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update
 
             case RenderMode.POPULATION_MAP:
                 draw_population_map()
+
+            case RenderMode.VICTIM_MAP:
+                draw_victim_map()  # Draw cells with victims
 
             case RenderMode.BLENDED_MAP:
                 draw_blended_map()  # Draw blended map

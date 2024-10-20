@@ -3,9 +3,9 @@ from __future__ import annotations
 from enum import Enum
 import numpy as np
 from abc import ABC 
-from .env_params import RESOURCE_TYPES, MAX_VISIBILITY
+from core.env_params import RESOURCE_TYPES, MAX_VISIBILITY
 
-from .resource import Resource, _QuantityType, _ResourceType
+from core.resource import Resource, _QuantityType, _ResourceType
 
 # TODO: Refactor This to make use to the BaseMap Class. 
 class ResourceMap:

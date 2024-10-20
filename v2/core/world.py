@@ -5,13 +5,12 @@ import numpy as np
 from .agent import Agent, _IdType
 from .observation import LocalObservation
 from .action import ActionInformation, Direction
-from .resource_map import ResourceMapGenerator, ResourceMap, Resource
 from .env_params import MAX_VISIBILITY
 
 if TYPE_CHECKING: 
     from .models import BaseDynamicsModel
 
-from .terrain_map import *
+from dynamics.space.terrain_map import *
 
 
 class World: 

@@ -39,7 +39,7 @@ class BaseMap(ABC):
         """
         Returns a copy of the  map.
         """
-        return self._copy()
+        return BaseMap(self._copy(), self._padding)
     
     def _copy(self):
         """
@@ -91,21 +91,15 @@ class BaseMapGenerator(ABC):
     """
     Base class for generating the terrain.
     """
-    def __init__(self, min_height : float , max_height : float , padding = MAX_VISIBILITY):
+    def __init__(self,  padding = MAX_VISIBILITY):
         """
-        :param min_height: - the minimum allowable height
-        :param max_height: - the maximum allowable height
         :param padding:    - the padding to place in the terrain map generator
         """
-        assert(min_height < max_height)
-
-        self.min_height = min_height
-        self.max_height = max_height 
-        self.padding = padding
+        self._padding = padding
     
     @abstractmethod
     def generate(self, dims : tuple[int, int]) -> BaseMap:
         """
-        Generate a resource map. Derived classes should extend this method.
+        Generate a map. Derived classes should extend this method.
         """
         pass
