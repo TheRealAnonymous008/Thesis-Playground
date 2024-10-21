@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 import numpy as np 
 @dataclass
 class Message: 
-    sender : int = 0
+    sender : Agent = None 
     message : int = 0             # Override the message here
 
 class BaseCommunicationProtocol(ABC):
@@ -41,7 +41,7 @@ class BaseCommunicationProtocol(ABC):
 
     def _choose_target(self, sender : Agent) -> Agent | None:
         """
-        Chooses an agent to send the message to.
+        Chooses an agent to send the message to. Returns either an Agent or None (should not return the sender).
         """
         neighbors = sender.agents_in_range 
         # Send agents a message
@@ -52,14 +52,14 @@ class BaseCommunicationProtocol(ABC):
 
     def _formulate_message_contents(self, sender : Agent, receiver : Agent):
         """
-        Formulates a message between sender and receiver
+        Formulates a message between sender and receiver. Returns the message contents which can be any object as long as it is interpretable 
         """
         return 1
 
 
     def receive_messages(self, world : World):
         """
-        Protocol for receiving messages
+        Protocol for receiving messages.
         """    
         # Comms protocol (receiving)
         for agent in world.agents: 
@@ -68,8 +68,8 @@ class BaseCommunicationProtocol(ABC):
                 self._interpret_message_contents(agent, msg)
             agent.clear_messages()
 
-    def _interpret_message_contents(self, agent : Agent, message : Message): 
+    def _interpret_message_contents(self, receiver : Agent, message : Message): 
         """
-        Protocol for interpreting any received messages
+        Protocol for interpreting any received messages. Does not return anything.
         """
         pass 
