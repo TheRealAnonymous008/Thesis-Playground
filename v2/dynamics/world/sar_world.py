@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import Callable, TYPE_CHECKING
 
-from core.agent import _IdType
 from core.world import *
 from dynamics.agents.sar_agent import *
 
