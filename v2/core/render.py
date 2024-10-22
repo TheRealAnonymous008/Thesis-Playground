@@ -3,10 +3,10 @@ import numpy as np
 
 from enum import Enum
 from typing import Callable
-from .world import World
+from .world import BaseWorld
 from dynamics.space.terrain_map import *
 
-def render_world(world: World, screen_size: tuple[int, int] = (600, 600), update_fn: Callable | None = None, delay_s: float = 1):
+def render_world(world: BaseWorld, screen_size: tuple[int, int] = (600, 600), update_fn: Callable | None = None, delay_s: float = 1):
     """
     Renders a provided world on screen.
 

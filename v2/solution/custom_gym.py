@@ -12,7 +12,7 @@ from pettingzoo import ParallelEnv
 from core.agent import Agent, AgentState
 from core.action import Direction
 from core.render import render_world
-from core.world import World
+from core.world import BaseWorld
 
 def take_action(action_code : int, agent : Agent):
     match (action_code) : 
@@ -29,7 +29,7 @@ def take_action(action_code : int, agent : Agent):
         case _ : pass # Do nothing, placeholder for now.
 
 class CustomGymEnviornment(ParallelEnv):
-    def __init__(self, world : World, time_step_upper = 100):
+    def __init__(self, world : BaseWorld, time_step_upper = 100):
         """
         Define the initial parameters of the environment
 

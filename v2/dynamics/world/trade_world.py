@@ -2,20 +2,20 @@ from __future__ import annotations
 from typing import Callable, TYPE_CHECKING
 
 import numpy as np
-from .agent import Agent, _IdType
-from .observation import LocalObservation
-from .action import ActionInformation, Direction
-from .env_params import MAX_VISIBILITY
+from core.agent import Agent, _IdType
+from core.observation import LocalObservation
+from core.action import ActionInformation, Direction
+from core.env_params import MAX_VISIBILITY
 
 if TYPE_CHECKING: 
-    from .models import BaseDynamicsModel
+    from core.models import BaseDynamicsModel
 
 from dynamics.space.terrain_map import *
-from abc import *
 
-class BaseWorld(ABC):
+
+class World: 
     """
-    Class responsible for simulating the environemnt .
+    Class responsible for simulating the SAR environemnt 
     """
     def __init__(self, 
                  dims : tuple[int, int],
@@ -41,7 +41,7 @@ class BaseWorld(ABC):
         
         self.reset()
 
-    def add_model(self, name : str, model : BaseDynamicsModel) -> BaseWorld: 
+    def add_model(self, name : str, model : BaseDynamicsModel) -> World: 
         self._models[name] = model
         return self  
 
@@ -52,19 +52,14 @@ class BaseWorld(ABC):
         self._agents.clear()
         self._time_step = 0 
         self._nagents = 0
-        self._reset()
 
         self._maps = self._generation_pipeline(self)
+        self._movement_mask = np.zeros(self._dims, dtype=bool)
+
         self._swarm_initializer(self)
+
         for agent in self.agents: 
             agent.reset()
-
-    @abstractmethod
-    def _reset(self):
-        """
-        Additional reset logic implemented by derived classes
-        """
-        pass
 
     def update(self):
         """
@@ -84,25 +79,45 @@ class BaseWorld(ABC):
 
         self._time_step += 1
 
-    @abstractmethod
     def _get_world_state(self):
         return self.get_presence_mask(self.agents)
 
-    @abstractmethod
     def _pre_update(self):
         """
         Perform any initialization work
         """
-        pass 
+        # First, pre-shuffle the agents
+        np.random.shuffle(self.agents)
 
-    @abstractmethod
+        # Generate movement masks for the agents
+        self.movement_mask = np.zeros(self._dims, dtype=bool)
+        for agent in self.agents:
+            position_const = agent.current_position_const
+            self.movement_mask[position_const[0]][position_const[1]] = True 
+
     def _update_agent_actuation(self): 
         """
         Resolve all agent actions here.
         """
-        pass 
+        for agent in self.agents:
+            action : ActionInformation = agent.action 
 
-    @abstractmethod
+            # Do stuff with agent actions
+            if action.movement != None: 
+                current_position = agent.current_position_const
+                self.movement_mask[current_position[0], current_position[1]] = False 
+                dir_movement = Direction.get_direction_of_movement(action.movement)
+                current_position += dir_movement
+                
+                if not self.is_traversable(current_position) or \
+                    self.movement_mask[current_position[0], current_position[1]] or \
+                    self._maps.get("Terrain").get_gradient(current_position, action.movement) > agent._traits._max_slope:
+                    current_position -= dir_movement
+
+                self.movement_mask[current_position[0], current_position[1]] = True 
+                agent.set_position(current_position)
+
+
     def _post_update(self):
         """
         Perform any clean up after updating but before passing all information to agents.
@@ -111,7 +126,7 @@ class BaseWorld(ABC):
         for model in self._models.values():
             model.forward(self)
 
-    @abstractmethod
+
     def _update_agent_sensors(self, agent : Agent):
         """
         Gives the agent its observations
@@ -121,6 +136,19 @@ class BaseWorld(ABC):
         observation = LocalObservation(nearby_agents)
 
         agent.set_observation(observation)
+
+    def _get_nearby_agents(self, agent: Agent, visibility_range: int) -> np.ndarray:
+        """
+        Gets all agents nearby using the visibility range. 
+        """
+        x, y = agent.current_position_const
+        x_min, x_max = max(0, x - visibility_range), min(self._dims[0], x + visibility_range + 1)
+        y_min, y_max = max(0, y - visibility_range), min(self._dims[1], y + visibility_range + 1)
+
+        # We assume the resource grid is final and will not change 
+        observation = self._world_state[x_min:x_max, y_min:y_max]
+
+        return observation
 
     # Functionalities  
     def add_agent(self, agent : Agent):
@@ -148,6 +176,24 @@ class BaseWorld(ABC):
         Check whether a position is in the bounds of the world or not.
         """
         return position[0] >= 0 and position[1] >= 0 and position[0] < self._dims[0] and position[1] < self._dims[1]
+    
+    def is_traversable(self, position: np.ndarray) -> bool:
+        """
+        Check whether a position is traversable to any agent
+        """
+        return self.is_in_bounds(position)
+    
+    def get_presence_mask(self, agents : list[Agent]) -> np.ndarray:
+        """
+        Returns a mask in the shape of the dims of the world that shows where agents are.
+        """
+        presence_mask = np.zeros(self._dims, dtype=np.int32)
+        for agent in agents: 
+            pos_const = agent.current_position_const
+            x, y = pos_const[0], pos_const[1]
+            presence_mask[x, y] = agent.id
+
+        return presence_mask
 
     @property
     def agents(self) -> list[Agent]:
@@ -172,3 +218,21 @@ class BaseWorld(ABC):
         Returns the number of cells in the world
         """
         return self._dims[0] * self._dims[1]
+    
+def initialize_positions_randomly(world: World, swarm: list[Agent]):
+    positions : list[tuple[int, int]] = []
+
+    # Add all traversable cells to the positions set
+    for x in range(world._dims[0]):
+        for y in range(world._dims[1]):
+            if world.is_traversable(np.array([x, y])):
+                positions.append((x, y))
+
+    # Randomly sample positions for the agents
+    sampled_position_idx = np.random.choice(len(positions), size=len(swarm), replace=False)
+
+    for agent, idx in zip(swarm, sampled_position_idx):
+        pos = positions[idx]
+        agent.set_position(np.array([pos[0], pos[1]], dtype=np.int32))
+
+    return swarm

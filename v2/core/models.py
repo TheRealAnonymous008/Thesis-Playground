@@ -6,7 +6,7 @@ import numpy as np
 from enum import Enum
 from abc import ABC, abstractmethod
 
-from .world import World 
+from .world import BaseWorld 
 
 from .agent import Agent
 from .utility import UtilityFunction

@@ -7,7 +7,7 @@ class EnergyModel(BaseDynamicsModel):
     def __init__(self):
         pass 
 
-    def forward(self, world : World) -> float: 
+    def forward(self, world : BaseWorld) -> float: 
         """
         Compute the energy consumption of an egent and update its current state.
         """

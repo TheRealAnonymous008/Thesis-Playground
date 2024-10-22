@@ -27,7 +27,7 @@ class BaseCommunicationProtocol(ABC):
     def __init__(self):
         pass 
 
-    def send_messages(self, world : World): 
+    def send_messages(self, world : BaseWorld): 
         """
         Protocol for sending messages. 
         """
@@ -57,7 +57,7 @@ class BaseCommunicationProtocol(ABC):
         return 1
 
 
-    def receive_messages(self, world : World):
+    def receive_messages(self, world : BaseWorld):
         """
         Protocol for receiving messages.
         """    
