@@ -12,6 +12,7 @@ from .agent_state import *
 from .direction import Direction
 from .message import Message
 
+from abc import ABC, abstractmethod
 
 _IdType = int
 class Agent:
@@ -29,9 +30,10 @@ class Agent:
         self._initializer()
         self.reset()
 
+    @abstractmethod
     def _initializer(self, *args, **kwargs):
         """
-        Code for initializing the agent. Derived classes should override this. 
+        Code for initializing the agent. 
         """
         self._current_observation : LocalObservation = None
         self._current_action : ActionInformation = ActionInformation()
@@ -46,12 +48,14 @@ class Agent:
         self._reset()
         self._current_state.reset(self._traits)
 
+    @abstractmethod
     def _reset(self):
         """
-        Code for reseting the agennt. Derived classes should override this
+        Code for reseting the agenn.
         """
         pass
 
+    @abstractmethod
     def update(self):
         """
         Update the agent's state
@@ -114,6 +118,7 @@ class Agent:
         return self._current_observation.neighbors(self.id)
 
     @property
+    @abstractmethod
     def local_observation(self) -> LocalObservation:
         """
         Get local observation
@@ -121,6 +126,7 @@ class Agent:
         return self._current_observation
 
     @property
+    @abstractmethod
     def action(self) -> ActionInformation:
         """
         Return the current action of the agent 
@@ -144,5 +150,6 @@ class Agent:
         return int(self._id)
 
     @property
+    @abstractmethod
     def utility(self) : 
         return self._current_state.current_utility
