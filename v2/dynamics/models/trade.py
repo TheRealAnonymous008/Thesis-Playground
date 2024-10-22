@@ -52,6 +52,7 @@ class TradeCommunicationProtocol(BaseCommunicationProtocol):
 
         match(packet.header):
             case TradeMessagePacketHeader.REQ: 
+                # TODO; Refactor this
                 # We can either accept, refuse, or push another request.  
                 # When pushing another request, we swap the roles of sender and receiver
                 verdict = self._request_logic.evaluate(sender, packet, receiver)
