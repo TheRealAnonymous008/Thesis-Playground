@@ -76,7 +76,7 @@ class CustomGymEnviornment(ParallelEnv):
         
         self._world.update()
         terminations = {a: False for a in self.agents}
-        rewards = {a: 0 for a in self.agents}           # TODO: Modify this 
+        rewards = {a: self._world.get_agent(a).utility for a in self.agents}
         observations = self.get_observations()
         infos = {a : {} for a in self.agents}
 

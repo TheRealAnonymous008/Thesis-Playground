@@ -48,6 +48,7 @@ class TradeAgentState(AgentState):
 
     :param current_utility:  Currently calculated utility. If None, utility was not calculated. 
     :param current_mass_carried: The total mass being carried by the agent at the moment .
+    :param current_money: The current amount of money the agent has.
     :param inventory:  Current agent inventory
     :param relations:  Dictionary mapping agent ids to agent relations
     :param msgs:  The current message buffer
@@ -56,6 +57,7 @@ class TradeAgentState(AgentState):
 
     current_utility : _UtilityType | None = None
     current_mass_carried : float = 0
+    current_money : float = 0
     inventory : dict[_ResourceType, _QuantityType] = field(default_factory= lambda : {})
     relations : dict[int, int] = field(default_factory= lambda : {})
     msgs: list[Message] = field(default_factory=lambda : [])
@@ -71,6 +73,7 @@ class TradeAgentState(AgentState):
         self.relations.clear()
         self.msgs.clear()
         self.current_mass_carried = 0
+        self.current_money = 0
         self.skills  = None 
     
     def add_to_inventory(self, resource : Resource):
@@ -147,6 +150,19 @@ class TradeAgentState(AgentState):
         """
         self.relations.pop(agent)
 
+    def add_money(self, amt: float):
+        """
+        Add money
+        """
+        self.current_money += amt
+
+    def remove_money(self, amt : float) -> float:
+        """
+        Remove money. Returns the amount removed. Money does not go below 0.
+        """
+        amt = min(amt, self.current_money)
+        self.current_money -= amt 
+        return amt
 
 class TradeAgent(Agent):
     """
@@ -164,8 +180,8 @@ class TradeAgent(Agent):
     def _reset(self):
         self._current_observation : LocalObservation = None
         self._current_action : TradeActionInformation= TradeActionInformation()
-        self._traits : AgentTraits = TradeAgentTraits()
-        self._current_state :  AgentState = TradeAgentState()
+        self._traits : TradeAgentState= TradeAgentTraits()
+        self._current_state :  TradeAgentState = TradeAgentState()
         self._utility_function : UtilityFunction = None 
 
         
@@ -205,6 +221,19 @@ class TradeAgent(Agent):
         Get a product from the inventory. Update the inventory.
         """
         return self._current_state.get_from_inventory(type, qty)
+    
+    def get_money(self, amt : float) -> float:
+        """
+        Get money 
+        """
+        return self._current_state.remove_money(amt)
+    
+    def add_money(self, amt : float):
+        """
+        Add money 
+        """
+        self._current_state.add_money(amt)
+    
     
     def has_in_inventory(self, type : _ResourceType, qty : _QuantityType) -> bool: 
         """
