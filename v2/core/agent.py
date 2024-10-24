@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import numpy as np
+from .agent_state import AgentTraits
 from .observation import LocalObservation
 
 from .action import *
 from .message import * 
 
-from .resource import Resource, _QuantityType, _ResourceType
 from .utility import UtilityFunction
 from .agent_state import *
-from .direction import Direction
 from .message import Message
 
 from abc import ABC, abstractmethod
@@ -36,9 +35,9 @@ class Agent:
         Code for initializing the agent. 
         """
         self._current_observation : LocalObservation = None
-        self._current_action : ActionInformation = ActionInformation()
-        self._traits : AgentTraits = AgentTraits()
-        self._current_state :  AgentState = AgentState()
+        self._current_action : ActionInformation = None 
+        self._traits : AgentTraits = None 
+        self._current_state :  AgentState = None
         self._utility_function : UtilityFunction = None 
         
     def reset(self):

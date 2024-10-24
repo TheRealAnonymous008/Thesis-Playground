@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 from core.agent import *
-from core.resource import _QuantityType, _ResourceType
+from core.direction import * 
 
 
 _UtilityType = float 
@@ -48,7 +48,7 @@ class SARAgentState(AgentState):
     skills : np.ndarray | None = None 
     
     
-    def reset(self, traits : AgentTraits):
+    def reset(self, traits : SARAgentTraits):
         """
         Reset the state
         """
@@ -94,6 +94,16 @@ class SARAgentState(AgentState):
         """
         self.relations.pop(agent)
 
+class SARUtilityFunction(UtilityFunction):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, state):
+        pass 
+    
+    def update(self):
+        pass
+
 
 class SARAgent(Agent):
     """
@@ -112,8 +122,10 @@ class SARAgent(Agent):
         super()._initializer()
         self._previous_position : np.ndarray[int] | None = None 
         self._current_position : np.ndarray[int] | None =  None 
-        self._traits : AgentTraits = SARAgentTraits()
+        self._traits : SARAgentTraits = SARAgentTraits()
+        self._current_action : SARActionInformation = SARActionInformation()
         self._current_state :  AgentState = SARAgentState()
+        self._utility_function : SARUtilityFunction = SARUtilityFunction()
 
     def _reset(self):
         self._previous_position = None 

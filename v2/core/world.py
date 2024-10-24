@@ -4,8 +4,6 @@ from typing import Callable, TYPE_CHECKING
 import numpy as np
 from .agent import Agent, _IdType
 from .observation import LocalObservation
-from .action import ActionInformation, Direction
-from .env_params import MAX_VISIBILITY
 
 if TYPE_CHECKING: 
     from .models import BaseDynamicsModel

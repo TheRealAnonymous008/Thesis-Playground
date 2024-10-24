@@ -1,5 +1,6 @@
 from core.agent import *
 from core.resource import _QuantityType, _ResourceType
+from core.direction import Direction
 
 _UtilityType = float 
 

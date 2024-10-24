@@ -10,9 +10,10 @@ from pettingzoo import ParallelEnv
 
 
 from core.agent import Agent, AgentState
-from core.action import Direction
+from core.action import BaseActionParser
 from core.render import render_world
 from core.world import BaseWorld
+from core.direction import Direction 
 
 def take_action(action_code : int, agent : Agent):
     match (action_code) : 
@@ -29,7 +30,10 @@ def take_action(action_code : int, agent : Agent):
         case _ : pass # Do nothing, placeholder for now.
 
 class CustomGymEnviornment(ParallelEnv):
-    def __init__(self, world : BaseWorld, time_step_upper = 100):
+    def __init__(self, 
+                 world : BaseWorld, 
+                 action_interpreter : BaseActionParser, 
+                 time_step_upper = 100):
         """
         Define the initial parameters of the environment
 
@@ -39,7 +43,8 @@ class CustomGymEnviornment(ParallelEnv):
 
         self._world = world
         self._max_time_steps = time_step_upper
-        
+        self._action_interpreter = action_interpreter 
+
         self.render_mode = None
         self.metadata = {
             "name" : "thesis"
@@ -72,7 +77,7 @@ class CustomGymEnviornment(ParallelEnv):
         """
         for agent_id, action in actions.items():
             agent = self._world.get_agent(agent_id)
-            take_action(action, agent)
+            self._action_interpreter.take_action(action, agent)
         
         self._world.update()
         terminations = {a: False for a in self.agents}

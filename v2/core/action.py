@@ -2,20 +2,28 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from enum import Enum
+from typing import TYPE_CHECKING
 import numpy as np
 
 
-from .direction import Direction
-from .resource import _ResourceType
-
+from abc import ABC, abstractmethod
+if TYPE_CHECKING: 
+    from core.agent import Agent 
 
 @dataclass
-class ActionInformation:
+class ActionInformation(ABC):
     """
     Contains attributes and misc. information about an agent's actions.
-
-    Base Classes should override this 
     """
-
+    @abstractmethod
     def reset(self):
+        pass 
+
+
+class BaseActionParser(ABC):
+    """
+    Handles how actions are interpreted.
+    """
+    @abstractmethod
+    def take_action(self, code : int, agent : Agent): 
         pass 

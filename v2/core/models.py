@@ -23,14 +23,3 @@ class BaseDynamicsModel(ABC):
         pass 
 
 
-
-
-TOTAL_FEATURES = PRODUCT_TYPES + RESOURCE_TYPES
-class UtilitySampler:
-    def __init__(self, dims = TOTAL_FEATURES ):
-        self.dims = dims 
-    
-    def forward(self, agent : Agent): 
-        params = np.random.normal(0, 1, self.dims)
-        bias = np.random.normal(-2, 2)
-        agent.set_utility(UtilityFunction(params, bias))
