@@ -162,7 +162,7 @@ class BaseWorld(ABC):
         return list(self._agents.keys())
     
     def get_map(self, name : str) -> BaseMap | None: 
-        return self._maps.get(name).copy
+        return self._maps.get(name)
     
     @property
     def total_cell_count(self) -> int:

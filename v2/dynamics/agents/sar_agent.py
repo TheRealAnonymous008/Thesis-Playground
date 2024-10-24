@@ -46,7 +46,7 @@ class SARAgentState(AgentState):
     relations : dict[int, int] = field(default_factory= lambda : {})
     msgs: list[Message] = field(default_factory=lambda : [])
     skills : np.ndarray | None = None 
-    
+    victims_rescued : int = 0
     
     def reset(self, traits : SARAgentTraits):
         """
@@ -57,6 +57,7 @@ class SARAgentState(AgentState):
         self.relations.clear()
         self.msgs.clear()
         self.skills  = None 
+        self.victims_rescued = 0
 
     @property
     def can_move(self):
@@ -124,7 +125,7 @@ class SARAgent(Agent):
         self._current_position : np.ndarray[int] | None =  None 
         self._traits : SARAgentTraits = SARAgentTraits()
         self._current_action : SARActionInformation = SARActionInformation()
-        self._current_state :  AgentState = SARAgentState()
+        self._current_state :  SARAgentState = SARAgentState()
         self._utility_function : SARUtilityFunction = SARUtilityFunction()
 
     def _reset(self):
@@ -165,6 +166,9 @@ class SARAgent(Agent):
 
             case _: 
                 raise Exception(f"Invalid direction specified {val}")
+            
+    def rescue(self): 
+        self._current_state.victims_rescued += 1
 
     def set_position(self, position : np.array):
         """

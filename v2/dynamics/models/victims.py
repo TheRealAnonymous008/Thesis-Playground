@@ -1,4 +1,26 @@
 from core.map import *
+from core.models import *
+
+from dynamics.agents.sar_agent import * 
+
+class VictimModel(BaseDynamicsModel):
+    def __init__(self):
+        pass 
+
+    def forward(self, world : BaseWorld) -> float: 
+        """
+        Check if the agent is on a victim
+        """
+        victim_map = world.get_map("Victims")
+        for agent in world.agents:
+            agent : SARAgent = agent 
+            position = agent.current_position_const
+
+            if victim_map.get(position) != 0:
+                agent.rescue()
+                victim_map.set(position, 0)
+                
+
 
 class VictimGenerator(BaseMapGenerator):
     def __init__(self, padding=MAX_VISIBILITY):

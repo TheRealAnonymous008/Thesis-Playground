@@ -28,6 +28,10 @@ class BaseMap(ABC):
         idx = self.translate_idx(idx)
         return self._map[idx[0], idx[1]]
     
+    def set(self, idx : tuple[int, int], value):
+        idx = self.translate_idx(idx)
+        self._map[idx[0], idx[1]] = value
+    
     def translate_idx(self, idx : tuple[int, int]) -> tuple[int, int]:
         """
         Translates the provided index based on the padding of the resource map. This way, we can treat the padding as nonexistent 
