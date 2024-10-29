@@ -99,9 +99,10 @@ class SARWorld(BaseWorld):
         x_min, x_max = x - visibility_range, x + visibility_range + 1
         y_min, y_max = y - visibility_range, y + visibility_range + 1
 
-        map = self.get_map("Victims")._map
-
-        return map[x_min : x_max, y_min: y_max]
+        victim_map = self.get_map('Victims')
+        map = victim_map._map
+        pad = victim_map._padding
+        return map[x_min + pad : x_max + pad , y_min + pad : y_max + pad]
 
     def is_traversable(self, position: np.ndarray) -> bool:
         """
