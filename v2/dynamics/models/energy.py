@@ -1,6 +1,7 @@
 import numpy as np
 from core.agent import Agent
 from core.models import *
+from core.world import BaseWorld
 
 
 class EnergyModel(BaseDynamicsModel):

@@ -84,7 +84,7 @@ class BaseWorld(ABC):
 
     @abstractmethod
     def _get_world_state(self):
-        return self.get_presence_mask(self.agents)
+        pass
 
     @abstractmethod
     def _pre_update(self):
@@ -114,11 +114,7 @@ class BaseWorld(ABC):
         """
         Gives the agent its observations
         """
-        visibility_range = agent._traits._visibility_range  
-        nearby_agents = self._get_nearby_agents(agent, visibility_range)
-        observation = LocalObservation(nearby_agents)
-
-        agent.set_observation(observation)
+        pass
 
     # Functionalities  
     def add_agent(self, agent : Agent):

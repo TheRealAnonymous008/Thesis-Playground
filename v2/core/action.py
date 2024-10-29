@@ -27,3 +27,11 @@ class BaseActionParser(ABC):
     @abstractmethod
     def take_action(self, code : int, agent : Agent): 
         pass 
+
+    @abstractmethod 
+    def get_action_space(self, agent : Agent):
+        pass 
+
+    @abstractmethod
+    def get_observation_space(self, agent : Agent):
+        pass

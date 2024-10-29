@@ -64,7 +64,7 @@ def feature_extractor(obs : dict) -> dict:
 
     for agent_id, agent_obs in obs.items():
         # Extract the vision grid from the agent's observation
-        vision_grid = agent_obs['vision']
+        vision_grid = agent_obs['Victims']
 
         
         # Convert the vision grid (numpy array) into a PyTorch tensor

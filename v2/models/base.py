@@ -62,6 +62,7 @@ class BaseModel:
         Learn for the specified number of time steps
         """
         state, _ = self.env.reset()
+        print(state)
         state = self.feature_extractor(state)
 
         for t in range(total_timesteps):

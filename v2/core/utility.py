@@ -14,7 +14,7 @@ class UtilityFunction(ABC):
     @abstractmethod
     def forward(self, state : AgentState) -> _UtilityType:
         """
-        Calculates the utility given the current agent state. Mutates the agent's current utility 
+        Calculates the utility given the current agent state.
         """
         pass 
 

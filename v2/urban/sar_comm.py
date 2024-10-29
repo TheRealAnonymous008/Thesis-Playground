@@ -21,4 +21,6 @@ class SARCommunicationProtocol(BaseCommunicationProtocol):
     
     def _interpret_message_contents(self, agent : Agent, message : Message):
         super()._interpret_message_contents(agent, message)
+        agent.add_relation(message.sender.id ,1)
+    
     

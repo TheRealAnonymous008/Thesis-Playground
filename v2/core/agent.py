@@ -103,11 +103,12 @@ class Agent:
         """
         self._utility_function = utility
 
-    def calculate_utility(self):
+    @property
+    def utility(self):
         """
         Evaluate this agent's utility
         """
-        self._utility_function.forward(self._current_state)
+        return self._utility_function.forward(self._current_state)
 
     @property
     def agents_in_range(self) -> list[_IdType]:
@@ -147,8 +148,3 @@ class Agent:
 
     def __hash__(self) -> int:
         return int(self._id)
-
-    @property
-    @abstractmethod
-    def utility(self) : 
-        return self._current_state.current_utility

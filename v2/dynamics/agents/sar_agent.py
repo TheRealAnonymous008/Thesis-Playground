@@ -2,6 +2,7 @@
 from __future__ import annotations
 from core.agent import *
 from core.direction import * 
+from core.observation import *
 
 
 _UtilityType = float 
@@ -99,12 +100,15 @@ class SARUtilityFunction(UtilityFunction):
     def __init__(self):
         super().__init__()
 
-    def forward(self, state):
-        pass 
+    def forward(self, state : SARAgentState):
+        return state.victims_rescued
     
     def update(self):
         pass
 
+@dataclass
+class SARObservation(LocalObservation):
+    victim_map : np.ndarray = None 
 
 class SARAgent(Agent):
     """
@@ -215,8 +219,3 @@ class SARAgent(Agent):
         if self._previous_position is None: 
             return False 
         return  np.all(self._previous_position == self._current_position)
-        
-    
-    @property
-    def utility(self) : 
-        return self._current_state.current_utility

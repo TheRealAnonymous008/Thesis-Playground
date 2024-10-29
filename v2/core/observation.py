@@ -13,11 +13,9 @@ class LocalObservation:
 
     :param nearby_agents: A list of all nearby agents and their location relative to the current agent 
 
-    :param resources: A list of the resourcee types available in an area
 
     """
     nearby_agents : np.ndarray
-    # resource_types : np.ndarray 
     
     def neighbors(self, id : int) -> list[int]:
         """

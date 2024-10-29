@@ -15,19 +15,7 @@ from core.render import render_world
 from core.world import BaseWorld
 from core.direction import Direction 
 
-def take_action(action_code : int, agent : Agent):
-    match (action_code) : 
-        case 0 : agent.move(Direction.NORTH) 
-        case 1 : agent.move(Direction.SOUTH) 
-        case 2 : agent.move(Direction.EAST) 
-        case 3 : agent.move(Direction.WEST)
-
-        case 4 : agent.pick_up(Direction.NORTH) 
-        case 5 : agent.pick_up(Direction.SOUTH) 
-        case 6 : agent.pick_up(Direction.EAST) 
-        case 7 : agent.pick_up(Direction.WEST) 
-
-        case _ : pass # Do nothing, placeholder for now.
+from dynamics.agents.sar_agent import * 
 
 class CustomGymEnviornment(ParallelEnv):
     def __init__(self, 
@@ -108,9 +96,7 @@ class CustomGymEnviornment(ParallelEnv):
         
         # Each agent should know its agent state in some way 
         agent = self._world.get_agent(agent_id)
-        return Dict({
-            "vision" : Box(0, self._world.total_resource_types, (2 * agent._visibility_range + 1, 2 * agent._visibility_range + 1))
-        })
+        return self._action_interpreter.get_observation_space(agent)
 
     
     def get_observations(self):
@@ -124,9 +110,10 @@ class CustomGymEnviornment(ParallelEnv):
         """
         Returns a dictionary of agent observations
         """
-        agent = self._world.get_agent(agent_id)
+        obs : SARObservation = self._world.get_agent(agent_id).local_observation
         return {
-            "vision" : agent.local_observation.resource_types
+            # "vision" : agent.local_observation.nearby_agents
+            "Victims" : obs.victim_map
         }
     
     @functools.lru_cache(maxsize=None)
@@ -135,12 +122,7 @@ class CustomGymEnviornment(ParallelEnv):
         Return the action space of the agent 
         """
 
-        # The action space shall be defined as follows
-        # 0 - 3 - MOVE N / S / E / W
-        # 4 - 7 - PICK UP N / S / E / W
-        # 8 - 11 - PUT_DOWN  N / S / E / W
-
-        return Discrete(12)
+        return self._action_interpreter.get_action_space(self._world.get_agent(agent))
     
     @property
     def is_finished(self):
