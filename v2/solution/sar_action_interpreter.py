@@ -3,6 +3,7 @@ from __future__ import annotations
 from core.action import *
 from core.direction import *
 from sar.sar_agent import *
+from sar.sar_env_params import * 
 from gymnasium.spaces import * 
 
 class SARActionInterpreter(BaseActionParser):
@@ -24,6 +25,14 @@ class SARActionInterpreter(BaseActionParser):
     def get_observation_space(self, agent : SARAgent):
         vis = agent._traits._visibility_range
         return Dict({
-            # "vision" : Box(0, 1, (2 * vis + 1, 2 * vis + 1))
-            "Victims" : Box(0, 1, (2 * vis + 1, 2 * vis + 1))
+            "Victims" : Box(0, 1, (2 * vis + 1, 2 * vis + 1)),
+            "Energy": Box(0, MAX_ENERGY + 1),
         })
+
+    def get_observation(self, agent : SARAgent):
+        obs : SARObservation = agent.local_observation
+        
+        return {
+            "Victims" : obs.victim_map,
+            "Energy": agent._current_state.current_energy,
+        }

@@ -2,6 +2,7 @@ from core.map import *
 from core.models import *
 
 from sar.sar_agent import * 
+from sar.sar_env_params import * 
 from core.world import BaseWorld
 
 class VictimModel(BaseDynamicsModel):

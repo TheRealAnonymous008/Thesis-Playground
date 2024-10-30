@@ -3,7 +3,9 @@ from __future__ import annotations
 from enum import Enum
 import numpy as np
 from abc import ABC 
-from core.env_params import RESOURCE_TYPES, MAX_VISIBILITY
+
+RESOURCE_TYPES = 1
+MAX_VISIBILITY = 4
 
 from core.resource import Resource, _QuantityType, _ResourceType
 

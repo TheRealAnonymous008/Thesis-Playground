@@ -110,11 +110,7 @@ class CustomGymEnviornment(ParallelEnv):
         """
         Returns a dictionary of agent observations
         """
-        obs : SARObservation = self._world.get_agent(agent_id).local_observation
-        return {
-            # "vision" : agent.local_observation.nearby_agents
-            "Victims" : obs.victim_map
-        }
+        return self._action_interpreter.get_observation(self._world.get_agent(agent_id))
     
     @functools.lru_cache(maxsize=None)
     def action_space(self, agent : int):

@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import numpy as np
 from abc import ABC, abstractmethod
-from .env_params import MAX_VISIBILITY
 from .direction import *
 
 class BaseMap(ABC): 
     """
     Base class for the terrain map. Specific implementations should override this
     """
-    def __init__(self, map : np.ndarray,  padding: int = MAX_VISIBILITY): 
+    def __init__(self, map : np.ndarray,  padding: int = 0): 
         """
         :param map: Information about the map.
         :param padding: Padding added to all sides
@@ -95,7 +94,7 @@ class BaseMapGenerator(ABC):
     """
     Base class for generating the terrain.
     """
-    def __init__(self,  padding = MAX_VISIBILITY):
+    def __init__(self,  padding = 0):
         """
         :param padding:    - the padding to place in the terrain map generator
         """

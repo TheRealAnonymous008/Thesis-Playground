@@ -4,7 +4,7 @@ from math import dist
 
 from noise import snoise2
 from utils.line import *
-from core.env_params import MAX_VISIBILITY
+from sar.sar_env_params import MAX_VISIBILITY
 from sar.terrain_map import *
 from typing import Dict, Tuple, List
 

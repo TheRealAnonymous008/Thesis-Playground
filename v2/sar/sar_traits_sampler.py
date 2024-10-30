@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from core.agent import *
 from .sar_agent import *
-from core.env_params import *
+from sar.sar_env_params import *
 
 class SARTraitSampler:
     """
@@ -23,7 +23,7 @@ class SARTraitSampler:
             traits = SARAgentTraits()
 
             # Sample traits here
-            traits._energy_capacity = np.clip(np.random.normal(100, 20), a_min=10, a_max = None)
+            traits._energy_capacity = np.clip(np.random.normal(100, 20), a_min=10, a_max = MAX_ENERGY)
             traits._max_slope = np.clip(np.random.normal(1, 0.5), a_min = 0.01, a_max = None)
             traits._visibility_range = int(np.random.uniform(1, MAX_VISIBILITY))
 

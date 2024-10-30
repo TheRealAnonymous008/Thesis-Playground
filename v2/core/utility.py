@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from .agent_state import AgentState, _UtilityType
-from .env_params import *
 from abc import ABC, abstractmethod
 
 import numpy as np 
