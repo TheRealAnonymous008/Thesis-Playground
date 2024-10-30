@@ -4,7 +4,6 @@ from core.agent import *
 from core.direction import * 
 from core.observation import *
 
-
 _UtilityType = float 
 
 @dataclass
@@ -21,14 +20,16 @@ class SARActionInformation(ActionInformation):
     def reset(self):
         self.movement = None
 
+
 @dataclass 
 class SARAgentTraits(AgentTraits):
     """
     Data class containing fixed parameters / traits of the agent relevant to the simulation
     """
-    _visibility_range : int = 3
-    _energy_capacity : float = 100.0
-    _max_slope : float = 1
+    _visibility_range : int = 3                 # How far can the agent see 
+    _energy_capacity : float = 100.0            # How far can the agent move
+    _max_slope : float = 1                      # How high can the agent traverse
+
 
 @dataclass
 class SARAgentState(AgentState):
