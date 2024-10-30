@@ -3,12 +3,13 @@ from typing import Callable, TYPE_CHECKING
 
 import numpy as np
 from .agent import Agent, _IdType
-from .observation import LocalObservation
+from .map import * 
 
 if TYPE_CHECKING: 
     from .models import BaseDynamicsModel
 
-from dynamics.space.terrain_map import *
+
+
 from abc import *
 
 class BaseWorld(ABC):

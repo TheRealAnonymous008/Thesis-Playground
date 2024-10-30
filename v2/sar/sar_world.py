@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Callable, TYPE_CHECKING
 
 from core.world import *
-from dynamics.agents.sar_agent import *
+from sar.sar_agent import *
 
 class SARWorld(BaseWorld): 
     """

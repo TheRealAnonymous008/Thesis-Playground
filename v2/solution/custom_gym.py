@@ -15,7 +15,7 @@ from core.render import render_world
 from core.world import BaseWorld
 from core.direction import Direction 
 
-from dynamics.agents.sar_agent import * 
+from sar.sar_agent import * 
 
 class CustomGymEnviornment(ParallelEnv):
     def __init__(self, 

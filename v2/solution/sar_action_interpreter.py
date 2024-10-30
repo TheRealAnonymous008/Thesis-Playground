@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from core.action import *
 from core.direction import *
-from dynamics.agents.sar_agent import *
+from sar.sar_agent import *
 from gymnasium.spaces import * 
 
 class SARActionInterpreter(BaseActionParser):
