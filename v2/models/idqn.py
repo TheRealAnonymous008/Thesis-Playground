@@ -90,15 +90,16 @@ class IDQN(BaseModel):
         states, actions, rewards, next_states, dones = experiences
 
         agents = self.env.agents
+        average_loss = 0
 
         for i, agent in enumerate(agents) : 
             # Compute Q(s_t, a)
             state_action_values = self.policy_net.forward(agent, states)
-            state_action_values = state_action_values.gather(1, actions[agent])
+            state_action_values = state_action_values.gather(1, actions[agent]).squeeze(1)
 
             # Compute V(s_{t+1}) using the target network
             with torch.no_grad():
-                next_state_values = self.target_net.forward(agent, next_states).max(1)[0].unsqueeze(1)
+                next_state_values = self.target_net.forward(agent, next_states).max(1)[0]
                 expected_state_action_values = (next_state_values * self.gamma * (1 - dones[i])) + rewards[i]
 
             # Compute loss
@@ -107,7 +108,10 @@ class IDQN(BaseModel):
             # Optimize the model
             self.optimizer.zero_grad()
             loss.backward
+            average_loss += loss.item()
             self.optimizer.step()
+
+        print(f"Average loss {average_loss / len(agents)}")
 
         # Soft update the target network
         self.soft_update()

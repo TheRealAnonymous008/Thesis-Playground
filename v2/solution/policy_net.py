@@ -58,6 +58,7 @@ class PolicyNet(nn.Module):
         return x
 
 import torch
+import numpy as np
 
 
 def feature_extractor(obs : dict) -> TensorDict:
@@ -75,7 +76,7 @@ def feature_extractor(obs : dict) -> TensorDict:
         energy = agent_obs['Energy']
         belief = agent_obs['Belief']
 
-        vision_tensor = torch.tensor([vision_grid], dtype=torch.float32)
+        vision_tensor = torch.tensor(vision_grid, dtype=torch.float32).unsqueeze(0)
 
         # Convert energy and belief to tensors (they could be single values or vectors)
         energy_tensor = torch.tensor([energy], dtype=torch.float32)
