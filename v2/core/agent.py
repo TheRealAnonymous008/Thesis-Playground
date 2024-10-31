@@ -26,6 +26,8 @@ class Agent:
         Initializes a simple agent 
         """
         self._id : _IdType = "-1"
+        self._current_belief : np.ndarray = 0
+
         self._initializer()
         self.reset()
 
@@ -52,7 +54,7 @@ class Agent:
         """
         Code for reseting the agenn.
         """
-        pass
+        pass 
 
     @abstractmethod
     def update(self):

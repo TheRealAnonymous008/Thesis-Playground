@@ -3,6 +3,7 @@ from __future__ import annotations
 from core.agent import *
 from core.direction import * 
 from core.observation import *
+from core.belief import *
 
 _UtilityType = float 
 
@@ -110,6 +111,13 @@ class SARUtilityFunction(UtilityFunction):
 @dataclass
 class SARObservation(LocalObservation):
     victim_map : np.ndarray = None 
+
+class SARBeliefInitializer(BaseBeliefInitializer):
+    def __init__(self, belief_dims : int = 1):
+        self.belief_dims = belief_dims
+
+    def initialize_belief(self, agent : SARAgent):
+        agent._current_belief = np.zeros((self.belief_dims))
 
 class SARAgent(Agent):
     """

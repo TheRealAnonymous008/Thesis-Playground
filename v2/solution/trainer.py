@@ -12,7 +12,11 @@ import time
 
 from models.base import BaseModel
 
-def train_loop(env : CustomGymEnviornment, model : BaseModel, games : int = 100, seed : int = 0):
+def train_loop(
+        env : CustomGymEnviornment, 
+        model : BaseModel,  
+        games : int = 100, 
+        seed : int = 0):
     """
     Train an agent for run_count number of games (no. of iters per game is dictated by env)
     """
@@ -23,6 +27,7 @@ def train_loop(env : CustomGymEnviornment, model : BaseModel, games : int = 100,
 
     for i in range(checkpts):
         model.learn(total_timesteps=steps_per_checkpt)
+        # TODO: Uncomment this 
         # model.save(f"{env.unwrapped.metadata.get('name')}_{time.strftime('%Y%m%d-%H%M%S')}")
         print("Model has been saved.")
 

@@ -62,7 +62,6 @@ class BaseModel:
         Learn for the specified number of time steps
         """
         state, _ = self.env.reset()
-        print(state)
         state = self.feature_extractor(state)
 
         for t in range(total_timesteps):
@@ -137,7 +136,7 @@ class BaseModel:
         flattened_states = {}
         for agent_id in states[0].keys():
             agent_states = [state[agent_id] for state in states]
-            flattened_states[agent_id] = torch.stack(agent_states, dim=0)
+            flattened_states[agent_id] = agent_states
 
         return flattened_states
     

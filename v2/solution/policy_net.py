@@ -2,6 +2,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from dataclasses import dataclass
+
+@dataclass 
+class FeatureDict:
+    vision_tensor : torch.Tensor  = None 
+    energy :  torch.Tensor = None 
+    belief : torch.Tensor = None 
+
+
 class PolicyNet(nn.Module):
     def __init__(self, input_channels: int, grid_size: int, num_actions: int):
         """
@@ -24,7 +33,7 @@ class PolicyNet(nn.Module):
         self.fc1 = nn.Linear(conv_output_size, 128)
         self.fc2 = nn.Linear(128, num_actions)
 
-    def forward(self, idx : int, obs : dict[int, torch.Tensor]) -> torch.Tensor:
+    def forward(self, idx : int, obs : dict[int, FeatureDict]) -> torch.Tensor:
         """
         Forward pass for the policy network.
 
@@ -35,43 +44,59 @@ class PolicyNet(nn.Module):
         """
         try: 
             x = obs[idx]
-            # Pass through the convolutional layers
-            x = F.relu(self.conv1(x))
-            x = F.relu(self.conv2(x))
-
-            # Flatten the output from conv layers
-            x = x.view(x.size(0), -1)
-
-            # Pass through fully connected layers
-            x = F.relu(self.fc1(x))
-            x = self.fc2(x)
-
-            return x
+            return self._forward(x)
         except:
-            print(obs.shape)
-            raise Exception("There's something wrong here")
+            raise Exception(f"There's something wrong here {idx} with data {obs[idx]} of length {len(obs[idx])}")
 
+    def _forward(self, obs : FeatureDict):
+        x = obs.vision_tensor
+
+        # Pass through the convolutional layers
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+
+        # Flatten the output from conv layers
+        x = x.view(x.size(0), -1)
+
+        # Pass through fully connected layers
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+
+        return x
 
 import torch
+
+
 def feature_extractor(obs : dict) -> dict:
     """
     Extracts features from the environment observations for each agent.
     
-    :param obs: Dictionary where keys are agent IDs and values are dictionaries containing the 'vision' grid.
+    :param obs: Dictionary where keys are agent IDs and values are dictionaries containing the relevant observation data
     :return: A dictionary where keys are agent IDs and values are PyTorch tensors representing the features.
     """
-    features = {}
+    features_dict = {}
 
     for agent_id, agent_obs in obs.items():
-        # Extract the vision grid from the agent's observation
+        # Extract individual components from agent's observation
         vision_grid = agent_obs['Victims']
+        energy = agent_obs['Energy']
+        belief = agent_obs['Belief']
 
-        
-        # Convert the vision grid (numpy array) into a PyTorch tensor
-        # Adding an extra dimension (1) to indicate the channel (for compatibility with ConvNets)
-        vision_tensor = torch.tensor(vision_grid, dtype=torch.float32).unsqueeze(0)
-        
-        # Add the tensor to the features dictionary, keyed by agent ID
-        features[agent_id] = vision_tensor
+        vision_tensor = torch.tensor(vision_grid, dtype=torch.float32).flatten()
 
-    return features
+        # Convert energy and belief to tensors (they could be single values or vectors)
+        energy_tensor = torch.tensor([energy], dtype=torch.float32)
+        belief_tensor = torch.tensor(belief, dtype=torch.float32)
+
+        # Concatenate all feature tensors into a one-dimensional feature vector
+        features = FeatureDict(
+            vision_tensor = vision_tensor, 
+            energy = energy_tensor ,
+            belief = belief_tensor
+        )
+
+        # Add the concatenated tensor to the features dictionary, keyed by agent ID
+        features_dict[agent_id] = features
+
+
+    return features_dict

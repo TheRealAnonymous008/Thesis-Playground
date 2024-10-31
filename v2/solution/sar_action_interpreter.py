@@ -7,8 +7,9 @@ from sar.sar_env_params import *
 from gymnasium.spaces import * 
 
 class SARActionInterpreter(BaseActionParser):
-    def __init__(self):
+    def __init__(self, belief_dims : int):
         super().__init__()
+        self._belief_dims = belief_dims
 
     
     def take_action(self, action_code : int, agent : SARAgent):
@@ -25,6 +26,7 @@ class SARActionInterpreter(BaseActionParser):
     def get_observation_space(self, agent : SARAgent):
         vis = agent._traits._visibility_range
         return Dict({
+            "Belief": Box(-1, 1, (self._belief_dims, )),
             "Victims" : Box(0, 1, (2 * vis + 1, 2 * vis + 1)),
             "Energy": Box(0, MAX_ENERGY + 1),
         })
@@ -33,6 +35,7 @@ class SARActionInterpreter(BaseActionParser):
         obs : SARObservation = agent.local_observation
         
         return {
+            "Belief": agent._current_belief,
             "Victims" : obs.victim_map,
             "Energy": agent._current_state.current_energy,
         }
