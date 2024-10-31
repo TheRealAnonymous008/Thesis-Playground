@@ -6,7 +6,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
-import random
 from solution.custom_gym import CustomGymEnviornment
 from typing import Type, Callable, Dict
 
@@ -14,7 +13,7 @@ T_Optimizer = Type[optim.Optimizer]
 T_Loss = nn.modules.loss._Loss
 T_FeatureExtractor = Callable[[dict], dict[torch.Tensor]]
 
-
+from  tensordict import TensorDict, LazyStackedTensorDict
 
 class BaseModel: 
     """
@@ -97,7 +96,7 @@ class BaseModel:
         
         """
         actions = {}
-        state = self._flatten_agent_dict([state])
+        state = self._flatten_state_dict([state])
         for a, s in state.items():
             action = self.select_action(a, state) 
             actions[a] = action
@@ -120,25 +119,40 @@ class BaseModel:
         next_states = [self.rollout_buffer[e][3] for e in experience_idxs]
 
         # Note that it is more appropriate to have the state dict such that it is keyed on agents and eeach value is an entire batch.
-        states = self._flatten_agent_dict([self.rollout_buffer[e][0] for e in experience_idxs])
-        actions = self._flatten_agent_dict([self.rollout_buffer[e][1] for e in experience_idxs])
+        states = self._flatten_state_dict([self.rollout_buffer[e][0] for e in experience_idxs])
+        actions = self._flatten_action_dict([self.rollout_buffer[e][1] for e in experience_idxs])
         rewards = torch.stack([self.rollout_buffer[e][2] for e in experience_idxs]).transpose(0, 1)
-        next_states = self._flatten_agent_dict([self.rollout_buffer[e][3] for e in experience_idxs])
+        next_states = self._flatten_state_dict([self.rollout_buffer[e][3] for e in experience_idxs])
         dones = torch.stack([self.rollout_buffer[e][4] for e in experience_idxs]).transpose(0, 1)
 
         return states, actions, rewards, next_states, dones
 
     @staticmethod
-    def _flatten_agent_dict(states : list[dict]):
+    def _flatten_state_dict(states : list[dict[int, TensorDict]]): 
         """
-        Given a batch of states (in list form), returns a dictionary of states keyed on the agents
+        Given a batch of states (in list form), returns a dictionary of states keyed on the agents.
+        It is assumed that the dataclasses' members are all tensor types tto allow concatenation
         """
         flattened_states = {}
         for agent_id in states[0].keys():
-            agent_states = [state[agent_id] for state in states]
+            # First get all relevant agent states
+            agent_states = LazyStackedTensorDict.lazy_stack([state[agent_id] for state in states])
+            
             flattened_states[agent_id] = agent_states
 
-        return flattened_states
+        return flattened_states 
+
+    @staticmethod
+    def _flatten_action_dict(actions : list[dict]):
+        """
+        Given a batch of actions (in list form), returns a dictionary of states keyed on the agents
+        """
+        flattened_actions = {}
+        for agent_id in actions[0].keys():
+            agent_actions = [[action[agent_id]] for action in actions]
+            flattened_actions[agent_id] = torch.tensor(agent_actions)
+
+        return flattened_actions
     
     def optimize_model(self, experiences):
         """

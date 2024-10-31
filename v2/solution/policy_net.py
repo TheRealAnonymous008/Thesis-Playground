@@ -1,15 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from dataclasses import dataclass
-
-@dataclass 
-class FeatureDict:
-    vision_tensor : torch.Tensor  = None 
-    energy :  torch.Tensor = None 
-    belief : torch.Tensor = None 
-
+from  tensordict import TensorDict
 
 class PolicyNet(nn.Module):
     def __init__(self, input_channels: int, grid_size: int, num_actions: int):
@@ -33,7 +25,7 @@ class PolicyNet(nn.Module):
         self.fc1 = nn.Linear(conv_output_size, 128)
         self.fc2 = nn.Linear(128, num_actions)
 
-    def forward(self, idx : int, obs : dict[int, FeatureDict]) -> torch.Tensor:
+    def forward(self, idx : int, obs : dict[int, list[TensorDict]]) -> torch.Tensor:
         """
         Forward pass for the policy network.
 
@@ -44,12 +36,13 @@ class PolicyNet(nn.Module):
         """
         try: 
             x = obs[idx]
+
             return self._forward(x)
         except:
-            raise Exception(f"There's something wrong here {idx} with data {obs[idx]} of length {len(obs[idx])}")
+            raise Exception(f"There's something wrong here {idx} with data {obs[idx]}")
 
-    def _forward(self, obs : FeatureDict):
-        x = obs.vision_tensor
+    def _forward(self, obs : TensorDict):
+        x = obs["vision"]
 
         # Pass through the convolutional layers
         x = F.relu(self.conv1(x))
@@ -67,7 +60,7 @@ class PolicyNet(nn.Module):
 import torch
 
 
-def feature_extractor(obs : dict) -> dict:
+def feature_extractor(obs : dict) -> TensorDict:
     """
     Extracts features from the environment observations for each agent.
     
@@ -82,18 +75,18 @@ def feature_extractor(obs : dict) -> dict:
         energy = agent_obs['Energy']
         belief = agent_obs['Belief']
 
-        vision_tensor = torch.tensor(vision_grid, dtype=torch.float32).flatten()
+        vision_tensor = torch.tensor([vision_grid], dtype=torch.float32)
 
         # Convert energy and belief to tensors (they could be single values or vectors)
         energy_tensor = torch.tensor([energy], dtype=torch.float32)
         belief_tensor = torch.tensor(belief, dtype=torch.float32)
 
         # Concatenate all feature tensors into a one-dimensional feature vector
-        features = FeatureDict(
-            vision_tensor = vision_tensor, 
-            energy = energy_tensor ,
-            belief = belief_tensor
-        )
+        features = TensorDict({
+            "vision" : vision_tensor,
+            "energy": energy_tensor,
+            "belief" : belief_tensor
+        })
 
         # Add the concatenated tensor to the features dictionary, keyed by agent ID
         features_dict[agent_id] = features
