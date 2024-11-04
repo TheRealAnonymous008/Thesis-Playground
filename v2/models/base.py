@@ -24,6 +24,7 @@ class BaseModel:
                  env : CustomGymEnviornment, 
                  policy_net : nn.Module,
                  encoder_net : nn.Module,
+                 decoder_net : nn.Module,
                  feature_extractor : T_FeatureExtractor,
                  buffer_size : int = 100000, 
                  batch_size : int = 64, 
@@ -49,12 +50,18 @@ class BaseModel:
         self.env : Env= env
         self.policy_net : torch.nn.Module = policy_net
         self.encoder_net : torch.nn.Module = encoder_net
+        self.decoder_net : torch.nn.Module = decoder_net
 
         self.rollout_buffer = deque(maxlen=buffer_size)  
         self.batch_size : int = batch_size,
         self.gamma : float = gamma 
         self.loss_fn : T_Loss = loss_fn
-        self.optimizer : T_Optimizer = optimizer(self.policy_net.parameters(), lr = lr)
+        
+        
+        self.policy_optimizer : T_Optimizer = optimizer(self.policy_net.parameters(), lr = lr)
+        self.encoder_optimizer : T_Optimizer = optimizer(self.encoder_net.parameters(), lr = lr)
+        self.decoder_optimizer : T_Optimizer = optimizer(self.decoder_net.parameters(), lr = lr)
+        
         self.feature_extractor = feature_extractor
         self.t_step = 0
 

@@ -13,6 +13,7 @@ class IDQN(BaseModel):
                  env : CustomGymEnviornment, 
                  policy_net : nn.Module,
                  encoder_net : nn.Module,
+                 decoder_net : nn.Module,
                  feature_extractor : T_FeatureExtractor,
                  target_net : nn.Module,
                  buffer_size : int = 100000, 
@@ -48,6 +49,7 @@ class IDQN(BaseModel):
         super().__init__(env = env, 
                          policy_net = policy_net, 
                          encoder_net = encoder_net,
+                         decoder_net = decoder_net,
                          feature_extractor= feature_extractor,
                          buffer_size = buffer_size, 
                          batch_size= batch_size, 
@@ -108,10 +110,16 @@ class IDQN(BaseModel):
             loss = self.loss_fn(state_action_values, expected_state_action_values)
 
             # Optimize the model
-            self.optimizer.zero_grad()
+            self.policy_optimizer.zero_grad()
+            self.encoder_net.zero_grad()
+            self.decoder_net.zero_grad()
+
             loss.backward
             average_loss += loss.item()
-            self.optimizer.step()
+
+            self.policy_optimizer.step()
+            self.encoder_optimizer.step()
+            self.decoder_optimizer.step()
 
         print(f"Average loss {average_loss / len(agents)}")
 
