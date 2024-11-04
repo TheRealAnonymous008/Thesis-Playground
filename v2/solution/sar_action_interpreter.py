@@ -6,6 +6,8 @@ from sar.sar_agent import *
 from sar.sar_env_params import * 
 from gymnasium.spaces import * 
 
+import torch.nn as nn
+
 class SARActionInterpreter(BaseActionParser):
     def __init__(self, belief_dims : int):
         super().__init__()
@@ -18,7 +20,8 @@ class SARActionInterpreter(BaseActionParser):
             case 1 : agent.move(Direction.SOUTH) 
             case 2 : agent.move(Direction.EAST) 
             case 3 : agent.move(Direction.WEST)
-            case _ : pass # Do nothing, placeholder for now.
+            case _: 
+                pass 
     
     def get_action_space(self, agent : SARAgent):
         return Discrete(4)

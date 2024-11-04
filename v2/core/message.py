@@ -27,6 +27,12 @@ class BaseCommunicationProtocol(ABC):
     def __init__(self):
         pass 
 
+    def start(self, world : BaseWorld):
+        """
+        Initialize sstuff
+        """
+        pass 
+
     def send_messages(self, world : BaseWorld): 
         """
         Protocol for sending messages. 

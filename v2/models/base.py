@@ -23,6 +23,7 @@ class BaseModel:
     def __init__(self, 
                  env : CustomGymEnviornment, 
                  policy_net : nn.Module,
+                 encoder_net : nn.Module,
                  feature_extractor : T_FeatureExtractor,
                  buffer_size : int = 100000, 
                  batch_size : int = 64, 
@@ -37,6 +38,7 @@ class BaseModel:
         :param env: The environment to learn from
         :param feature_extractor: The feature extractor to apply to each state. Note that it must return a tensor with a batch dimension already defined.
         :param policy_net:  The policy network. 
+        :param policy_net:  The encoder network. 
         :param buffer_size: The size of the experience replay buffer
         :param batch_size: Learning batch size
         :param gamma: Discount factor for future rewards.
@@ -46,6 +48,7 @@ class BaseModel:
         """
         self.env : Env= env
         self.policy_net : torch.nn.Module = policy_net
+        self.encoder_net : torch.nn.Module = encoder_net
 
         self.rollout_buffer = deque(maxlen=buffer_size)  
         self.batch_size : int = batch_size,

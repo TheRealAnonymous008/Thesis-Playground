@@ -2,13 +2,19 @@ from __future__ import annotations
 
 from core.message import * 
 
+import torch.nn as nn
+
 @dataclass 
 class SARMessagePacket: 
     location : np.ndarray = None 
 
 class SARCommunicationProtocol(BaseCommunicationProtocol):
-    def __init__(self):
+    def __init__(self, encoder_decoder : nn.Module):
         super().__init__()
+        self._encoder = encoder_decoder
+
+    def start(self, world : BaseWorld):
+        self._encoder.encoder_forward_batch(world.agents)
 
     def _choose_target(self, sender : Agent) -> Agent :
         return super()._choose_target(sender)

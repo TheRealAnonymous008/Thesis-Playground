@@ -4,23 +4,20 @@ from copy import copy
 
 from gymnasium.spaces.space import Space
 import numpy as np 
-from gymnasium.spaces import Discrete, Box, Dict 
 
 from pettingzoo import ParallelEnv
-
-
-from core.agent import Agent, AgentState
 from core.action import BaseActionParser
 from core.render import render_world
 from core.world import BaseWorld
-from core.direction import Direction 
 
-from sar.sar_agent import * 
+from sar.sar_agent import *
+from core.message import BaseCommunicationProtocol 
 
 class CustomGymEnviornment(ParallelEnv):
     def __init__(self, 
                  world : BaseWorld, 
                  action_interpreter : BaseActionParser, 
+                 comms_protocol : BaseCommunicationProtocol,
                  time_step_upper = 100):
         """
         Define the initial parameters of the environment
@@ -31,6 +28,7 @@ class CustomGymEnviornment(ParallelEnv):
 
         self._world = world
         self._max_time_steps = time_step_upper
+        self._comms_protoocol = comms_protocol
         self._action_interpreter = action_interpreter 
 
         self.render_mode = None
@@ -66,6 +64,10 @@ class CustomGymEnviornment(ParallelEnv):
         for agent_id, action in actions.items():
             agent = self._world.get_agent(agent_id)
             self._action_interpreter.take_action(action, agent)
+
+        self._comms_protoocol.start(self._world)
+        self._comms_protoocol.send_messages(self._world)
+        self._comms_protoocol.receive_messages(self._world)
         
         self._world.update()
         terminations = {a: False for a in self.agents}

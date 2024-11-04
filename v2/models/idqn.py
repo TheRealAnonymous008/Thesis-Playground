@@ -12,6 +12,7 @@ class IDQN(BaseModel):
     def __init__(self, 
                  env : CustomGymEnviornment, 
                  policy_net : nn.Module,
+                 encoder_net : nn.Module,
                  feature_extractor : T_FeatureExtractor,
                  target_net : nn.Module,
                  buffer_size : int = 100000, 
@@ -46,6 +47,7 @@ class IDQN(BaseModel):
         """
         super().__init__(env = env, 
                          policy_net = policy_net, 
+                         encoder_net = encoder_net,
                          feature_extractor= feature_extractor,
                          buffer_size = buffer_size, 
                          batch_size= batch_size, 
