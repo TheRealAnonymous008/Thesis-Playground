@@ -29,6 +29,10 @@ class Encoder(nn.Module):
 
         self.device = device
 
+    def to(self, device):
+        super().to(device)
+        self.device = device
+        
     def encoder_forward_batch(self, agents: list[SARAgent]) -> torch.Tensor:
         """
         Returns an embedding corresponding to an `agent`.
@@ -82,6 +86,10 @@ class Decoder(nn.Module):
         self.fc1 = nn.Linear(PACKET_DIMS + 32, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, BELIEF_DIMS)
 
+        self.device = device
+
+    def to(self, device):
+        super().to(device)
         self.device = device
 
     def decoder_forward(self, packet : SARMessagePacket, sender_embedding: torch.Tensor) -> torch.Tensor:

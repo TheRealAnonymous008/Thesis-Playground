@@ -14,6 +14,8 @@ T_Loss = nn.modules.loss._Loss
 T_FeatureExtractor = Callable[[dict], dict[torch.Tensor]]
 
 from  tensordict import TensorDict, LazyStackedTensorDict
+from .complex_model import *
+
 
 class BaseModel: 
     """
@@ -22,9 +24,7 @@ class BaseModel:
 
     def __init__(self, 
                  env : CustomGymEnviornment, 
-                 policy_net : nn.Module,
-                 encoder_net : nn.Module,
-                 decoder_net : nn.Module,
+                 model : ComplexModel,
                  feature_extractor : T_FeatureExtractor,
                  buffer_size : int = 100000, 
                  batch_size : int = 64, 
@@ -48,25 +48,22 @@ class BaseModel:
         :param lr : Learning rate for the optimizer  
         """
         self.env : Env= env
-        self.policy_net : torch.nn.Module = policy_net
-        self.encoder_net : torch.nn.Module = encoder_net
-        self.decoder_net : torch.nn.Module = decoder_net
+        self._model = model
 
         self.rollout_buffer = deque(maxlen=buffer_size)  
         self.batch_size : int = batch_size,
         self.gamma : float = gamma 
         self.loss_fn : T_Loss = loss_fn
         
-        
-        self.policy_optimizer : T_Optimizer = optimizer(self.policy_net.parameters(), lr = lr)
-        self.encoder_optimizer : T_Optimizer = optimizer(self.encoder_net.parameters(), lr = lr)
-        self.decoder_optimizer : T_Optimizer = optimizer(self.decoder_net.parameters(), lr = lr)
+        self.policy_optimizer : T_Optimizer = optimizer(self._model._policy_net.parameters(), lr = lr)
+        self.encoder_optimizer : T_Optimizer = optimizer(self._model._encoder_net.parameters(), lr = lr)
+        self.decoder_optimizer : T_Optimizer = optimizer(self._model._decoder_net.parameters(), lr = lr)
         
         self.feature_extractor = feature_extractor
         self.t_step = 0
 
 
-    def learn(self, total_timesteps : int): 
+    def learn(self, total_timesteps : int, optimization_passes : int = 1): 
         """
         Learn for the specified number of time steps
         """
@@ -98,22 +95,23 @@ class BaseModel:
 
         
 
-    def select_joint_action(self, state : dict) -> dict:
+    def select_joint_action(self, state : dict, deterministic : bool = False) -> dict:
         """
         Select a joint action
         
         `state` is assumed to be a dictionary keyed with agent ids. 
+        `deterministic` is used to force deterministic action selection
         
         """
         actions = {}
         state = self._flatten_state_dict([state])
         for a, s in state.items():
-            action = self.select_action(a, state) 
+            action = self.select_action(a, state, deterministic) 
             actions[a] = action
 
         return actions 
     
-    def select_action(self, agent : int, state : dict) -> torch.Tensor:
+    def select_action(self, agent : int, state : dict, deterministic : bool = False) -> torch.Tensor:
         """
         Select an action for the specified agent. Derived classes should override this.
         """
@@ -174,10 +172,10 @@ class BaseModel:
         """
         Savee the policy network to the specified path
         """
-        torch.save(self.policy_net.state_dict(), model_path) 
+        torch.save(self._model._policy_net.state_dict(), model_path) 
 
     def load(self, model_path: str):
         """
         Load the policy network from the specified path
         """
-        self.policy_net.load_state_dict(torch.load(model_path))
+        self._model._policy_net.load_state_dict(torch.load(model_path))

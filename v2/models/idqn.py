@@ -11,9 +11,7 @@ class IDQN(BaseModel):
 
     def __init__(self, 
                  env : CustomGymEnviornment, 
-                 policy_net : nn.Module,
-                 encoder_net : nn.Module,
-                 decoder_net : nn.Module,
+                 model : ComplexModel,
                  feature_extractor : T_FeatureExtractor,
                  target_net : nn.Module,
                  buffer_size : int = 100000, 
@@ -47,9 +45,7 @@ class IDQN(BaseModel):
         :param epsilon_decay: How much does epsilon decay. Used for epsilon greedy action sampling
         """
         super().__init__(env = env, 
-                         policy_net = policy_net, 
-                         encoder_net = encoder_net,
-                         decoder_net = decoder_net,
+                         model= model,
                          feature_extractor= feature_extractor,
                          buffer_size = buffer_size, 
                          batch_size= batch_size, 
@@ -60,7 +56,7 @@ class IDQN(BaseModel):
         )
 
         self.target_net : torch.nn.Module= target_net
-        self.target_net.load_state_dict(self.policy_net.state_dict())
+        self.target_net.load_state_dict(self._model._policy_net.state_dict())
         self.target_net.eval()
         self.tau : float = tau 
         self.epsilon : float  = epsilon_start
@@ -68,21 +64,28 @@ class IDQN(BaseModel):
         self.epsilon_decay : float = epsilon_decay 
 
     
-    def learn(self, total_timesteps: int):
+    def learn(self, total_timesteps: int, optimization_passes : int):
         super().learn(total_timesteps)
-        experiences = self.sample_experiences()
-        self.optimize_model(experiences)
+
+        for _ in range (optimization_passes): 
+            experiences = self.sample_experiences()
+            self.optimize_model(experiences)
+            
         self.epsilon = max(self.epsilon_end, self.epsilon_decay * self.epsilon)
 
-
-    def select_action(self, agent_id : int, state : dict) -> Tensor:
+    def select_action(self, agent_id: int, state: dict, deterministic: bool = False) -> Tensor:
         """
-        Select an action following an epsilon greedy policy
+        Select an action following an epsilon greedy policy, or greedy if deterministic=True
         """
+        if deterministic:
+            with torch.no_grad():
+                action_values = self._model._policy_net.forward(agent_id, state)
+                return torch.argmax(action_values, dim=1)
+        
         sample = random.random()
         if sample > self.epsilon:
             with torch.no_grad():
-                action_values = self.policy_net.forward(agent_id, state)
+                action_values = self._model._policy_net.forward(agent_id, state)
                 return torch.argmax(action_values, dim=1)
         else:
             return torch.tensor([self.env.action_space(agent_id).sample()], dtype=torch.long)
@@ -98,7 +101,7 @@ class IDQN(BaseModel):
 
         for i, agent in enumerate(agents) : 
             # Compute Q(s_t, a)
-            state_action_values = self.policy_net.forward(agent, states)
+            state_action_values = self._model._policy_net.forward(agent, states)
             state_action_values = state_action_values.gather(1, actions[agent]).squeeze(1)
 
             # Compute V(s_{t+1}) using the target network
@@ -111,17 +114,17 @@ class IDQN(BaseModel):
 
             # Optimize the model
             self.policy_optimizer.zero_grad()
-            self.encoder_net.zero_grad()
-            self.decoder_net.zero_grad()
+            self.encoder_optimizer.zero_grad()
+            self.decoder_optimizer.zero_grad()
 
-            loss.backward
+            loss.backward()
             average_loss += loss.item()
 
             self.policy_optimizer.step()
             self.encoder_optimizer.step()
             self.decoder_optimizer.step()
 
-        print(f"Average loss {average_loss / len(agents)}")
+        # print(f"Average loss {average_loss / len(agents)}")
 
         # Soft update the target network
         self.soft_update()
@@ -131,5 +134,5 @@ class IDQN(BaseModel):
         Soft update model parameters.
         θ_target = τ*θ_local + (1 - τ)*θ_target
         """
-        for target_param, local_param in zip(self.target_net.parameters(), self.policy_net.parameters()):
+        for target_param, local_param in zip(self.target_net.parameters(), self._model._policy_net.parameters()):
             target_param.data.copy_(self.tau * local_param.data + (1.0 - self.tau) * target_param.data)

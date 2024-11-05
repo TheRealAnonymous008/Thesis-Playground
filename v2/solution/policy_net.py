@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from  tensordict import TensorDict
 
 class PolicyNet(nn.Module):
-    def __init__(self, input_channels: int, grid_size: int, num_actions: int):
+    def __init__(self, input_channels: int, grid_size: int, num_actions: int, device = "cpu"):
         """
         Initialize the Policy Network
 
@@ -24,6 +24,12 @@ class PolicyNet(nn.Module):
         # Fully connected layers for decision making (Q-values)
         self.fc1 = nn.Linear(conv_output_size, 128)
         self.fc2 = nn.Linear(128, num_actions)
+
+        self.device = device
+
+    def to(self, device):
+        super().to(device)
+        self.device = device
 
     def forward(self, idx : int, obs : dict[int, list[TensorDict]]) -> torch.Tensor:
         """
