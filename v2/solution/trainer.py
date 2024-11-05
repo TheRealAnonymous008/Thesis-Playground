@@ -61,6 +61,7 @@ def test_agents(env : CustomGymEnviornment, model :BaseModel, games : int = 100,
 
         model.load(latest_policy)
 
+    model._model.eval()
     rewards = {agent: 0 for agent in env.possible_agents}
 
     for i in range(games):

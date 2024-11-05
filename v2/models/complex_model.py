@@ -18,3 +18,13 @@ class ComplexModel:
         self._policy_net.to(device)
         self._encoder_net.to(device)
         self._decoder_net.to(device)
+
+    def eval(self):
+        self._policy_net.eval()
+        self._encoder_net.eval()
+        self._decoder_net.eval()
+
+    def train(self):
+        self._policy_net.train()
+        self._encoder_net.train()
+        self._decoder_net.train()
