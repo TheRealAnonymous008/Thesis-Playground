@@ -81,7 +81,10 @@ def test_agents(env : CustomGymEnviornment, model :BaseModel, games : int = 100,
     avg_reward_per_agent = {
         agent: rewards[agent] / games for agent in env.possible_agents
     }
-    print(f"Avg reward: {avg_reward}  std: {np.std(rewards.values())}")
+
+    rewards = [reward for reward in rewards.values()]
+
+    print(f"Avg reward: {avg_reward}  std: {np.std(rewards)}")
     print("Avg reward per agent, per game: ", avg_reward_per_agent)
     # print("Full rewards: ", rewards)
     return avg_reward
