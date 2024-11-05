@@ -44,10 +44,11 @@ class PolicyNet(nn.Module):
             x = obs[idx]
 
             return self._forward(x)
-        except:
-            raise Exception(f"There's something wrong here {idx} with data {obs[idx]}")
+        except Exception as e:
+            raise Exception(f"There's something wrong here {idx} with error {e}")
 
     def _forward(self, obs : TensorDict):
+        obs = obs.to(device=self.device)
         x = obs["vision"]
 
         # Pass through the convolutional layers

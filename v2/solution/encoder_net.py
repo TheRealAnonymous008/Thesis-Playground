@@ -32,7 +32,7 @@ class Encoder(nn.Module):
     def to(self, device):
         super().to(device)
         self.device = device
-        
+
     def encoder_forward_batch(self, agents: list[SARAgent]) -> torch.Tensor:
         """
         Returns an embedding corresponding to an `agent`.
@@ -60,9 +60,7 @@ class Encoder(nn.Module):
                 features = torch.cat((traits, state), dim=0)
                 batch_features.append(features)
             
-            batch_features = torch.stack(batch_features)
-            batch_features.to(device=self.device)
-            
+            batch_features = torch.stack(batch_features).to(device=self.device)            
             # Forward pass through the network
             x = F.relu(self.fc1(batch_features))
             embedding = self.fc2(x)
@@ -104,7 +102,7 @@ class Decoder(nn.Module):
             # Extract the packet data and sender information
             location_data = torch.tensor(packet.location, dtype=torch.float32, device= self.device)
             
-            x = torch.concat([location_data, sender_embedding])
+            x = torch.concat([location_data, sender_embedding]).to(device=self.device)
 
             # Pass the location data through the network
             x = F.relu(self.fc1(x))

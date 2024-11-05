@@ -32,6 +32,7 @@ class BaseModel:
                  optimizer : T_Optimizer = torch.optim.Adam,
                  loss_fn : T_Loss = nn.MSELoss(),
                  lr : float = 1e-3,
+                 device : str = "cuda",
                  ):
         """
         Initialize the model 
@@ -61,6 +62,9 @@ class BaseModel:
         
         self.feature_extractor = feature_extractor
         self.t_step = 0
+        self.device = device
+
+        self._model.to(self.device)
 
 
     def learn(self, total_timesteps : int, optimization_passes : int = 1): 
@@ -77,11 +81,10 @@ class BaseModel:
             # TODO: Potentially refactor this? 
 
             next_state = self.feature_extractor(next_state)
-            terminated = torch.tensor(list(terminated.values()), dtype = torch.bool)
-            truncated = torch.tensor(list(truncated.values()), dtype = torch.bool) 
-            done = torch.logical_or(terminated, truncated).to(dtype = torch.int8)       # Note that we need this to be int so that we can do some arithmetic with it.
-            reward = torch.tensor(list(reward.values()), dtype = torch.float32)
-
+            terminated = torch.tensor(list(terminated.values()), dtype = torch.bool,)
+            truncated = torch.tensor(list(truncated.values()), dtype = torch.bool,) 
+            done = torch.logical_or(terminated, truncated).to(dtype = torch.int8,)       # Note that we need this to be int so that we can do some arithmetic with it.
+            reward = torch.tensor(list(reward.values()), dtype = torch.float32,)
 
             self.rollout_buffer.append(
                 (state, action, reward, next_state, done)
@@ -129,9 +132,9 @@ class BaseModel:
         # Note that it is more appropriate to have the state dict such that it is keyed on agents and eeach value is an entire batch.
         states = self._flatten_state_dict([self.rollout_buffer[e][0] for e in experience_idxs])
         actions = self._flatten_action_dict([self.rollout_buffer[e][1] for e in experience_idxs])
-        rewards = torch.stack([self.rollout_buffer[e][2] for e in experience_idxs]).transpose(0, 1)
+        rewards = torch.stack([self.rollout_buffer[e][2] for e in experience_idxs]).transpose(0, 1).to(self.device)
         next_states = self._flatten_state_dict([self.rollout_buffer[e][3] for e in experience_idxs])
-        dones = torch.stack([self.rollout_buffer[e][4] for e in experience_idxs]).transpose(0, 1)
+        dones = torch.stack([self.rollout_buffer[e][4] for e in experience_idxs]).transpose(0, 1).to(self.device)
 
         return states, actions, rewards, next_states, dones
 

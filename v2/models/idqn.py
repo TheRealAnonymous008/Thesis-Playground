@@ -24,6 +24,7 @@ class IDQN(BaseModel):
                  epsilon_start: float = 1.0,
                  epsilon_end: float = 0.01,
                  epsilon_decay: float = 0.995,
+                 device : str = "cpu",
                  ):
         """
         Initialize the model 
@@ -52,7 +53,8 @@ class IDQN(BaseModel):
                          gamma = gamma, 
                          optimizer = optimizer, 
                          loss_fn= loss_fn,
-                         lr = lr 
+                         lr = lr ,
+                         device = device
         )
 
         self.target_net : torch.nn.Module= target_net
@@ -63,8 +65,10 @@ class IDQN(BaseModel):
         self.epsilon_end : float = epsilon_end
         self.epsilon_decay : float = epsilon_decay 
 
+        self.target_net.to(self.device)
     
     def learn(self, total_timesteps: int, optimization_passes : int):
+        self._model.eval()
         super().learn(total_timesteps)
 
         for _ in range (optimization_passes): 
@@ -99,10 +103,13 @@ class IDQN(BaseModel):
         agents = self.env.agents
         average_loss = 0
 
+        self._model.train()
+
         for i, agent in enumerate(agents) : 
             # Compute Q(s_t, a)
             state_action_values = self._model._policy_net.forward(agent, states)
-            state_action_values = state_action_values.gather(1, actions[agent]).squeeze(1)
+            action : torch.Tensor = actions[agent].to(self.device)
+            state_action_values = state_action_values.gather(1, action).squeeze(1)
 
             # Compute V(s_{t+1}) using the target network
             with torch.no_grad():
@@ -124,7 +131,7 @@ class IDQN(BaseModel):
             self.encoder_optimizer.step()
             self.decoder_optimizer.step()
 
-        # print(f"Average loss {average_loss / len(agents)}")
+        print(f"Average loss {average_loss / len(agents)}")
 
         # Soft update the target network
         self.soft_update()
