@@ -15,12 +15,22 @@ from tqdm import tqdm
 from models.base import BaseModel
 import numpy as np
 import torch 
+
+def set_seed(seed: int | None):
+    """
+    Set random seed for reproducibility across numpy and torch if seed is non-negative.
+    """
+    if seed != None :
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)  # If using CUDA, set all CUDA seeds
+
 def train_loop(
         env: CustomGymEnviornment, 
         model: BaseModel,  
         games: int = 100, 
         optimization_passes: int = 10,
-        seed: int = 0):
+        seed: int = None):
     """
     Train an agent for run_count number of games (no. of iters per game is dictated by env)
     """
@@ -30,7 +40,8 @@ def train_loop(
     checkpts = int(steps / steps_per_checkpt)
     avg_rewards = []
 
-    torch.seed(seed)
+    set_seed(seed)
+    model.env.reset(seed= seed)
 
     # Wrap the training loop in tqdm for progress tracking
     for i in tqdm(range(checkpts), desc="Training Progress"):
