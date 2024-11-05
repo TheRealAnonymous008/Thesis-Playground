@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 from models.base import BaseModel
 import numpy as np
-
+import torch 
 def train_loop(
         env: CustomGymEnviornment, 
         model: BaseModel,  
@@ -30,15 +30,17 @@ def train_loop(
     checkpts = int(steps / steps_per_checkpt)
     avg_rewards = []
 
+    torch.seed(seed)
+
     # Wrap the training loop in tqdm for progress tracking
     for i in tqdm(range(checkpts), desc="Training Progress"):
         model.learn(total_timesteps=steps_per_checkpt, optimization_passes=optimization_passes)
         # TODO: Uncomment this 
-        # model.save(f"{env.unwrapped.metadata.get('name')}_{time.strftime('%Y%m%d-%H%M%S')}")
         print("Model has been saved.")
 
         avg_rewards.append(test_agents(env, model, 1))
 
+    model.save(f"{env.unwrapped.metadata.get('name')}_{time.strftime('%Y%m%d-%H%M%S')}")
     print(f"Finished training on {str(env.unwrapped.metadata['name'])}.")
     
     env.close()
@@ -78,14 +80,17 @@ def test_agents(env : CustomGymEnviornment, model :BaseModel, games : int = 100,
 
     env.close()
 
-    avg_reward = sum(rewards.values()) / len(rewards.values())
     avg_reward_per_agent = {
         agent: rewards[agent] / games for agent in env.possible_agents
     }
 
     rewards = [reward for reward in rewards.values()]
 
-    print(f"Avg reward: {avg_reward}  std: {np.std(rewards)}")
+    mean = np.mean(rewards)
+    std = np.std(rewards)
+    coeff_variation = std / mean 
+
+    print(f"Avg reward: {mean}  std: {std}  coeff : {coeff_variation}")
     print("Avg reward per agent, per game: ", avg_reward_per_agent)
     # print("Full rewards: ", rewards)
-    return avg_reward
+    return mean

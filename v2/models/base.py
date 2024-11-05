@@ -171,14 +171,21 @@ class BaseModel:
         """
         raise NotImplementedError
 
-    def save(self, model_path : str): 
+    def save(self, model_path: str):
         """
-        Savee the policy network to the specified path
+        Save the entire model (policy, encoder, and decoder networks) to the specified path
         """
-        torch.save(self._model._policy_net.state_dict(), model_path) 
+        torch.save({
+            'policy_net': self._model._policy_net.state_dict(),
+            'encoder_net': self._model._encoder_net.state_dict(),
+            'decoder_net': self._model._decoder_net.state_dict()
+        }, model_path)
 
     def load(self, model_path: str):
         """
-        Load the policy network from the specified path
+        Load the entire model (policy, encoder, and decoder networks) from the specified path
         """
-        self._model._policy_net.load_state_dict(torch.load(model_path))
+        checkpoint = torch.load(model_path)
+        self._model._policy_net.load_state_dict(checkpoint['policy_net'])
+        self._model._encoder_net.load_state_dict(checkpoint['encoder_net'])
+        self._model._decoder_net.load_state_dict(checkpoint['decoder_net'])
