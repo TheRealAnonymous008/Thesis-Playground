@@ -92,10 +92,10 @@ def feature_extractor(obs : dict, device : str = "cpu") -> TensorDict:
             "vision" : vision_tensor,
             "state": state_tensor,
             "belief" : belief_tensor
-        })
+        }, device = device)
 
         # Add the concatenated tensor to the features dictionary, keyed by agent ID
-        features_dict[agent_id] = features.to(device)
+        features_dict[agent_id] = features
 
 
     return features_dict
