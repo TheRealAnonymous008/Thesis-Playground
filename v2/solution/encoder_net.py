@@ -40,35 +40,30 @@ class Encoder(nn.Module):
         :param agent: An instance of Agent with `traits` and `state` attributes.
         :return: A latent vector representing the agent's embedding.
         """
-        try:
-            # Extract traits and state features
-            batch_features = []
+        # Extract traits and state features
+        batch_features = []
 
-            for agent in agents: 
-                traits = torch.tensor([
-                    agent._traits._visibility_range,
-                    agent._traits._energy_capacity,
-                    agent._traits._max_slope
-                ], dtype=torch.float32)
-                
-                state = torch.tensor([
-                    agent._current_state.current_energy,
-                    agent._current_state.victims_rescued
-                ], dtype=torch.float32)
-                
-                # Concatenate all features
-                features = torch.cat((traits, state), dim=0)
-                batch_features.append(features)
+        for agent in agents: 
+            traits = agent.trait_as_tensor            
+            state = torch.tensor([
+                agent._current_state.current_energy,
+                agent._current_state.victims_rescued
+            ]).to(agent._device)            # TODO: This is a hotfix.
             
-            batch_features = torch.stack(batch_features).to(device=self.device)            
-            # Forward pass through the network
-            x = F.relu(self.fc1(batch_features))
-            embedding = self.fc2(x)
-            
-            return embedding
-        except Exception as e:
-            raise Exception(f"There's something wrong here. Input {agent}. Error: {e}")
+            # Concatenate all features
+            features = torch.cat((traits, state), dim=0)
+            batch_features.append(features)
+
+        # Need to cast to torch.dtype = float32        
+        batch_features = torch.stack(batch_features).to(dtype = torch.float32)    
+
+        # Forward pass through the network 
+        x = batch_features
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = self.fc2(x)
         
+        return x
 
 PACKET_DIMS = 2
 class Decoder(nn.Module):
@@ -98,16 +93,14 @@ class Decoder(nn.Module):
         :param sender_embedding: The sender's embedding tensor based on their ID.
         :return: A belief vector for the agent, of dimension `BELIEF`.
         """
-        try:
-            # Extract the packet data and sender information
-            location_data = torch.tensor(packet.location, dtype=torch.float32, device= self.device)
-            
-            x = torch.concat([location_data, sender_embedding]).to(device=self.device)
+        # Extract the packet data and sender information
+        location_data = torch.tensor(packet.location, dtype=torch.float32, device= self.device)
+        
+        x = torch.concat([location_data, sender_embedding])
 
-            # Pass the location data through the network
-            x = F.relu(self.fc1(x))
-            belief_update = self.fc2(x)
+        # Pass the location data through the network
+        x = F.relu(self.fc1(x))
+        belief_update = self.fc2(x)
 
-            return belief_update
-        except Exception as e:
-            raise Exception(f"There's something wrong here. Input {packet}. Error: {e}")
+        return belief_update
+        

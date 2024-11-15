@@ -88,7 +88,7 @@ class SARWorld(BaseWorld):
         x, y = agent.current_position_const
         x_min, x_max = max(0, x - visibility_range), min(self._dims[0], x + visibility_range + 1)
         y_min, y_max = max(0, y - visibility_range), min(self._dims[1], y + visibility_range + 1)
-
+        
         # We assume the resource grid is final and will not change 
         observation = self._world_state[x_min:x_max, y_min:y_max]
 

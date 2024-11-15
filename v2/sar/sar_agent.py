@@ -1,5 +1,6 @@
 
 from __future__ import annotations
+from dataclasses import field
 from core.agent import *
 from core.direction import * 
 from core.observation import *
@@ -27,10 +28,25 @@ class SARAgentTraits(AgentTraits):
     """
     Data class containing fixed parameters / traits of the agent relevant to the simulation
     """
-    _visibility_range : int = 3                 # How far can the agent see 
-    _energy_capacity : float = 100.0            # How far can the agent move
-    _max_slope : float = 1                      # How high can the agent traverse
+    _tensor : torch.Tensor = torch.zeros((3,))
 
+    @property 
+    def _visibility_range(self) -> int:
+        return int (self._tensor[0].item()) 
+
+    @property 
+    def _energy_capacity(self):
+        return self._tensor[1].item()
+    
+    @property
+    def _max_slope(self):
+        return self._tensor[2].item()
+    
+    def to_tensor(self):
+        return self._tensor
+    
+    def to_device(self, device):
+        self._tensor = self._tensor.to(device=device)
 
 @dataclass
 class SARAgentState(AgentState):
@@ -98,6 +114,11 @@ class SARAgentState(AgentState):
         """
         self.relations.pop(agent)
 
+    
+
+
+    
+
 class SARUtilityFunction(UtilityFunction):
     def __init__(self):
         super().__init__()
@@ -144,6 +165,10 @@ class SARAgent(Agent):
     def _reset(self):
         self._previous_position = None 
         self._current_action = SARActionInformation()
+
+    def to(self, device : str):
+        super().to(device)
+        self._traits.to_device(device= device)
 
     def update(self):
         """

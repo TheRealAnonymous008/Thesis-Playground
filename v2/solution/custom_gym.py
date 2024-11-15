@@ -36,11 +36,17 @@ class CustomGymEnviornment(ParallelEnv):
             "name" : "thesis"
         }
 
+        self._device = "cpu"
+
+    def to(self, device : str):
+        self._device = device
+
     def reset(self, seed = 42, options = None):
         """
         Reset the environemnt. Returns observation and infos
         """
         np.random.seed(seed)
+        self._world.to(self._device)
         self._world.reset()
         self.agents : list[str] = self._world.agent_aliases
         self.possible_agents = copy(self.agents)

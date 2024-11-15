@@ -38,11 +38,15 @@ class BaseWorld(ABC):
 
         self._models : dict[str, BaseDynamicsModel] = {}
         
+        self._device = "cpu"
         self.reset()
 
     def add_model(self, name : str, model : BaseDynamicsModel) -> BaseWorld: 
         self._models[name] = model
         return self  
+
+    def to(self, device : str):
+        self._device = device
 
     def reset(self):
         """
@@ -55,8 +59,10 @@ class BaseWorld(ABC):
 
         self._maps = self._generation_pipeline(self)
         self._swarm_initializer(self)
+
         for agent in self.agents: 
             agent.reset()
+            agent.to(self._device)
 
     @abstractmethod
     def _reset(self):

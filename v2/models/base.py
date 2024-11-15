@@ -32,7 +32,7 @@ class BaseModel:
                  optimizer : T_Optimizer = torch.optim.Adam,
                  loss_fn : T_Loss = nn.MSELoss(),
                  lr : float = 1e-3,
-                 device : str = "cuda",
+                 device : str = "cpu",
                  ):
         """
         Initialize the model 
@@ -48,7 +48,7 @@ class BaseModel:
         :papram loss_fn: The loss function used for the optimizer
         :param lr : Learning rate for the optimizer  
         """
-        self.env : Env= env
+        self.env : CustomGymEnviornment = env
         self._model = model
 
         self.rollout_buffer = deque(maxlen=buffer_size)  
@@ -65,6 +65,7 @@ class BaseModel:
         self.device = device
 
         self._model.to(self.device)
+        self.env.to(self.device)
 
 
     def learn(self, total_timesteps : int, optimization_passes : int = 1): 

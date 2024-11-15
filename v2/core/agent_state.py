@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 
 from .resource import Resource, _QuantityType, _ResourceType
 
+import torch
+
 _UtilityType = float 
 
 @dataclass 
@@ -15,7 +17,15 @@ class AgentTraits:
     """
     Data class containing fixed parameters / traits of the agent relevant to the simulation
     """
-    pass 
+    _device = "cpu"
+
+    @abstractmethod
+    def to_tensor(self) -> torch.Tensor:
+        pass 
+    
+    @abstractmethod 
+    def to_device(self, device : str):
+        self._device = device
 
 @dataclass
 class AgentState:

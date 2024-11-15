@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-from .agent_state import AgentTraits
+from .agent_state import AgentState, AgentTraits
 from .observation import LocalObservation
 
 from .action import *
@@ -12,6 +12,8 @@ from .agent_state import *
 from .message import Message
 
 from abc import ABC, abstractmethod
+
+import torch
 
 _IdType = int
 class Agent:
@@ -27,6 +29,7 @@ class Agent:
         """
         self._id : _IdType = "-1"
         self._current_belief : np.ndarray = 0
+        self._device = "cpu"
 
         self._initializer()
         self.reset()
@@ -38,9 +41,16 @@ class Agent:
         """
         self._current_observation : LocalObservation = None
         self._current_action : ActionInformation = None 
-        self._traits : AgentTraits = None 
+        self._traits : AgentTraits = AgentTraits() 
         self._current_state :  AgentState = None
         self._utility_function : UtilityFunction = None 
+
+    @abstractmethod
+    def to(self, device : str):
+        """
+        Set the device of the agent for use in CUDA
+        """
+        self._device = device
         
     def reset(self):
         """
@@ -135,6 +145,12 @@ class Agent:
         """
         return self._current_action
     
+    @property 
+    @abstractmethod 
+    def trait_as_tensor(self) -> torch.Tensor: 
+        return self._traits.to_tensor()
+
+
     def bind_to_world(self, world_id : int):
         """
         Set the agent's ID to be that of the ID assigned to it by the world
