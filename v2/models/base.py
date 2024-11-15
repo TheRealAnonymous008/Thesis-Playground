@@ -79,11 +79,14 @@ class BaseModel:
             action = self.select_joint_action(state)
             next_state, reward, terminated, truncated, _ = self.env.step(action)
 
-            # TODO: Potentially refactor this? 
+            # TODO: Potentially refactor this?  In particular, the terminated and truncated code below is a bit hacky and reliant 
+            # on an agent with id 1 existing
 
             next_state = self.feature_extractor(next_state, self.device)
-            terminated = torch.tensor(list(terminated.values()), dtype = torch.bool,)
-            truncated = torch.tensor(list(truncated.values()), dtype = torch.bool,) 
+
+            num_agents = self.env.max_num_agents
+            terminated = torch.fill(torch.zeros(num_agents), terminated[1])
+            truncated = torch.fill(torch.zeros(num_agents), truncated[1])
             done = torch.logical_or(terminated, truncated).to(dtype = torch.int8,)       # Note that we need this to be int so that we can do some arithmetic with it.
             reward = torch.tensor(list(reward.values()), dtype = torch.float32,)
 
