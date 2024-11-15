@@ -51,7 +51,7 @@ class Encoder(nn.Module):
             features = torch.cat((traits, state), dim=0)
             batch_features.append(features)
 
-        # Need to cast to torch.dtype = float32        
+        # Need to cast to torch.dtype = float32     
         batch_features = torch.stack(batch_features)
 
         # Forward pass through the network 

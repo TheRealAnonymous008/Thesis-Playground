@@ -113,7 +113,7 @@ class BaseModel:
             action = self.select_action(a, state, deterministic) 
             actions[a] = action
 
-        return actions 
+        return actions
     
     def select_action(self, agent : int, state : dict, deterministic : bool = False) -> torch.Tensor:
         """

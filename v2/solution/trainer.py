@@ -50,8 +50,8 @@ def train_loop(
         print("Model has been saved.")
 
         avg_rewards.append(test_agents(model.env, model, 1))
-
-    model.save(f"{env.unwrapped.metadata.get('name')}_{time.strftime('%Y%m%d-%H%M%S')}")
+    
+    # model.save(f"{env.unwrapped.metadata.get('name')}_{time.strftime('%Y%m%d-%H%M%S')}")
     print(f"Finished training on {str(env.unwrapped.metadata['name'])}.")
     
     env.close()

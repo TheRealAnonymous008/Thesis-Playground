@@ -63,7 +63,7 @@ class CustomGymEnviornment(ParallelEnv):
 
         return observations, infos
     
-    def step(self, actions : dict[int, int]):
+    def step(self, actions : dict[int, torch.Tensor]):
         """
         Take an action for the current agent 
 
@@ -71,7 +71,7 @@ class CustomGymEnviornment(ParallelEnv):
         """
         for agent_id, action in actions.items():
             agent = self._world.get_agent(agent_id)
-            self._action_interpreter.take_action(action, agent)
+            self._action_interpreter.take_action(action.item(), agent)
 
         self._comms_protoocol.start(self._world)
         self._comms_protoocol.send_messages(self._world)
