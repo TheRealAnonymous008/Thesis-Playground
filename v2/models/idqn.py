@@ -76,7 +76,7 @@ class IDQN(BaseModel):
             
         self.epsilon = max(self.epsilon_end, self.epsilon_decay * self.epsilon)
 
-    def select_action(self, agent_id: int, state: dict, deterministic: bool = False) -> Tensor:
+    def _select_action(self, agent_id: int, state: dict, deterministic: bool = False) -> Tensor:
         """
         Select an action following an epsilon greedy policy, or greedy if deterministic=True
         """
@@ -107,7 +107,7 @@ class IDQN(BaseModel):
         for i, agent in enumerate(agents) : 
             # Compute Q(s_t, a)
             state_action_values = self._model._policy_net.forward(agent, states)
-            action : torch.Tensor = actions[agent]
+            action : torch.Tensor = actions[agent].to(self.device)
             state_action_values = state_action_values.gather(1, action).squeeze(1)
 
             # Compute V(s_{t+1}) using the target network

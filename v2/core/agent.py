@@ -28,7 +28,7 @@ class Agent:
         Initializes a simple agent 
         """
         self._id : _IdType = "-1"
-        self._current_belief : np.ndarray = 0
+        self._current_belief : torch.Tensor = torch.Tensor(0)
         self._device = "cpu"
 
         self._initializer()

@@ -55,7 +55,8 @@ class PolicyNet(nn.Module):
         x = x.view(x.size(0), -1)
 
         # Pass through fully connected layers
-        x = F.relu(self.fc1(x))
+        x = self.fc1(x)
+        x = F.relu(x)
         x = self.fc2(x)
 
         return x
@@ -64,7 +65,7 @@ import torch
 import numpy as np
 
 
-def feature_extractor(obs : dict) -> TensorDict:
+def feature_extractor(obs : dict, device : str = "cpu") -> TensorDict:
     """
     Extracts features from the environment observations for each agent.
     
@@ -72,6 +73,7 @@ def feature_extractor(obs : dict) -> TensorDict:
     :return: A dictionary where keys are agent IDs and values are PyTorch tensors representing the features.
     """
     features_dict = {}
+
 
     for agent_id, agent_obs in obs.items():
         # Extract individual components from agent's observation
@@ -93,7 +95,7 @@ def feature_extractor(obs : dict) -> TensorDict:
         })
 
         # Add the concatenated tensor to the features dictionary, keyed by agent ID
-        features_dict[agent_id] = features
+        features_dict[agent_id] = features.to(device)
 
 
     return features_dict

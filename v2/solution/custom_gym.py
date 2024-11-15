@@ -18,7 +18,9 @@ class CustomGymEnviornment(ParallelEnv):
                  world : BaseWorld, 
                  action_interpreter : BaseActionParser, 
                  comms_protocol : BaseCommunicationProtocol,
-                 time_step_upper = 100):
+                 time_step_upper = 100,
+                 device : str = "cpu"
+                 ):
         """
         Define the initial parameters of the environment
 
@@ -36,7 +38,7 @@ class CustomGymEnviornment(ParallelEnv):
             "name" : "thesis"
         }
 
-        self._device = "cpu"
+        self._device = device
 
     def to(self, device : str):
         self._device = device

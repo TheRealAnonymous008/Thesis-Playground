@@ -138,7 +138,7 @@ class SARBeliefInitializer(BaseBeliefInitializer):
         self.belief_dims = belief_dims
 
     def initialize_belief(self, agent : SARAgent):
-        agent._current_belief = np.zeros((self.belief_dims))
+        agent._current_belief = torch.zeros((self.belief_dims), device=agent._device)
 
 class SARAgent(Agent):
     """
@@ -169,6 +169,7 @@ class SARAgent(Agent):
     def to(self, device : str):
         super().to(device)
         self._traits.to_device(device= device)
+        self._current_belief.to(device = device)
 
     def update(self):
         """

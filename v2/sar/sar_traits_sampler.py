@@ -27,7 +27,7 @@ class SARTraitSampler:
             energy_capacity = np.clip(np.random.normal(100, 20), a_min=10, a_max = MAX_ENERGY)
             max_slope = np.clip(np.random.normal(1, 0.5), a_min = 0.01, a_max = None)
 
-            traits._tensor = torch.tensor([MAX_VISIBILITY - 1, energy_capacity, max_slope])
+            traits._tensor = torch.tensor([3, energy_capacity, max_slope])
             agent._traits = traits 
 
             agent.to(device)

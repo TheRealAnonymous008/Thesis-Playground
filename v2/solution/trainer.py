@@ -49,7 +49,7 @@ def train_loop(
         # TODO: Uncomment this 
         print("Model has been saved.")
 
-        avg_rewards.append(test_agents(env, model, 1))
+        avg_rewards.append(test_agents(model.env, model, 1))
 
     model.save(f"{env.unwrapped.metadata.get('name')}_{time.strftime('%Y%m%d-%H%M%S')}")
     print(f"Finished training on {str(env.unwrapped.metadata['name'])}.")
@@ -83,7 +83,7 @@ def test_agents(env : CustomGymEnviornment, model :BaseModel, games : int = 100,
             rewards[agent]== 0
         
         for _ in range(env._max_time_steps): 
-            obs = model.feature_extractor(obs)
+            obs = model.feature_extractor(obs, model.device)
             action = model.select_joint_action(obs, deterministic=True)
             obs, reward, termination, truncation, info = env.step(action)
             for agent in env.agents:

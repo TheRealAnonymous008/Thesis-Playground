@@ -73,7 +73,7 @@ class BaseModel:
         Learn for the specified number of time steps
         """
         state, _ = self.env.reset()
-        state = self.feature_extractor(state)
+        state = self.feature_extractor(state, self.device)
 
         for t in range(total_timesteps):
             action = self.select_joint_action(state)
@@ -81,7 +81,7 @@ class BaseModel:
 
             # TODO: Potentially refactor this? 
 
-            next_state = self.feature_extractor(next_state)
+            next_state = self.feature_extractor(next_state, self.device)
             terminated = torch.tensor(list(terminated.values()), dtype = torch.bool,)
             truncated = torch.tensor(list(truncated.values()), dtype = torch.bool,) 
             done = torch.logical_or(terminated, truncated).to(dtype = torch.int8,)       # Note that we need this to be int so that we can do some arithmetic with it.
@@ -95,7 +95,7 @@ class BaseModel:
 
             if done.all(): 
                 state, _ = self.env.reset()
-                state = self.feature_extractor(state)
+                state = self.feature_extractor(state, self.device)
 
         
 
@@ -119,7 +119,11 @@ class BaseModel:
         """
         Select an action for the specified agent. Derived classes should override this.
         """
-        raise NotImplementedError
+        tensor = self._select_action(agent, state ,deterministic)
+        return tensor.to(self.device)
+
+    def _select_action(self, agent : int, state : dict, deterministic : bool = False) -> torch.Tensor:
+        raise NotImplementedError()
     
     def sample_experiences(self) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """
