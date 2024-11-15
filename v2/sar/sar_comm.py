@@ -7,7 +7,7 @@ import torch.nn as nn
 
 @dataclass 
 class SARMessagePacket: 
-    location : np.ndarray = None 
+    location : torch.Tensor = None 
 
 class SARCommunicationProtocol(BaseCommunicationProtocol):
     def __init__(self, encoder : nn.Module, decoder : nn.Module):
@@ -25,7 +25,7 @@ class SARCommunicationProtocol(BaseCommunicationProtocol):
     
     def _formulate_message_contents(self, sender : Agent , receiver : Agent) -> Message:
         contents = SARMessagePacket( 
-            sender.current_position
+            torch.tensor(sender.current_position, device = sender._device, dtype = torch.float32)
         )
         return contents
     

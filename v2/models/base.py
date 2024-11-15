@@ -88,8 +88,8 @@ class BaseModel:
             terminated = torch.fill(torch.zeros(num_agents), terminated[1])
             truncated = torch.fill(torch.zeros(num_agents), truncated[1])
             done = torch.logical_or(terminated, truncated).to(dtype = torch.int8,)       # Note that we need this to be int so that we can do some arithmetic with it.
-            reward = torch.tensor(list(reward.values()), dtype = torch.float32,)
-
+            reward = torch.tensor([*reward.values()], dtype=torch.float32)
+            
             self.rollout_buffer.append(
                 (state, action, reward, next_state, done)
             )
@@ -167,9 +167,10 @@ class BaseModel:
         Given a batch of actions (in list form), returns a dictionary of states keyed on the agents
         """
         flattened_actions = {}
-        for agent_id in actions[0].keys():
-            agent_actions = [[action[agent_id]] for action in actions]
+        for agent_id in actions[0]:
+            agent_actions = [[action[agent_id] for action in actions]]
             flattened_actions[agent_id] = torch.tensor(agent_actions)
+
 
         return flattened_actions
     

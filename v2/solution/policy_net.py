@@ -81,11 +81,11 @@ def feature_extractor(obs : dict, device : str = "cpu") -> TensorDict:
         state = agent_obs['State']
         belief = agent_obs['Belief']
 
-        vision_tensor = torch.tensor(vision_grid, dtype=torch.float32).unsqueeze(0)
+        vision_tensor = torch.from_numpy(vision_grid).float().unsqueeze(0)
 
         # Convert energy and belief to tensors (they could be single values or vectors)
         state_tensor = state
-        belief_tensor = torch.tensor(belief, dtype=torch.float32)
+        belief_tensor = belief
 
         # Concatenate all feature tensors into a one-dimensional feature vector
         features = TensorDict({

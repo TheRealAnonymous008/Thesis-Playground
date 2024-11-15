@@ -39,7 +39,7 @@ class Decoder(nn.Module):
         :return: A belief vector for the agent, of dimension `BELIEF`.
         """
         # Extract the packet data and sender information
-        location_data = torch.tensor(packet.location, dtype=torch.float32, device= self.device)
+        location_data = packet.location
         
         x = torch.concat([location_data, sender_embedding])
 
