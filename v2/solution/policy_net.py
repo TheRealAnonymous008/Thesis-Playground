@@ -40,12 +40,9 @@ class PolicyNet(nn.Module):
 
         :return: Q-values for each action
         """
-        try: 
-            x = obs[idx]
+        x = obs[idx]
 
-            return self._forward(x)
-        except Exception as e:
-            raise Exception(f"There's something wrong here {idx} with error {e}")
+        return self._forward(x)
 
     def _forward(self, obs : TensorDict):
         x = obs["vision"]
@@ -78,20 +75,20 @@ def feature_extractor(obs : dict) -> TensorDict:
 
     for agent_id, agent_obs in obs.items():
         # Extract individual components from agent's observation
-        vision_grid = agent_obs['Victims']
-        energy = agent_obs['Energy']
+        vision_grid = agent_obs['Vision']
+        state = agent_obs['State']
         belief = agent_obs['Belief']
 
         vision_tensor = torch.tensor(vision_grid, dtype=torch.float32).unsqueeze(0)
 
         # Convert energy and belief to tensors (they could be single values or vectors)
-        energy_tensor = torch.tensor([energy], dtype=torch.float32)
+        state_tensor = state
         belief_tensor = torch.tensor(belief, dtype=torch.float32)
 
         # Concatenate all feature tensors into a one-dimensional feature vector
         features = TensorDict({
             "vision" : vision_tensor,
-            "energy": energy_tensor,
+            "state": state_tensor,
             "belief" : belief_tensor
         })
 

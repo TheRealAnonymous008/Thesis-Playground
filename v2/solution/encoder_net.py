@@ -45,10 +45,7 @@ class Encoder(nn.Module):
 
         for agent in agents: 
             traits = agent.trait_as_tensor            
-            state = torch.tensor([
-                agent._current_state.current_energy,
-                agent._current_state.victims_rescued
-            ]).to(agent._device)            # TODO: This is a hotfix.
+            state = agent.state_as_tensor
             
             # Concatenate all features
             features = torch.cat((traits, state), dim=0)

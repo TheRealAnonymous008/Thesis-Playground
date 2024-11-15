@@ -30,8 +30,8 @@ class SARActionInterpreter(BaseActionParser):
         vis = agent._traits._visibility_range
         return Dict({
             "Belief": Box(-1, 1, (self._belief_dims, )),
-            "Victims" : Box(0, 1, (2 * vis + 1, 2 * vis + 1)),
-            "Energy": Box(0, MAX_ENERGY + 1),
+            "Vision" : Box(0, 1, (2 * vis + 1, 2 * vis + 1)),
+            "State": Box(low = 0, high = np.inf),
         })
 
     def get_observation(self, agent : SARAgent):
@@ -39,6 +39,6 @@ class SARActionInterpreter(BaseActionParser):
         
         return {
             "Belief": agent._current_belief,
-            "Victims" : obs.victim_map,
-            "Energy": agent._current_state.current_energy,
+            "Vision" : obs.victim_map,
+            "State": agent.state_as_tensor
         }

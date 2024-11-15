@@ -253,3 +253,10 @@ class SARAgent(Agent):
         if self._previous_position is None: 
             return False 
         return  np.all(self._previous_position == self._current_position)
+    
+    @property 
+    def state_as_tensor(self):
+        return torch.tensor([
+                self._current_state.current_energy,
+                self._current_state.victims_rescued
+            ]).to(self._device)            # TODO: This is a hotfix.

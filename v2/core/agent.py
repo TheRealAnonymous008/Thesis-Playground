@@ -149,6 +149,11 @@ class Agent:
     @abstractmethod 
     def trait_as_tensor(self) -> torch.Tensor: 
         return self._traits.to_tensor()
+    
+    @property 
+    @abstractmethod
+    def state_as_tensor(self) -> torch.Tensor: 
+        pass 
 
 
     def bind_to_world(self, world_id : int):
