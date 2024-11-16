@@ -107,7 +107,7 @@ class IDQN(BaseModel):
         for i, agent in enumerate(agents) : 
             # Compute Q(s_t, a)
             state_action_values = self._model._policy_net.forward(agent, states)
-            action : torch.Tensor = actions[agent].to(self.device)
+            action : torch.Tensor = actions[agent]
             state_action_values = state_action_values.gather(1, action).squeeze(1)
 
             # Compute V(s_{t+1}) using the target network

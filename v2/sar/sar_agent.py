@@ -114,10 +114,6 @@ class SARAgentState(AgentState):
         """
         self.relations.pop(agent)
 
-    
-
-
-    
 
 class SARUtilityFunction(UtilityFunction):
     def __init__(self):
@@ -260,4 +256,4 @@ class SARAgent(Agent):
         return torch.tensor([
                 self._current_state.current_energy,
                 self._current_state.victims_rescued
-            ]).to(self._device)            # TODO: This is a hotfix.
+            ]).to(self._device)            # TODO: This is a hotfix. May need to refactor this so that the SARAgentState is not a tensor

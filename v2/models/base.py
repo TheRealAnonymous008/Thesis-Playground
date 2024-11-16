@@ -119,7 +119,7 @@ class BaseModel:
         
         """
         actions = {}
-        state = self._flatten_state_dict([state])
+        state = self._flatten_state_dict([state], self.device)
         for a, s in state.items():
             action = self.select_action(a, state, deterministic) 
             actions[a] = action
@@ -146,16 +146,16 @@ class BaseModel:
         next_states = [self.rollout_buffer[e][3] for e in experience_idxs]
 
         # Note that it is more appropriate to have the state dict such that it is keyed on agents and eeach value is an entire batch.
-        states = self._flatten_state_dict([self.rollout_buffer[e][0] for e in experience_idxs])
-        actions = self._flatten_action_dict([self.rollout_buffer[e][1] for e in experience_idxs])
+        states = self._flatten_state_dict([self.rollout_buffer[e][0] for e in experience_idxs], device = self.device)
+        actions = self._flatten_action_dict([self.rollout_buffer[e][1] for e in experience_idxs], device= self.device)
         rewards = torch.stack([self.rollout_buffer[e][2] for e in experience_idxs]).transpose(0, 1).to(self.device)
-        next_states = self._flatten_state_dict([self.rollout_buffer[e][3] for e in experience_idxs])
+        next_states = self._flatten_state_dict([self.rollout_buffer[e][3] for e in experience_idxs], device= self.device)
         dones = torch.stack([self.rollout_buffer[e][4] for e in experience_idxs]).transpose(0, 1).to(self.device)
 
         return states, actions, rewards, next_states, dones
 
     @staticmethod
-    def _flatten_state_dict(states : list[dict[int, TensorDict]]): 
+    def _flatten_state_dict(states : list[dict[int, TensorDict]], device : str = "cpu"): 
         """
         Given a batch of states (in list form), returns a dictionary of states keyed on the agents.
         It is assumed that the dataclasses' members are all tensor types tto allow concatenation
@@ -163,21 +163,21 @@ class BaseModel:
         flattened_states = {}
         for agent_id in states[0].keys():
             # First get all relevant agent states
-            agent_states = LazyStackedTensorDict.lazy_stack([state[agent_id] for state in states])
+            agent_states = LazyStackedTensorDict.lazy_stack([state[agent_id] for state in states], device = device)
             
             flattened_states[agent_id] = agent_states
 
         return flattened_states 
 
     @staticmethod
-    def _flatten_action_dict(actions : list[dict]):
+    def _flatten_action_dict(actions : list[dict], device : str = "cpu"):
         """
         Given a batch of actions (in list form), returns a dictionary of states keyed on the agents
         """
         flattened_actions = {}
         for agent_id in actions[0]:
             agent_actions = [[action[agent_id] for action in actions]]
-            flattened_actions[agent_id] = torch.tensor(agent_actions)
+            flattened_actions[agent_id] = torch.tensor(agent_actions, device = device)
 
 
         return flattened_actions
