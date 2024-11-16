@@ -47,11 +47,12 @@ def train_loop(
     for i in tqdm(range(checkpts), desc="Training Progress"):
         model.learn(total_timesteps=steps_per_checkpt, optimization_passes=optimization_passes)
         # TODO: Uncomment this 
+        # model.save(f"{env.unwrapped.metadata.get('name')}_{time.strftime('%Y%m%d-%H%M%S')}")
+
         print("Model has been saved.")
 
         avg_rewards.append(test_agents(model.env, model, 1))
     
-    # model.save(f"{env.unwrapped.metadata.get('name')}_{time.strftime('%Y%m%d-%H%M%S')}")
     print(f"Finished training on {str(env.unwrapped.metadata['name'])}.")
     
     env.close()
@@ -83,9 +84,7 @@ def test_agents(env : CustomGymEnviornment, model :BaseModel, games : int = 100,
             rewards[agent]== 0
         
         for _ in range(env._max_time_steps): 
-            obs = model.feature_extractor(obs, model.device)
-            action = model.select_joint_action(obs, deterministic=True)
-            obs, reward, termination, truncation, info = env.step(action)
+            _, _, reward, obs, _, _ = model.step(obs)
             for agent in env.agents:
                 rewards[agent] += reward[agent]
 

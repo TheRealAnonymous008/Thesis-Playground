@@ -17,6 +17,7 @@ from  tensordict import TensorDict, LazyStackedTensorDict
 from .complex_model import *
 
 
+
 class BaseModel: 
     """
     Base Class for MARL solutions
@@ -72,17 +73,15 @@ class BaseModel:
         """
         Learn for the specified number of time steps
         """
-        state, _ = self.env.reset()
-        state = self.feature_extractor(state, self.device)
+        _state, _ = self.env.reset()
 
         for t in range(total_timesteps):
-            action = self.select_joint_action(state)
-            next_state, reward, terminated, truncated, _ = self.env.step(action)
+            state, action, reward, _next_state, terminated, truncated = self.step(_state)
 
             # TODO: Potentially refactor this?  In particular, the terminated and truncated code below is a bit hacky and reliant 
             # on an agent with id 1 existing
 
-            next_state = self.feature_extractor(next_state, self.device)
+            next_state = self.feature_extractor(_next_state, self.device)
 
             num_agents = self.env.max_num_agents
             terminated = torch.fill(torch.zeros(num_agents), terminated[1])
@@ -94,13 +93,22 @@ class BaseModel:
                 (state, action, reward, next_state, done)
             )
 
-            state = next_state
+            _state = _next_state
 
             if done.all(): 
-                state, _ = self.env.reset()
-                state = self.feature_extractor(state, self.device)
+                _state, _ = self.env.reset()
 
-        
+    def step(self, state : dict):
+        """
+        Returns the following in order
+
+        State Embedding, Action, Reward, Next State, Terminated, Truncated
+        """
+        state = self.feature_extractor(state, self.device)
+        action = self.select_joint_action(state)
+        next_state, reward, terminated, truncated, _ = self.env.step(action)
+
+        return state, action ,reward, next_state, terminated, truncated
 
     def select_joint_action(self, state : dict, deterministic : bool = False) -> dict:
         """
@@ -198,3 +206,31 @@ class BaseModel:
         self._model._policy_net.load_state_dict(checkpoint['policy_net'])
         self._model._encoder_net.load_state_dict(checkpoint['encoder_net'])
         self._model._decoder_net.load_state_dict(checkpoint['decoder_net'])
+
+
+from core.render import *
+
+class RenderWrapper:
+    """
+    Render Wrapper for the Base Model for visualization of the environment as it runs
+    """
+    def __init__(self, model : BaseModel):
+        self._model = model 
+
+        self._done = True 
+        self._state = None 
+
+    def update(self):
+        if self._done:
+            seed = np.random.randint(0, 100000) 
+            self._state, info = self._model.env.reset(seed)
+        
+        _, _, _, obs, terminated, truncated = self._model.step(self._state)
+
+        self._state = obs 
+        self._done = terminated[1] or truncated[1]
+
+    def render(self):
+        self._model._model.eval()
+
+        render_world(self._model.env._world, update_fn= self.update, delay_s= 0.1 )
