@@ -14,6 +14,8 @@ class PolicyNet(nn.Module):
         """
         super(PolicyNet, self).__init__()
 
+        self.grid_size = grid_size
+
         # Define a simple CNN for the vision input
         self.conv1 = nn.Conv2d(in_channels=input_channels, out_channels=16, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1)
@@ -46,6 +48,21 @@ class PolicyNet(nn.Module):
 
     def _forward(self, obs : TensorDict):
         x = obs["vision"]
+
+        # Get the current grid size
+        current_size = x.size(-1)
+
+        # Calculate padding required for each side
+        if current_size < self.grid_size:
+            pad_total = self.grid_size - current_size
+            pad_left = pad_total // 2
+            pad_right = pad_total - pad_left
+            pad_top = pad_total // 2
+            pad_bottom = pad_total - pad_top
+
+            # Apply padding
+            x = F.pad(x, (pad_left, pad_right, pad_top, pad_bottom))
+
 
         # Pass through the convolutional layers
         x = F.relu(self.conv1(x))
