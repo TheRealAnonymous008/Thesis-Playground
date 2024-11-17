@@ -21,6 +21,8 @@ class VictimModel(BaseDynamicsModel):
             if victim_map.get(position) != 0:
                 agent.rescue()
                 victim_map.set(position, 0)
+            else: 
+                agent._current_state.just_rescued_victim = 0
                 
 
 
@@ -33,6 +35,7 @@ class VictimGenerator(BaseMapGenerator):
 
         # The population density map from which we sample victims
         self._density_map: BaseMap | None = None
+
 
     def set_density_map(self, density_map: BaseMap):
         self._density_map = density_map

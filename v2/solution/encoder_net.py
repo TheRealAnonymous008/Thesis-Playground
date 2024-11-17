@@ -7,7 +7,7 @@ from sar.sar_agent import *
 
 from sar.sar_comm import SARMessagePacket
 
-INPUT_DIMS = 5
+INPUT_DIMS = 6
 from sar.sar_env_params import BELIEF_DIMS
 
 class Encoder(nn.Module):

@@ -66,6 +66,7 @@ class SARAgentState(AgentState):
     msgs: list[Message] = field(default_factory=lambda : [])
     skills : np.ndarray | None = None 
     victims_rescued : int = 0
+    just_rescued_victim : int = 0
     
     def reset(self, traits : SARAgentTraits):
         """
@@ -77,6 +78,7 @@ class SARAgentState(AgentState):
         self.msgs.clear()
         self.skills  = None 
         self.victims_rescued = 0
+        self.just_rescued_victim = 0
 
     @property
     def can_move(self):
@@ -120,7 +122,7 @@ class SARUtilityFunction(UtilityFunction):
         super().__init__()
 
     def forward(self, state : SARAgentState):
-        return state.victims_rescued
+        return state.just_rescued_victim
     
     def update(self):
         pass
@@ -204,6 +206,7 @@ class SARAgent(Agent):
             
     def rescue(self): 
         self._current_state.victims_rescued += 1
+        self._current_state.just_rescued_victim = 1
 
     def set_position(self, position : np.array):
         """
@@ -255,5 +258,6 @@ class SARAgent(Agent):
     def state_as_tensor(self):
         return torch.tensor([
                 self._current_state.current_energy,
-                self._current_state.victims_rescued
+                self._current_state.victims_rescued,
+                self._current_state.just_rescued_victim,
             ]).to(self._device)            # TODO: This is a hotfix. May need to refactor this so that the SARAgentState is not a tensor
