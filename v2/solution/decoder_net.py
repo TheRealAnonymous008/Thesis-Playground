@@ -7,10 +7,8 @@ from sar.sar_agent import *
 
 from sar.sar_comm import SARMessagePacket
 
-INPUT_DIMS = 5
-from sar.sar_env_params import BELIEF_DIMS
+from sar.sar_env_params import INPUT_DIMS, PACKET_DIMS, BELIEF_DIMS
 
-PACKET_DIMS = 2
 class Decoder(nn.Module):
     def __init__(self, hidden_dim=32, device = "cpu"):
         """

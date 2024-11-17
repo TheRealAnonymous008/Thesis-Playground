@@ -6,9 +6,7 @@ from core.agent import *
 from sar.sar_agent import *
 
 from sar.sar_comm import SARMessagePacket
-
-INPUT_DIMS = 6
-from sar.sar_env_params import BELIEF_DIMS
+from sar.sar_env_params import BELIEF_DIMS, INPUT_DIMS
 
 class Encoder(nn.Module):
     def __init__(self, hidden_dim=64, output_dim=32, device = "cpu"):
