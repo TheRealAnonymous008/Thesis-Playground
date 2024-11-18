@@ -61,7 +61,7 @@ class PolicyNet(nn.Module):
             pad_bottom = pad_total - pad_top
 
             # Apply padding
-            x = F.pad(x, (pad_left, pad_right, pad_top, pad_bottom))
+            x = F.pad(x, (pad_left, pad_right, pad_top, pad_bottom), value = -1)
 
 
         # Pass through the convolutional layers

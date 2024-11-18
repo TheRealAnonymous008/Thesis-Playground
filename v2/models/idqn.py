@@ -14,7 +14,7 @@ class IDQN(BaseModel):
                  model : ComplexModel,
                  feature_extractor : T_FeatureExtractor,
                  target_net : nn.Module,
-                 buffer_size : int = 100000, 
+                 buffer_size : int = 10000, 
                  batch_size : int = 64, 
                  gamma: float = 0.99, 
                  optimizer : T_Optimizer = optim.Adam,

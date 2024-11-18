@@ -40,26 +40,36 @@ class VictimGenerator(BaseMapGenerator):
     def set_density_map(self, density_map: BaseMap):
         self._density_map = density_map
 
-    def generate(self, dims: tuple[int, int]) -> BaseMap:
+    def generate(self, dims: tuple[int, int], number: int = 100) -> BaseMap:
         """
         Generate a map of the victims in the area based on population density.
-        The more densely populated areas will have a higher number of victims.
+        The more densely populated areas will have a higher number of victims, 
+        while ensuring the exact specified number is placed randomly.
         """
         if self._density_map is None:
             raise ValueError("Density map has not been set.")
-
-        # Create an empty map for storing the victim locations
-        victim_map = np.zeros(dims)
-
-        # Iterate over each location in the map
+        
+        # Flatten the density map into a list of coordinates and their probabilities
+        density_list = []
         for x in range(dims[0]):
             for y in range(dims[1]):
-                # Get the population density at the current location
                 density_value = self._density_map.get((x, y))
-                
-                # Use the density value to probabilistically place victims
-                if np.random.rand() < density_value: 
-                    victim_map[x, y] = 1  # Place a victim
-
+                density_list.append((x, y, density_value))
+        
+        # Normalize density values into probabilities
+        total_density = sum(d[2] for d in density_list)
+        if total_density == 0:
+            raise ValueError("Density map contains no valid density values.")
+        probabilities = [d[2] / total_density for d in density_list]
+        
+        # Randomly select `number` coordinates based on probabilities
+        chosen_indices = np.random.choice(len(density_list), size=number, replace=False, p=probabilities)
+        selected_coords = [density_list[i][:2] for i in chosen_indices]
+        
+        # Create victim map and populate selected coordinates
+        victim_map = np.zeros(dims)
+        for x, y in selected_coords:
+            victim_map[x, y] = 1  # Place a victim at the chosen location
+        
         # Return the generated victim map as a BaseMap instance
         return BaseMap(victim_map, padding=self._padding)
