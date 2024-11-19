@@ -13,11 +13,14 @@ class PolicyNet(nn.Module):
         self.conv1 = nn.Conv2d(in_channels=input_channels, out_channels=16, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1)
 
-        # Calculate the size after convolution for the fully connected layer
+        # Calculate the size after convolution
         conv_output_size = grid_size * grid_size * 32
 
+        # Fully connected layer to reduce convolutional output to size 5
+        self.conv_fc = nn.Linear(conv_output_size, 5)
+
         # Adjust the input size for the first fully connected layer
-        total_input_size = conv_output_size + state_size + belief_size
+        total_input_size = 5 + state_size + belief_size
 
         # Fully connected layers for decision making (Q-values)
         self.fc1 = nn.Linear(total_input_size, 128)
@@ -65,25 +68,25 @@ class PolicyNet(nn.Module):
         x = F.relu(self.conv2(x))
 
         # Flatten the output from the convolutional layers
-        conv_out = x.view(x.size(0), -1)
+        x = x.view(x.size(0), -1)
+
+        # Pass through the additional FC layer to reduce dimensions
+        x = self.conv_fc(x)
+        x = F.relu(x)  # Apply activation
 
         # Retrieve state and belief tensors
-        state = obs["state"]
-        belief = obs["belief"]
-
-        # Flatten state and belief tensors if necessary
-        state = state.view(state.size(0), -1)
-        belief = belief.view(belief.size(0), -1)
+        state = torch.clone(obs["state"]).detach()
+        belief = torch.clone(obs["belief"]).detach()
 
         # Concatenate vision, state, and belief tensors
-        y = torch.cat((conv_out, state, belief), dim=1)
+        x = torch.cat((x, state, belief), dim=1)
 
         # Pass through fully connected layers
-        y = self.fc1(y)
-        y = F.relu(y)
-        y = self.fc2(y)
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = self.fc2(x)
 
-        return y
+        return x
 
 
 import torch

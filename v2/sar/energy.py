@@ -17,8 +17,7 @@ class EnergyModel(BaseDynamicsModel):
             total_energy_consumption = 0
             
             if action.movement != None and agent.has_moved: 
-                e = np.random.normal(0.5, 0.25)
-                total_energy_consumption += max(0.1, e)
+                total_energy_consumption += 1
 
             agent._current_state.current_energy -= total_energy_consumption
             agent._current_state.current_energy = max(0, agent._current_state.current_energy)

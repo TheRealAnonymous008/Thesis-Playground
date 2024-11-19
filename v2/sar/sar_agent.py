@@ -259,7 +259,7 @@ class SARAgent(Agent):
     @property 
     def state_as_tensor(self):
         return torch.tensor([
-                self._current_state.current_energy,
+                self._current_state.current_energy / 1000,
                 self._current_state.victims_rescued,
                 self._current_state.just_rescued_victim,
                 float(self._current_position[0] / WORLD_DIMS[0]),
