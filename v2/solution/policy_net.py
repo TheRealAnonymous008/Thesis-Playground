@@ -4,14 +4,7 @@ import torch.nn.functional as F
 from  tensordict import TensorDict
 
 class PolicyNet(nn.Module):
-    def __init__(self, input_channels: int, grid_size: int, num_actions: int, device = "cpu"):
-        """
-        Initialize the Policy Network
-
-        :param input_channels: Number of input channels (for vision, it's likely 1)
-        :param grid_size: Size of the observation grid (e.g., 5x5 or 7x7)
-        :param num_actions: Number of possible actions (Discrete(12) in this case)
-        """
+    def __init__(self, input_channels: int, grid_size: int, num_actions: int, state_size: int, belief_size: int, device="cpu"):
         super(PolicyNet, self).__init__()
 
         self.grid_size = grid_size
@@ -23,8 +16,11 @@ class PolicyNet(nn.Module):
         # Calculate the size after convolution for the fully connected layer
         conv_output_size = grid_size * grid_size * 32
 
+        # Adjust the input size for the first fully connected layer
+        total_input_size = conv_output_size + state_size + belief_size
+
         # Fully connected layers for decision making (Q-values)
-        self.fc1 = nn.Linear(conv_output_size, 128)
+        self.fc1 = nn.Linear(total_input_size, 128)
         self.fc2 = nn.Linear(128, num_actions)
 
         self.device = device
@@ -45,8 +41,9 @@ class PolicyNet(nn.Module):
         x = obs[idx]
 
         return self._forward(x)
-
-    def _forward(self, obs : TensorDict):
+    
+    def _forward(self, obs: TensorDict):
+        # Process the vision tensor
         x = obs["vision"]
 
         # Get the current grid size
@@ -61,22 +58,33 @@ class PolicyNet(nn.Module):
             pad_bottom = pad_total - pad_top
 
             # Apply padding
-            x = F.pad(x, (pad_left, pad_right, pad_top, pad_bottom), value = -1)
-
+            x = F.pad(x, (pad_left, pad_right, pad_top, pad_bottom), value=-1)
 
         # Pass through the convolutional layers
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
 
-        # Flatten the output from conv layers
-        x = x.view(x.size(0), -1)
+        # Flatten the output from the convolutional layers
+        conv_out = x.view(x.size(0), -1)
+
+        # Retrieve state and belief tensors
+        state = obs["state"]
+        belief = obs["belief"]
+
+        # Flatten state and belief tensors if necessary
+        state = state.view(state.size(0), -1)
+        belief = belief.view(belief.size(0), -1)
+
+        # Concatenate vision, state, and belief tensors
+        y = torch.cat((conv_out, state, belief), dim=1)
 
         # Pass through fully connected layers
-        x = self.fc1(x)
-        x = F.relu(x)
-        x = self.fc2(x)
+        y = self.fc1(y)
+        y = F.relu(y)
+        y = self.fc2(y)
 
-        return x
+        return y
+
 
 import torch
 import numpy as np

@@ -5,11 +5,9 @@ import torch.nn.functional as F
 from core.agent import * 
 from sar.sar_agent import *
 
-from sar.sar_comm import SARMessagePacket
-from sar.sar_env_params import BELIEF_DIMS, INPUT_DIMS
 
 class Encoder(nn.Module):
-    def __init__(self, hidden_dim=64, output_dim=32, device = "cpu"):
+    def __init__(self, state_dims, trait_dims , hidden_dim=64, output_dim=32, device = "cpu"):
         """
         Initialize an Encoder Network. The Encoder Network is used to provide latent space embeddings for each 
         heterogeneous agent based on traits and state information.
@@ -19,7 +17,7 @@ class Encoder(nn.Module):
         :param output_dim: The size of the latent space embedding.
         """
         super(Encoder, self).__init__()
-        self.fc1 = nn.Linear(INPUT_DIMS, hidden_dim)
+        self.fc1 = nn.Linear(state_dims + trait_dims, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, output_dim)
 
 

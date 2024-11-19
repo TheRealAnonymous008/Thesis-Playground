@@ -7,10 +7,9 @@ from sar.sar_agent import *
 
 from sar.sar_comm import SARMessagePacket
 
-from sar.sar_env_params import INPUT_DIMS, PACKET_DIMS, BELIEF_DIMS
 
 class Decoder(nn.Module):
-    def __init__(self, input_dims = 32, hidden_dim=32, device = "cpu"):
+    def __init__(self,  belief_dims = 5, packet_dims = 5, input_dims = 32, hidden_dim=32,device = "cpu"):
         """
         Initialize a Decoder Network. The Decoder Network updates an agent's belief based on incoming messages.
         
@@ -19,8 +18,8 @@ class Decoder(nn.Module):
         :param belief_dim: Output dimension representing the updated agent belief.
         """
         super(Decoder, self).__init__()
-        self.fc1 = nn.Linear(PACKET_DIMS + input_dims, hidden_dim)
-        self.fc2 = nn.Linear(hidden_dim, BELIEF_DIMS)
+        self.fc1 = nn.Linear(packet_dims + input_dims, hidden_dim)
+        self.fc2 = nn.Linear(hidden_dim, belief_dims)
 
         self.device = device
 

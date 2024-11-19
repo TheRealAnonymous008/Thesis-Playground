@@ -8,6 +8,8 @@ from core.belief import *
 
 _UtilityType = float 
 
+from sar.sar_env_params import WORLD_DIMS
+
 @dataclass
 class SARActionInformation(ActionInformation):
     """
@@ -260,4 +262,6 @@ class SARAgent(Agent):
                 self._current_state.current_energy,
                 self._current_state.victims_rescued,
                 self._current_state.just_rescued_victim,
+                float(self._current_position[0] / WORLD_DIMS[0]),
+                float(self._current_position[1] / WORLD_DIMS[1]), 
             ]).to(self._device)            # TODO: This is a hotfix. May need to refactor this so that the SARAgentState is not a tensor

@@ -14,7 +14,7 @@ T_Loss = nn.modules.loss._Loss
 T_FeatureExtractor = Callable[[dict], dict[torch.Tensor]]
 
 from  tensordict import TensorDict, LazyStackedTensorDict
-from .complex_model import *
+from solution.complex_model import *
 
 
 
