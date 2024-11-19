@@ -79,15 +79,16 @@ class CustomGymEnviornment(ParallelEnv):
         
         self._world.update()
         terminations = {a: False for a in self.agents}
-        rewards = {a: self._world.get_agent(a).utility for a in self.agents}
         observations = self.get_observations()
         infos = {a : {} for a in self.agents}
 
         if self.is_finished:
             truncations = {a : True for a in self.agents}
+            rewards = {a : self._world.get_agent(a).dense_utility for a in self.agents}
             self.agents= []
         else: 
             truncations = {a: False for a in self.agents}
+            rewards = {a: self._world.get_agent(a).sparse_utility for a in self.agents}
 
         return observations, rewards, terminations, truncations, infos
 

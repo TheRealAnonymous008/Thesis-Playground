@@ -50,6 +50,7 @@ class SARAgentTraits(AgentTraits):
     def to_device(self, device):
         self._tensor = self._tensor.to(device=device)
 
+from sar.sar_env_params import BASE_POSITION
 @dataclass
 class SARAgentState(AgentState):
     """
@@ -69,12 +70,14 @@ class SARAgentState(AgentState):
     skills : np.ndarray | None = None 
     victims_rescued : int = 0
     just_rescued_victim : int = 0
+    position : np.ndarray = field(default_factory= lambda : np.array([0,  0]))
     
     def reset(self, traits : SARAgentTraits):
         """
         Reset the state
         """
         self.current_energy = traits._energy_capacity
+        self.position = np.array([0, 0])
         self.current_utility = None
         self.relations.clear()
         self.msgs.clear()
@@ -85,6 +88,10 @@ class SARAgentState(AgentState):
     @property
     def can_move(self):
         return self.current_energy > 0
+    
+    @property 
+    def distance_to_center(self):
+        return float(np.linalg.norm(self.position - BASE_POSITION) / 100)
  
     def add_message(self, message : Message) : 
         """
@@ -123,9 +130,12 @@ class SARUtilityFunction(UtilityFunction):
     def __init__(self):
         super().__init__()
 
-    def forward(self, state : SARAgentState):
-        return state.just_rescued_victim
+    def dense_forward(self, state : SARAgentState):
+        return state.just_rescued_victim * 2 + state.distance_to_center
     
+    def sparse_forward(self, state : SARAgentState):
+        return state.victims_rescued * 100
+
     def update(self):
         pass
 
@@ -165,6 +175,7 @@ class SARAgent(Agent):
     def _reset(self):
         self._previous_position = None 
         self._current_action = SARActionInformation()
+        self._current_state.position = self._current_position
 
     def to(self, device : str):
         super().to(device)
@@ -261,7 +272,5 @@ class SARAgent(Agent):
         return torch.tensor([
                 self._current_state.current_energy / 1000,
                 self._current_state.victims_rescued,
-                self._current_state.just_rescued_victim,
-                float(self._current_position[0] / WORLD_DIMS[0]),
-                float(self._current_position[1] / WORLD_DIMS[1]), 
+                self._current_state.distance_to_center, 
             ]).to(self._device)            # TODO: This is a hotfix. May need to refactor this so that the SARAgentState is not a tensor

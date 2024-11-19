@@ -56,8 +56,8 @@ class Agent:
         """
         Reset the agent
         """
-        self._reset()
         self._current_state.reset(self._traits)
+        self._reset()
 
     @abstractmethod
     def _reset(self):
@@ -116,11 +116,18 @@ class Agent:
         self._utility_function = utility
 
     @property
-    def utility(self):
+    def dense_utility(self):
         """
         Evaluate this agent's utility
         """
-        return self._utility_function.forward(self._current_state)
+        return self._utility_function.dense_forward(self._current_state)
+    
+    @property 
+    def sparse_utility(self):
+        """
+        Evaluate the utility at the end of the reward function
+        """
+        return self._utility_function.sparse_forward(self._current_state)
 
     @property
     def agents_in_range(self) -> list[_IdType]:
