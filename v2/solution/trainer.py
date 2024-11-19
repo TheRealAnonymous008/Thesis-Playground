@@ -76,17 +76,18 @@ def test_agents(env : CustomGymEnviornment, model :BaseModel, games : int = 100,
         model.load(latest_policy)
 
     model._model.eval()
+    # While it is called reward -- we can actually have it be anything we want (for example, the actual goal we are optimizing for )
     rewards = {agent: 0 for agent in env.possible_agents}
 
     for i in range(games):
         obs, info = env.reset(seed=i)
         for agent in env.agents:
-            rewards[agent]== 0
+            rewards[agent] = 0
         
         for _ in range(env._max_time_steps): 
             _, _, reward, obs, _, _ = model.step(obs)
             for agent in env.agents:
-                rewards[agent] += reward[agent]
+                rewards[agent] += env._world.get_agent(agent)._current_state.just_rescued_victim
 
     env.close()
 

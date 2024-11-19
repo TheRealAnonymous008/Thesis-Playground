@@ -10,12 +10,22 @@ class SARTraitSampler:
     """
 
     def __init__(self): 
-        self._default_swarm_size = SWARM_SIZE
-
-        self.agents : list[SARAgent] = []
-        # Fixed seed for generation. TThis way everything is consistent.
         np.random.seed(1337)
-        for _ in range (self._default_swarm_size):
+        self.agents : list[SARAgent] = self.generate_agents(SWARM_SIZE)
+
+
+
+    def generate(self, n_agents : int, device : str = "cpu") -> list[SARAgent]:
+        """
+        Generate the specified amount of agents. Any hyperparameters such as target population distribution 
+        should be specified as part of this class' specification
+        """
+        
+        return self.generate_agents(SWARM_SIZE, device)
+    
+    def generate_agents(self, n_agents : int, device : str = "cpu"):
+        agents : list[Agent] = []
+        for _ in range (n_agents):
             agent = SARAgent()
             traits = SARAgentTraits()
 
@@ -27,13 +37,8 @@ class SARTraitSampler:
             traits._tensor = torch.tensor([visibility, energy_capacity, max_slope], dtype = torch.float32)
             agent._traits = traits 
 
-            self.agents.append(agent)
+            agent.to(device)
 
+            agents.append(agent)
 
-    def generate(self, n_agents : int, device : str = "cpu") -> list[SARAgent]:
-        """
-        Generate the specified amount of agents. Any hyperparameters such as target population distribution 
-        should be specified as part of this class' specification
-        """
-        
-        return self.agents
+        return agents
