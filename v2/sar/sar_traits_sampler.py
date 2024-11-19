@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from core.agent import *
 from .sar_agent import *
-from sar.sar_env_params import *
+from sar.sar_env_params import SWARM_SIZE, MAX_ENERGY
 
 class SARTraitSampler:
     """
@@ -10,15 +10,12 @@ class SARTraitSampler:
     """
 
     def __init__(self): 
-        pass 
+        self._default_swarm_size = SWARM_SIZE
 
-    def generate(self, n_agents : int, device : str = "cpu") -> list[SARAgent]:
-        """
-        Generate the specified amount of agents. Any hyperparameters such as target population distribution 
-        should be specified as part of this class' specification
-        """
-        agents : list[SARAgent] = []
-        for _ in range(n_agents):
+        self.agents : list[SARAgent] = []
+        # Fixed seed for generation. TThis way everything is consistent.
+        np.random.seed(1337)
+        for _ in range (self._default_swarm_size):
             agent = SARAgent()
             traits = SARAgentTraits()
 
@@ -30,8 +27,13 @@ class SARTraitSampler:
             traits._tensor = torch.tensor([visibility, energy_capacity, max_slope], dtype = torch.float32)
             agent._traits = traits 
 
-            agent.to(device)
+            self.agents.append(agent)
 
-            agents.append(agent)
 
-        return agents
+    def generate(self, n_agents : int, device : str = "cpu") -> list[SARAgent]:
+        """
+        Generate the specified amount of agents. Any hyperparameters such as target population distribution 
+        should be specified as part of this class' specification
+        """
+        
+        return self.agents
