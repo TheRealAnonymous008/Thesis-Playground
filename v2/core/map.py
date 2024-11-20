@@ -19,7 +19,7 @@ class BaseMap(ABC):
             map, 
             pad_width=((self._padding, self._padding), (self._padding, self._padding)), 
             mode='constant', 
-            constant_values=0
+            constant_values=-1
         )
         self._dims = (map.shape[0], map.shape[1])
 

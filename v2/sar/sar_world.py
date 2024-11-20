@@ -76,7 +76,8 @@ class SARWorld(BaseWorld):
         nearby_agents = self._get_nearby_agents(agent, visibility_range)
         observation = SARObservation(
             nearby_agents= nearby_agents,
-            victim_map= self._get_nearby_victims(agent, visibility_range)
+            victim_map= self._get_nearby_victims(agent, visibility_range),
+            terrain_map= self._get_nearby_terrain(agent, visibility_range),
         )
 
         agent.set_observation(observation)
@@ -100,6 +101,16 @@ class SARWorld(BaseWorld):
         y_min, y_max = y - visibility_range, y + visibility_range + 1
 
         victim_map = self.get_map('Victims')
+        map = victim_map._map
+        pad = victim_map._padding
+        return map[x_min + pad : x_max + pad , y_min + pad : y_max + pad]
+    
+    def _get_nearby_terrain(self, agent : SARAgent, visibility_range : int) -> np.ndarray:
+        x, y = agent.current_position_const
+        x_min, x_max = x - visibility_range, x + visibility_range + 1
+        y_min, y_max = y - visibility_range, y + visibility_range + 1
+
+        victim_map = self.get_map('Terrain')
         map = victim_map._map
         pad = victim_map._padding
         return map[x_min + pad : x_max + pad , y_min + pad : y_max + pad]

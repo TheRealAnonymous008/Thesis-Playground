@@ -27,21 +27,28 @@ class Decoder(nn.Module):
         super().to(device)
         self.device = device
 
-    def decoder_forward(self, packet : SARMessagePacket, sender_embedding: torch.Tensor) -> torch.Tensor:
+    def decoder_forward(self, belief: torch.Tensor, packet: SARMessagePacket, sender_embedding: torch.Tensor) -> torch.Tensor:
         """
-        Returns a tensor representing the updated agent's belief based on the message content.
+        Updates the agent's belief based on the incoming message and sender embedding.
 
-        :param message: A Message instance containing a SARMessagePacket.
-        :param sender_embedding: The sender's embedding tensor based on their ID.
-        :return: A belief vector for the agent, of dimension `BELIEF`.
+        :param belief: Previous belief tensor of shape [belief_dims].
+        :param packet: An instance of SARMessagePacket containing the message data.
+        :param sender_embedding: Sender's embedding tensor of shape [input_dims].
+        :return: Updated belief tensor of shape [belief_dims].
         """
-        # Extract the packet data and sender information
-        location_data = packet.location
-        
-        x = torch.concat([location_data, sender_embedding])
+        # Extract the packet data
+        location_data = packet.location  # Assuming shape [packet_dims]
 
-        # Pass the location data through the network
-        x = F.relu(self.fc1(x))
-        belief_update = self.fc2(x)
-        return belief_update
+        # Concatenate the location data and sender embedding
+        x = torch.cat([location_data, sender_embedding], dim=-1)
+
+        # Compute the belief update
+        x = F.relu(self.fc1(x))  # Hidden layer activation
+        belief_update = self.fc2(x)  # Compute belief adjustment
+
+        # Combine previous belief and belief update (convex combination)
+        updated_belief = F.softmax(belief + belief_update, dim=-1)
+
+        return updated_belief
+
         

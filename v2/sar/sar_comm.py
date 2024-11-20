@@ -30,9 +30,7 @@ class SARCommunicationProtocol(BaseCommunicationProtocol):
         return contents
     
     def _interpret_message_contents(self, agent : Agent, message : Message):
-        belief : torch.Tensor = self._decoder.decoder_forward(message.message, self._embeddings[message.sender.id - 1])
-
-        agent._current_belief += belief
+        agent._current_belief = self._decoder.decoder_forward(agent._current_belief, message.message, self._embeddings[message.sender.id - 1])
         agent.add_relation(message.sender.id ,1)
     
     

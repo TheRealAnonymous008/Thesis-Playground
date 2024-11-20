@@ -142,6 +142,7 @@ class SARUtilityFunction(UtilityFunction):
 @dataclass
 class SARObservation(LocalObservation):
     victim_map : np.ndarray = None 
+    terrain_map : np.ndarray = None 
 
 class SARBeliefInitializer(BaseBeliefInitializer):
     def __init__(self, belief_dims : int = 1):
@@ -271,6 +272,5 @@ class SARAgent(Agent):
     def state_as_tensor(self):
         return torch.tensor([
                 self._current_state.current_energy / 1000,
-                self._current_state.victims_rescued,
-                self._current_state.distance_to_center, 
-            ]).to(self._device)            # TODO: This is a hotfix. May need to refactor this so that the SARAgentState is not a tensor
+                self._current_state.victims_rescued, 
+            ]).to(self._device)            

@@ -53,6 +53,7 @@ class SARActionInterpreter(BaseActionParser):
         return Dict({
             "Belief": Box(-1, 1, (self._belief_dims, )),
             "Vision" : Box(0, 1, (2 * vis + 1, 2 * vis + 1)),
+            "Terrain": Box(0, 1, (2 * vis + 1, 2 * vis + 1)),
             "State": Box(low = 0, high = np.inf),
         })
 
@@ -62,5 +63,6 @@ class SARActionInterpreter(BaseActionParser):
         return {
             "Belief": agent._current_belief,
             "Vision" : obs.victim_map,
+            "Terrain" : obs.terrain_map,
             "State": agent.state_as_tensor
         }
