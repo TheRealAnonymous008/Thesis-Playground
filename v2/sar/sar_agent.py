@@ -130,11 +130,11 @@ class SARUtilityFunction(UtilityFunction):
     def __init__(self):
         super().__init__()
 
-    def dense_forward(self, state : SARAgentState):
-        return state.just_rescued_victim * 2 - state.distance_to_center
+    def dense_forward(self, agent : SARAgent):
+        return agent._current_state.just_rescued_victim / agent._traits._energy_capacity
     
-    def sparse_forward(self, state : SARAgentState):
-        return state.victims_rescued * 10
+    def sparse_forward(self, agent : SARAgent):
+        return agent._current_state.victims_rescued * 10 / agent._traits._energy_capacity
 
     def update(self):
         pass

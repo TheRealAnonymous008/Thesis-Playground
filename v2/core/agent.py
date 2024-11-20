@@ -120,14 +120,14 @@ class Agent:
         """
         Evaluate this agent's utility
         """
-        return self._utility_function.dense_forward(self._current_state)
+        return self._utility_function.dense_forward(self)
     
     @property 
     def sparse_utility(self):
         """
         Evaluate the utility at the end of the reward function
         """
-        return self._utility_function.sparse_forward(self._current_state)
+        return self._utility_function.sparse_forward(self)
 
     @property
     def agents_in_range(self) -> list[_IdType]:

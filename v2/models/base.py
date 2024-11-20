@@ -132,14 +132,14 @@ class BaseModel:
         """
         # Action masking
         tensor = self._select_action(agent, state ,deterministic)
+        return tensor
 
-        action_mask = self.env._action_interpreter.get_action_mask(
+    def get_action_mask(self, agent : int, device : str = "cpu"): 
+        return self.env._action_interpreter.get_action_mask(
             agent = self.env._world.get_agent(agent), 
             world =self.env._world, 
-            device = tensor.device
+            device = device
         )
-        masked_tensor = tensor + action_mask
-        return tensor       # TODO: Use the masked tensor
 
     def _select_action(self, agent : int, state : dict, deterministic : bool = False) -> torch.Tensor:
         raise NotImplementedError()

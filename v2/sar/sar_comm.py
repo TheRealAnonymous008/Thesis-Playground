@@ -20,8 +20,8 @@ class SARCommunicationProtocol(BaseCommunicationProtocol):
     def start(self, world : BaseWorld):
         self._embeddings = self._encoder.encoder_forward_batch(world.agents)
 
-    def _choose_target(self, sender : Agent) -> Agent :
-        return super()._choose_target(sender)
+    def _choose_targets(self, sender : Agent) -> Agent :
+        return super()._choose_targets(sender)
     
     def _formulate_message_contents(self, sender : Agent , receiver : Agent) -> Message:
         contents = SARMessagePacket( 

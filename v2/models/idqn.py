@@ -82,13 +82,13 @@ class IDQN(BaseModel):
         """
         if deterministic:
             with torch.no_grad():
-                action_values = self._model._policy_net.forward(agent_id, state)
+                action_values = self._model._policy_net.forward(agent_id, state) + self.get_action_mask(agent_id , self.device)
                 return torch.argmax(action_values, dim=1)
         
         sample = random.random()
         if sample > self.epsilon:
             with torch.no_grad():
-                action_values = self._model._policy_net.forward(agent_id, state)
+                action_values = self._model._policy_net.forward(agent_id, state) + self.get_action_mask(agent_id , self.device)
                 return torch.argmax(action_values, dim=1)
         else:
             return torch.tensor([self.env.action_space(agent_id).sample()], dtype=torch.long)

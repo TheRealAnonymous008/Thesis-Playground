@@ -9,6 +9,8 @@ from gymnasium.spaces import *
 
 import torch.nn as nn
 
+ACTION_DIMS = 4
+
 class SARActionInterpreter(BaseActionParser):
     def __init__(self, belief_dims : int):
         super().__init__()
@@ -34,23 +36,14 @@ class SARActionInterpreter(BaseActionParser):
         """
         # Get the current position of the agent
         current_position = agent.current_position_const
-
-        # Define potential moves based on the directions
-        moves = {
-            0: Direction.NORTH,
-            1: Direction.SOUTH,
-            2: Direction.EAST,
-            3: Direction.WEST,
-        }
-
         # Initialize the action mask as a torch tensor with zeros
-        action_mask = torch.ones(len(moves), dtype=torch.float32, device=device) * -torch.inf
+        action_mask = torch.ones(ACTION_DIMS, dtype=torch.float32, device=device) * -torch.inf
 
         # Iterate through possible actions and check traversability
-        for action_code, direction in moves.items():
-            new_position = current_position + Direction.get_direction_of_movement(direction)
+        for dir in DIRECTION_MAP.keys():
+            new_position = current_position + Direction.get_direction_of_movement(dir)
             if world.is_traversable(new_position):
-                action_mask[action_code] = 0  # Mark as valid
+                action_mask[dir.value - 1] = 0  # Mark as valid
 
         return action_mask
 

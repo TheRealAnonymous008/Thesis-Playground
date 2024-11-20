@@ -38,21 +38,22 @@ class BaseCommunicationProtocol(ABC):
         Protocol for sending messages. 
         """
         for agent in world.agents :
-            choice = self._choose_target(agent)
-            if choice != None: 
-                tgt_agent = world.get_agent(choice)
-                message_contents = self._formulate_message_contents(agent, tgt_agent)
-                message = Message(agent, message_contents)
-                agent.send_message(tgt_agent, message)
+            choices = self._choose_targets(agent)
+            if choices != None: 
+                for choice in choices : 
+                    tgt_agent = world.get_agent(choice)
+                    message_contents = self._formulate_message_contents(agent, tgt_agent)
+                    message = Message(agent, message_contents)
+                    agent.send_message(tgt_agent, message)
 
-    def _choose_target(self, sender : Agent) -> Agent | None:
+    def _choose_targets(self, sender : Agent) -> list[Agent] | None:
         """
         Chooses an agent to send the message to. Returns either an Agent or None (should not return the sender).
         """
         neighbors = sender.agents_in_range 
         # Send agents a message
         if len (neighbors) > 0:
-            return (np.random.choice(neighbors))
+            return neighbors
         else: 
             return  None 
 
