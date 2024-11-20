@@ -27,13 +27,13 @@ class SARActionInterpreter(BaseActionParser):
     def get_action_space(self, agent : SARAgent):
         return Discrete(4)
     
-    def get_action_mask(self, agent: SARAgent, world: SARWorld):
+    def get_action_mask(self, agent: SARAgent, world: SARWorld, device : str = "cpu"):
         """
         Returns an action mask indicating the valid actions for the agent in the current world state.
         Valid actions are marked as 1, and invalid actions are marked as 0.
         """
         # Get the current position of the agent
-        current_position = agent.position
+        current_position = agent.current_position_const
 
         # Define potential moves based on the directions
         moves = {
@@ -44,13 +44,13 @@ class SARActionInterpreter(BaseActionParser):
         }
 
         # Initialize the action mask as a torch tensor with zeros
-        action_mask = torch.zeros(len(moves), dtype=torch.float32)
+        action_mask = torch.ones(len(moves), dtype=torch.float32, device=device) * -torch.inf
 
         # Iterate through possible actions and check traversability
         for action_code, direction in moves.items():
             new_position = current_position + Direction.get_direction_of_movement(direction)
             if world.is_traversable(new_position):
-                action_mask[action_code] = 1  # Mark as valid
+                action_mask[action_code] = 0  # Mark as valid
 
         return action_mask
 

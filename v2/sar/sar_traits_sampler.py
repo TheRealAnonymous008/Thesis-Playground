@@ -21,7 +21,7 @@ class SARTraitSampler:
         should be specified as part of this class' specification
         """
         
-        return self.generate_agents(SWARM_SIZE, device)
+        return self.agents
     
     def generate_agents(self, n_agents : int, device : str = "cpu"):
         agents : list[Agent] = []

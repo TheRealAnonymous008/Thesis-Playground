@@ -130,12 +130,16 @@ class BaseModel:
         """
         Select an action for the specified agent. Derived classes should override this.
         """
-        action_mask = self.env._action_interpreter.get_action_mask(agent, self.env._world)
-
         # Action masking
         tensor = self._select_action(agent, state ,deterministic)
-        masked_tensor = tensor + torch.log(action_mask + 1e-8)
-        return masked_tensor
+
+        action_mask = self.env._action_interpreter.get_action_mask(
+            agent = self.env._world.get_agent(agent), 
+            world =self.env._world, 
+            device = tensor.device
+        )
+        masked_tensor = tensor + action_mask
+        return tensor       # TODO: Use the masked tensor
 
     def _select_action(self, agent : int, state : dict, deterministic : bool = False) -> torch.Tensor:
         raise NotImplementedError()

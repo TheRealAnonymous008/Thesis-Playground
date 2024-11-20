@@ -42,5 +42,5 @@ class BaseActionParser(ABC):
         pass 
 
     @abstractmethod
-    def get_action_mask(self, agent : Agent, world : BaseWorld):
+    def get_action_mask(self, agent : Agent, world : BaseWorld, device : str = "cpu"):
         pass 
