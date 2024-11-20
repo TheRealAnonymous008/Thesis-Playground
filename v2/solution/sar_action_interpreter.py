@@ -4,6 +4,7 @@ from core.action import *
 from core.direction import *
 from sar.sar_agent import *
 from sar.sar_env_params import * 
+from sar.sar_world  import *
 from gymnasium.spaces import * 
 
 import torch.nn as nn
@@ -25,6 +26,34 @@ class SARActionInterpreter(BaseActionParser):
     
     def get_action_space(self, agent : SARAgent):
         return Discrete(4)
+    
+    def get_action_mask(self, agent: SARAgent, world: SARWorld):
+        """
+        Returns an action mask indicating the valid actions for the agent in the current world state.
+        Valid actions are marked as 1, and invalid actions are marked as 0.
+        """
+        # Get the current position of the agent
+        current_position = agent.position
+
+        # Define potential moves based on the directions
+        moves = {
+            0: Direction.NORTH,
+            1: Direction.SOUTH,
+            2: Direction.EAST,
+            3: Direction.WEST,
+        }
+
+        # Initialize the action mask as a torch tensor with zeros
+        action_mask = torch.zeros(len(moves), dtype=torch.float32)
+
+        # Iterate through possible actions and check traversability
+        for action_code, direction in moves.items():
+            new_position = current_position + Direction.get_direction_of_movement(direction)
+            if world.is_traversable(new_position):
+                action_mask[action_code] = 1  # Mark as valid
+
+        return action_mask
+
 
     def get_observation_space(self, agent : SARAgent):
         vis = agent._traits._visibility_range

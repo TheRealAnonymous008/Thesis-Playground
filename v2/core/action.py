@@ -9,6 +9,7 @@ import numpy as np
 from abc import ABC, abstractmethod
 if TYPE_CHECKING: 
     from core.agent import Agent 
+    from core.world import BaseWorld
 
 @dataclass
 class ActionInformation(ABC):
@@ -38,4 +39,8 @@ class BaseActionParser(ABC):
 
     @abstractmethod
     def get_observation(self, agent : Agent):
+        pass 
+
+    @abstractmethod
+    def get_action_mask(self, agent : Agent, world : BaseWorld):
         pass 
