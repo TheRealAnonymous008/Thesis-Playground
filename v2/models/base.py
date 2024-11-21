@@ -98,6 +98,15 @@ class BaseModel:
             if done.all(): 
                 _state, _ = self.env.reset()
 
+    def update_difficulty(self):
+        """
+        Update the environment's difficulty or complexity. Invoke as needed
+        """
+        self.env.update_difficulty()
+    
+    def reset_difficulty(self):
+        self.env.reset_difficulty()
+
     def step(self, state : dict):
         """
         Returns the following in order

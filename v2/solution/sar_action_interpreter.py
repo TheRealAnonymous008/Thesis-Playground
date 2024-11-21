@@ -19,7 +19,7 @@ class SARActionInterpreter(BaseActionParser):
     
     def take_action(self, action_code : int, agent : SARAgent):
         match (action_code) : 
-            case 0 : agent.move(Direction.NORTH) 
+            case 0 : agent.move(Direction.NORTH)  
             case 1 : agent.move(Direction.SOUTH) 
             case 2 : agent.move(Direction.EAST) 
             case 3 : agent.move(Direction.WEST)

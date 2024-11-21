@@ -42,10 +42,14 @@ def train_loop(
 
     set_seed(seed)
     model.env.reset(seed= seed)
+    model.reset_difficulty()
+
 
     # Wrap the training loop in tqdm for progress tracking
     for i in tqdm(range(checkpts), desc="Training Progress"):
         model.learn(total_timesteps=steps_per_checkpt, optimization_passes=optimization_passes)
+        model.update_difficulty()
+
         # TODO: Uncomment this 
         # model.save(f"{env.unwrapped.metadata.get('name')}_{time.strftime('%Y%m%d-%H%M%S')}")
 

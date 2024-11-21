@@ -31,7 +31,7 @@ class SARTraitSampler:
 
             # Sample traits here
             visibility = int(np.random.uniform(1, 4))
-            energy_capacity = np.clip(np.random.normal(100, 20), a_min=10, a_max = MAX_ENERGY)
+            energy_capacity = np.clip(np.random.normal(180, 40), a_min=10, a_max = MAX_ENERGY)
             max_slope = np.clip(np.random.normal(1, 0.5), a_min = 0.01, a_max = None)
 
             traits._tensor = torch.tensor([visibility, energy_capacity, max_slope], dtype = torch.float32)

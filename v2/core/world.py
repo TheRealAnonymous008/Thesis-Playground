@@ -39,7 +39,16 @@ class BaseWorld(ABC):
         self._models : dict[str, BaseDynamicsModel] = {}
         
         self._device = "cpu"
+
+        self._params : dict = {}            # Override this as needed
+        self.reset_difficulty()
         self.reset()
+
+    def set_param(self, name : str, val ):
+        self._params[name] = val
+
+    def get_param(self, name : str):
+        return self._params[name]
 
     def add_model(self, name : str, model : BaseDynamicsModel) -> BaseWorld: 
         self._models[name] = model
@@ -63,6 +72,18 @@ class BaseWorld(ABC):
         for agent in self.agents: 
             agent.reset()
             agent.to(self._device)
+
+    def update_difficulty(self):
+        """
+        Update the environment's difficulty or complexity. Invoke as needed
+        """
+        pass
+    
+    def reset_difficulty(self):
+        """
+        Reset the environment's difficulty or complexity. Reset as needed 
+        """
+        pass
 
     @abstractmethod
     def _reset(self):

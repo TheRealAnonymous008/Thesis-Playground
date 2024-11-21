@@ -99,6 +99,14 @@ class CustomGymEnviornment(ParallelEnv):
         """
         render_world(self._world, (800, 800), update_fn=update, delay_s=0)
 
+    def update_difficulty(self):
+        self._world.update_difficulty()
+        self._max_time_steps = min(self._max_time_steps + 5, 200)
+    
+    def reset_difficulty(self):
+        self._world.reset_difficulty()
+        self._max_time_steps = 10
+
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent_id : int) -> Space:
         """

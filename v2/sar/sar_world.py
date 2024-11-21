@@ -132,6 +132,20 @@ class SARWorld(BaseWorld):
             presence_mask[x, y] = agent.id
 
         return presence_mask
+    
+    def update_difficulty(self):
+        """
+        Update the environment's difficulty or complexity. Invoke as needed
+        """
+        total_victims = max(100, self.get_param("total_victims") - 1)
+        self.set_param("total_victims", total_victims)
+    
+    def reset_difficulty(self):
+        """
+        Reset the environment's difficulty or complexity. Reset as needed 
+        """
+        self.set_param("total_victims", 2000)
+        
 
     
 def initialize_positions_randomly(world: SARWorld, swarm: list[SARAgent]):
