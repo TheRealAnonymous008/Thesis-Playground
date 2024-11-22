@@ -28,18 +28,16 @@ def set_seed(seed: int | None):
 def train_loop(
         env: CustomGymEnviornment, 
         model: BaseModel,  
-        games: int = 100, 
+        games_per_checkpoint: int = 50, 
+        checkpoints : int = 10,
         optimization_passes: int = 10,
-        difficulty_rate : int = 30,
+        difficulty_rate : int = 4,
         verbose : bool = False,
         seed: int = None):
     """
     Train an agent for run_count number of games (no. of iters per game is dictated by env)
     """
     print(f"Training on {str(env.metadata['name'])}.")
-    steps = games * env._max_time_steps
-    steps_per_checkpt = 100
-    checkpts = int(steps / steps_per_checkpt)
     avg_rewards = []
 
     set_seed(seed)
@@ -49,10 +47,9 @@ def train_loop(
     time_steps = 0
 
     # Wrap the training loop in tqdm for progress tracking
-    for i in tqdm(range(checkpts), desc="Training Progress"):
-        model.learn(total_timesteps=steps_per_checkpt, optimization_passes=optimization_passes, verbose = verbose)
-        if time_steps % difficulty_rate == 0:
-            model.update_difficulty()
+    for i in tqdm(range(checkpoints), desc="Training Progress"):
+        model.learn(total_timesteps=games_per_checkpoint * env._max_time_steps, optimization_passes=optimization_passes, verbose = verbose)
+        model.update_difficulty()
         time_steps += 1
 
         # TODO: Uncomment this 
@@ -97,7 +94,7 @@ def test_agents(env : CustomGymEnviornment, model :BaseModel, games : int = 100,
         for _ in range(env._max_time_steps): 
             _, _, reward, obs, _, _ = model.step(obs)
             for agent in env.agents:
-                rewards[agent] += env._world.get_agent(agent)._current_state.just_rescued_victim
+                rewards[agent] += env._world.get_agent(agent)._current_state.just_rescued_victim / env._max_time_steps
 
     env.close()
 

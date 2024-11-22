@@ -55,5 +55,7 @@ class Encoder(nn.Module):
         x = self.fc1(x)
         x = F.relu(x)
         x = self.fc2(x)
+
+        x = F.softmax(x)        # Normalize so that it doesn't explode
         
         return x

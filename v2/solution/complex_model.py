@@ -66,6 +66,7 @@ class ComplexModel:
             input_channels=1,
             grid_size= self._grid_size,
             num_actions= self._action_dims,
+            traits_size= self._trait_dims,
             state_size= self._state_dims,
             belief_size= self._belief_dims,
             device = self._policy_net.device
