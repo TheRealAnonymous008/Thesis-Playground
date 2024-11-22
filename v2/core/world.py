@@ -71,6 +71,7 @@ class BaseWorld(ABC):
 
         for agent in self.agents: 
             agent.reset()
+            agent._world = self
             agent.to(self._device)
 
     def update_difficulty(self):

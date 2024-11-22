@@ -137,14 +137,14 @@ class SARWorld(BaseWorld):
         """
         Update the environment's difficulty or complexity. Invoke as needed
         """
-        total_victims = max(100, int(self.get_param("total_victims") * 0.95))
+        total_victims = max(100, int(self.get_param("total_victims") * 0.8))
         self.set_param("total_victims", total_victims)
     
     def reset_difficulty(self):
         """
         Reset the environment's difficulty or complexity. Reset as needed 
         """
-        self.set_param("total_victims", 1000)
+        self.set_param("total_victims", 2000)
         
 
     

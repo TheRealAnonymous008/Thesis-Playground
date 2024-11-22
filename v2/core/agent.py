@@ -13,6 +13,10 @@ from .message import Message
 
 from abc import ABC, abstractmethod
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING: 
+    from world import BaseWorld
+
 import torch
 
 _IdType = int
@@ -30,6 +34,7 @@ class Agent:
         self._id : _IdType = "-1"
         self._current_belief : torch.Tensor = torch.Tensor(0)
         self._device = "cpu"
+        self._world : BaseWorld = None
 
         self._initializer()
         self.reset()
@@ -62,7 +67,7 @@ class Agent:
     @abstractmethod
     def _reset(self):
         """
-        Code for reseting the agenn.
+        Code for reseting the agent.
         """
         pass 
 

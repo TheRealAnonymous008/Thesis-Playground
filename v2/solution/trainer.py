@@ -30,6 +30,8 @@ def train_loop(
         model: BaseModel,  
         games: int = 100, 
         optimization_passes: int = 10,
+        difficulty_rate : int = 30,
+        verbose : bool = False,
         seed: int = None):
     """
     Train an agent for run_count number of games (no. of iters per game is dictated by env)
@@ -48,17 +50,17 @@ def train_loop(
 
     # Wrap the training loop in tqdm for progress tracking
     for i in tqdm(range(checkpts), desc="Training Progress"):
-        model.learn(total_timesteps=steps_per_checkpt, optimization_passes=optimization_passes)
-        if time_steps % 10 == 0:
+        model.learn(total_timesteps=steps_per_checkpt, optimization_passes=optimization_passes, verbose = verbose)
+        if time_steps % difficulty_rate == 0:
             model.update_difficulty()
         time_steps += 1
 
         # TODO: Uncomment this 
         # model.save(f"{env.unwrapped.metadata.get('name')}_{time.strftime('%Y%m%d-%H%M%S')}")
+        if verbose: 
+            print("Model has been saved.")
 
-        print("Model has been saved.")
-
-        avg_rewards.append(test_agents(model.env, model, 1))
+        avg_rewards.append(test_agents(model.env, model, 1, verbose = verbose))
     
     print(f"Finished training on {str(env.unwrapped.metadata['name'])}.")
     
@@ -67,10 +69,11 @@ def train_loop(
     return avg_rewards
 
 
-def test_agents(env : CustomGymEnviornment, model :BaseModel, games : int = 100,  seed : int = 0,  load_from_disk : bool = False):
-    print(
-        f"\nStarting evaluation on {str(env.metadata['name'])} (num_games={games})"
-    )
+def test_agents(env : CustomGymEnviornment, model :BaseModel, games : int = 100,  seed : int = 0,  load_from_disk : bool = False, verbose : bool = True ):
+    if verbose: 
+        print(
+            f"\nStarting evaluation on {str(env.metadata['name'])} (num_games={games})"
+        )
 
     if load_from_disk: 
         try:
@@ -108,7 +111,8 @@ def test_agents(env : CustomGymEnviornment, model :BaseModel, games : int = 100,
     std = np.std(rewards)
     coeff_variation = std / mean 
 
-    print(f"Avg reward: {mean}  std: {std}  coeff : {coeff_variation}")
-    print("Avg reward per agent, per game: ", avg_reward_per_agent)
+    if verbose: 
+        print(f"Avg reward: {mean}  std: {std}  coeff : {coeff_variation}")
+        print("Avg reward per agent, per game: ", avg_reward_per_agent)
     # print("Full rewards: ", rewards)
     return mean

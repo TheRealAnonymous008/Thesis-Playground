@@ -69,7 +69,7 @@ class BaseModel:
         self.env.to(self.device)
 
 
-    def learn(self, total_timesteps : int, optimization_passes : int = 1): 
+    def learn(self, total_timesteps : int, optimization_passes : int = 1, verbose : bool = False ): 
         """
         Learn for the specified number of time steps
         """
@@ -199,7 +199,7 @@ class BaseModel:
 
         return flattened_actions
     
-    def optimize_model(self, experiences):
+    def optimize_model(self, experiences, verbose : bool = False):
         """
         Perform a learning step: update the policy network using a batch of experiences.
         """

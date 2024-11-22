@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from  tensordict import TensorDict
 
 class PolicyNet(nn.Module):
-    def __init__(self, input_channels: int, grid_size: int, num_actions: int, state_size: int, belief_size: int, device="cpu"):
+    def __init__(self, input_channels: int, grid_size: int, num_actions: int, state_size: int, belief_size: int, traits_size : int, device="cpu"):
         super(PolicyNet, self).__init__()
 
         self.grid_size = grid_size
@@ -26,7 +26,7 @@ class PolicyNet(nn.Module):
         self.conv_fc2 = nn.Linear(conv_output_size, intermediate_embed_size)
 
         # Adjust the input size for the first fully connected layer
-        total_input_size = 2 * intermediate_embed_size + state_size + belief_size
+        total_input_size = 2 * intermediate_embed_size + state_size + belief_size + traits_size
 
         # Fully connected layers for decision making (Q-values)
         self.fc1 = nn.Linear(total_input_size, 128)
@@ -96,9 +96,10 @@ class PolicyNet(nn.Module):
         # Retrieve state and belief tensors
         state = torch.clone(obs["state"]).detach()
         belief = torch.clone(obs["belief"]).detach()
+        traits = torch.clone(obs["traits"]).detach()
 
         # Concatenate vision, state, and belief tensors
-        x = torch.cat((x, y, state, belief), dim=1)
+        x = torch.cat((x, y, state, belief, traits), dim=1)
 
         # Pass through fully connected layers
         x = self.fc1(x)
@@ -128,6 +129,7 @@ def feature_extractor(obs : dict, device : str = "cpu") -> TensorDict:
         terrain_grid = agent_obs['Terrain']
         state = agent_obs['State']
         belief = agent_obs['Belief']
+        traits = agent_obs['Traits']
 
         vision_tensor = torch.from_numpy(vision_grid).float().unsqueeze(0)
         terrain_grid = torch.from_numpy(terrain_grid).float().unsqueeze(0)
@@ -142,6 +144,7 @@ def feature_extractor(obs : dict, device : str = "cpu") -> TensorDict:
             "state": state_tensor,
             "belief" : belief_tensor,
             "terrain": terrain_grid,
+            "traits": traits
         }, device = device)
 
         # Add the concatenated tensor to the features dictionary, keyed by agent ID

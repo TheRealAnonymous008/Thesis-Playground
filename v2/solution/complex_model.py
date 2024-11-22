@@ -28,6 +28,7 @@ class ComplexModel:
             num_actions = action_dims, 
             state_size= state_dims, 
             belief_size= belief_dims, 
+            traits_size= trait_dims,
             device = device)
         self._encoder_net = Encoder(
             state_dims= state_dims,

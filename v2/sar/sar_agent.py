@@ -134,7 +134,7 @@ class SARUtilityFunction(UtilityFunction):
         return agent._current_state.just_rescued_victim / agent._traits._energy_capacity
     
     def sparse_forward(self, agent : SARAgent):
-        return agent._current_state.victims_rescued * 10 / agent._traits._energy_capacity
+        return agent._current_state.victims_rescued / (agent._traits._energy_capacity * agent._world.get_param("total_victims"))  * 10
 
     def update(self):
         pass

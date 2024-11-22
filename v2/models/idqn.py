@@ -66,13 +66,13 @@ class IDQN(BaseModel):
 
         self.target_net.to(self.device)
     
-    def learn(self, total_timesteps: int, optimization_passes : int):
+    def learn(self, total_timesteps: int, optimization_passes : int, verbose : bool = False ):
         self._model.eval()
         super().learn(total_timesteps)
 
         for _ in range (optimization_passes): 
             experiences = self.sample_experiences()
-            self.optimize_model(experiences)
+            self.optimize_model(experiences, verbose)
             
         self.epsilon = max(self.epsilon_end, self.epsilon_decay * self.epsilon)
 
@@ -93,7 +93,7 @@ class IDQN(BaseModel):
         else:
             return torch.tensor([self.env.action_space(agent_id).sample()], dtype=torch.long)
 
-    def optimize_model(self, experiences):
+    def optimize_model(self, experiences, verbose : bool = False ):
         """
         Perform a learning step: update the policy network using a batch of experiences.
         """
@@ -130,7 +130,8 @@ class IDQN(BaseModel):
             self.encoder_optimizer.step()
             self.decoder_optimizer.step()
 
-        print(f"Average loss {average_loss / len(agents)}")
+        if verbose: 
+            print(f"Average loss {average_loss / len(agents)}")
 
         # Soft update the target network
         self.soft_update()
