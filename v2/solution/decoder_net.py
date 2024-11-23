@@ -31,7 +31,7 @@ class Decoder(nn.Module):
         self.conv_fc1 = nn.Linear(conv_output_size, intermediate_embed_size)
         self.conv_fc2 = nn.Linear(conv_output_size, intermediate_embed_size)
 
-        fc1_input_size = 2 * intermediate_embed_size
+        fc1_input_size = 2 * intermediate_embed_size + input_dims
         self.fc1 = nn.Linear(fc1_input_size, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, belief_dims)
 
@@ -82,7 +82,7 @@ class Decoder(nn.Module):
         y = F.relu(y) 
 
         # Compute the belief update
-        h = torch.cat((x, y))
+        h = torch.cat((x, y, sender_embedding))
         h = F.relu(self.fc1(h))  # Hidden layer activation
         belief_update = self.fc2(h)  # Compute belief adjustment
 
