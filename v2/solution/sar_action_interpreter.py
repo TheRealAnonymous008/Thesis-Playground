@@ -56,6 +56,7 @@ class SARActionInterpreter(BaseActionParser):
             "Vision" : Box(0, 1, (2 * vis + 1, 2 * vis + 1)),
             "Terrain": Box(0, 1, (2 * vis + 1, 2 * vis + 1)),
             "State": Box(low = 0, high = np.inf),
+            "Exploration": Box(0, 1, (2 * vis + 1, 2 * vis + 1)),
         })
 
     def get_observation(self, agent : SARAgent):
@@ -66,5 +67,6 @@ class SARActionInterpreter(BaseActionParser):
             "Traits": agent.trait_as_tensor,
             "Vision" : obs.victim_map,
             "Terrain" : obs.terrain_map,
-            "State": agent.state_as_tensor
+            "State": agent.state_as_tensor,
+            "Exploration": obs.exploration_map
         }

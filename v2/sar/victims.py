@@ -14,9 +14,12 @@ class VictimModel(BaseDynamicsModel):
         Check if the agent is on a victim
         """
         victim_map = world.get_map("Victims")
+        exploration_map = world.get_map("Exploration")
         for agent in world.agents:
             agent : SARAgent = agent 
             position = agent.current_position_const
+
+            exploration_map.set(position, 1)
 
             if victim_map.get(position) != 0:
                 agent.rescue()

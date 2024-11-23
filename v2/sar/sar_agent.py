@@ -143,6 +143,7 @@ class SARUtilityFunction(UtilityFunction):
 class SARObservation(LocalObservation):
     victim_map : np.ndarray = None 
     terrain_map : np.ndarray = None 
+    exploration_map : np.ndarray = None
 
 class SARBeliefInitializer(BaseBeliefInitializer):
     def __init__(self, belief_dims : int = 1):
