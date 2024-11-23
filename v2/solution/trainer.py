@@ -94,7 +94,8 @@ def test_agents(env : CustomGymEnviornment, model :BaseModel, games : int = 100,
         for _ in range(env._max_time_steps): 
             _, _, reward, obs, _, _ = model.step(obs)
             for agent in env.agents:
-                rewards[agent] += env._world.get_agent(agent)._current_state.just_rescued_victim / env._max_time_steps
+                r = env._world.get_agent(agent)._current_state.just_rescued_victim / env._world.get_param("total_victims") * 100 
+                rewards[agent] += r / env._max_time_steps
 
     env.close()
 

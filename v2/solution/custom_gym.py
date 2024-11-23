@@ -105,7 +105,7 @@ class CustomGymEnviornment(ParallelEnv):
     
     def reset_difficulty(self):
         self._world.reset_difficulty()
-        self._max_time_steps = 10
+        self._max_time_steps = 50
 
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent_id : int) -> Space:
