@@ -5,9 +5,12 @@ from core.message import *
 import torch
 import torch.nn as nn
 
+from .sar_agent import SARObservation
+
 @dataclass 
 class SARMessagePacket: 
-    location : torch.Tensor = None 
+    victims : torch.Tensor = None
+    exploration : torch.Tensor = None 
 
 class SARCommunicationProtocol(BaseCommunicationProtocol):
     def __init__(self, encoder : nn.Module, decoder : nn.Module):
@@ -24,8 +27,15 @@ class SARCommunicationProtocol(BaseCommunicationProtocol):
         return super()._choose_targets(sender)
     
     def _formulate_message_contents(self, sender : Agent , receiver : Agent) -> Message:
+        obs : SARObservation = sender._current_observation
+        vision_grid = obs.victim_map
+        exploration_grid = obs.exploration_map
+
+        vision_tensor = torch.from_numpy(vision_grid).float().unsqueeze(0).to(sender._device)
+        exploration_tensor = torch.from_numpy(exploration_grid).float().unsqueeze(0).to(sender._device)
         contents = SARMessagePacket( 
-            torch.tensor(sender.current_position, device = sender._device, dtype = torch.float32)
+            vision_tensor, 
+            exploration_tensor
         )
         return contents
     

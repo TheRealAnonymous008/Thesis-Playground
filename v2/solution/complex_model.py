@@ -39,8 +39,10 @@ class ComplexModel:
         ) 
         self._decoder_net = Decoder(
             input_dims= latent_dims, 
+            belief_dims=belief_dims,
             hidden_dim = latent_dims, 
             packet_dims= packet_dims,
+            grid_size= grid_size,
             device= device) 
     
     def to(self, device : str):

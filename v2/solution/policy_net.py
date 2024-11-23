@@ -72,9 +72,9 @@ class PolicyNet(nn.Module):
             pad_bottom = pad_total - pad_top
 
             # Apply padding
-            x = F.pad(x, (pad_left, pad_right, pad_top, pad_bottom), value=-1)
-            y = F.pad(y, (pad_left, pad_right, pad_top, pad_bottom), value=-1)
-            z = F.pad(z, (pad_left, pad_right, pad_top, pad_bottom), value=-1)
+            x = F.pad(x, (pad_left, pad_right, pad_top, pad_bottom), value=-torch.inf)
+            y = F.pad(y, (pad_left, pad_right, pad_top, pad_bottom), value=-torch.inf)
+            z = F.pad(z, (pad_left, pad_right, pad_top, pad_bottom), value=-torch.inf)
 
         x = F.relu(self.conv11(x))
         x = F.relu(self.conv12(x))
