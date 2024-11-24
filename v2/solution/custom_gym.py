@@ -101,7 +101,7 @@ class CustomGymEnviornment(ParallelEnv):
 
     def update_difficulty(self):
         self._world.update_difficulty()
-        self._max_time_steps = min(self._max_time_steps + 10, 200)
+        self._max_time_steps = min(self._max_time_steps + 10, 500)
     
     def reset_difficulty(self):
         self._world.reset_difficulty()
