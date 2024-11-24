@@ -53,7 +53,7 @@ def train_loop(
         time_steps += 1
 
         # TODO: Uncomment this 
-        # model.save(f"{env.unwrapped.metadata.get('name')}_{time.strftime('%Y%m%d-%H%M%S')}")
+        model.save(f"{env.unwrapped.metadata.get('name')}_{time.strftime('%Y%m%d-%H%M%S')}.zip")
         if verbose: 
             print("Model has been saved.")
 
