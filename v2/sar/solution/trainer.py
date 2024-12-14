@@ -7,7 +7,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.ppo import CnnPolicy, MlpPolicy, MultiInputPolicy 
 import supersuit as ss
 
-from .custom_gym import CustomGymEnviornment
+from models.custom_gym import CustomGymEnviornment
 import time
 
 from tqdm import tqdm

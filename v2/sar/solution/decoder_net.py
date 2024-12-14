@@ -2,13 +2,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from core.agent import * 
+from models.base_models import BaseDecoder
 from sar.sar_agent import *
-
 from sar.sar_comm import SARMessagePacket
 
 
-class Decoder(nn.Module):
+class Decoder(BaseDecoder):
     def __init__(self,  belief_dims = 5, packet_dims = 5, input_dims = 32, hidden_dim=32, grid_size = 5, device = "cpu"):
         """
         Initialize a Decoder Network. The Decoder Network updates an agent's belief based on incoming messages.
@@ -17,7 +16,7 @@ class Decoder(nn.Module):
         :param hidden_dim: Hidden layer dimension.
         :param belief_dim: Output dimension representing the updated agent belief.
         """
-        super(Decoder, self).__init__()
+        super(Decoder, self).__init__(belief_dims, packet_dims, input_dims, hidden_dim, grid_size, device)
 
         self.out_channels = 4
         self.conv11 = nn.Conv2d(in_channels=1, out_channels=16, kernel_size=3, stride=1, padding=1)
@@ -35,12 +34,6 @@ class Decoder(nn.Module):
         self.fc1 = nn.Linear(fc1_input_size, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, belief_dims)
 
-        self.grid_size = grid_size
-        self.device = device
-
-    def to(self, device):
-        super().to(device)
-        self.device = device
 
     def decoder_forward(self, belief: torch.Tensor, packet: SARMessagePacket, sender_embedding: torch.Tensor) -> torch.Tensor:
         """

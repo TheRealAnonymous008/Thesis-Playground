@@ -6,15 +6,15 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
-from solution.custom_gym import CustomGymEnviornment
+from .custom_gym import CustomGymEnviornment
 from typing import Type, Callable, Dict
 
 T_Optimizer = Type[optim.Optimizer]
 T_Loss = nn.modules.loss._Loss
 T_FeatureExtractor = Callable[[dict], dict[torch.Tensor]]
 
-from  tensordict import TensorDict, LazyStackedTensorDict
-from solution.complex_model import *
+from tensordict import TensorDict, LazyStackedTensorDict
+from .complex_model import *
 
 
 

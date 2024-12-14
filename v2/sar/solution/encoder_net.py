@@ -4,9 +4,10 @@ import torch.nn.functional as F
 
 from core.agent import * 
 from sar.sar_agent import *
+from models.base_models import BaseEncoder
 
 
-class Encoder(nn.Module):
+class Encoder(BaseEncoder):
     def __init__(self, state_dims, trait_dims , hidden_dim=64, output_dim=32, device = "cpu"):
         """
         Initialize an Encoder Network. The Encoder Network is used to provide latent space embeddings for each 
@@ -16,18 +17,13 @@ class Encoder(nn.Module):
         :param hidden_dim: The hidden dimension size.
         :param output_dim: The size of the latent space embedding.
         """
-        super(Encoder, self).__init__()
+        super(Encoder, self).__init__(state_dims, trait_dims, hidden_dim, output_dim, device)
         self.fc1 = nn.Linear(state_dims + trait_dims, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, output_dim)
 
 
         # self.dfc1 = nn.Linear(output_dim,)
 
-        self.device = device
-
-    def to(self, device):
-        super().to(device)
-        self.device = device
 
     def encoder_forward_batch(self, agents: list[SARAgent]) -> torch.Tensor:
         """

@@ -1,16 +1,15 @@
 import functools
-import random
 from copy import copy 
 
 from gymnasium.spaces.space import Space
 import numpy as np 
+import torch
 
 from pettingzoo import ParallelEnv
 from core.action import BaseActionParser
 from core.render import render_world
 from core.world import BaseWorld
 
-from sar.sar_agent import *
 from core.message import BaseCommunicationProtocol 
 
 class CustomGymEnviornment(ParallelEnv):

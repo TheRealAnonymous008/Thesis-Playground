@@ -3,11 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 from  tensordict import TensorDict
 
-class PolicyNet(nn.Module):
-    def __init__(self, input_channels: int, grid_size: int, num_actions: int, state_size: int, belief_size: int, traits_size : int, device="cpu"):
-        super(PolicyNet, self).__init__()
+from models.base_models import BasePolicyNet 
 
-        self.grid_size = grid_size
+class PolicyNet(BasePolicyNet):
+    def __init__(self, input_channels: int, grid_size: int, num_actions: int, state_size: int, belief_size: int, traits_size : int, device="cpu"):
+        super(PolicyNet, self).__init__(input_channels, grid_size, num_actions, state_size, belief_size, traits_size, device)
 
         # Define a simple CNN for the vision input
         self.conv11 = nn.Conv2d(in_channels=input_channels, out_channels=16, kernel_size=3, stride=1, padding=1)
@@ -35,24 +35,6 @@ class PolicyNet(nn.Module):
         self.fc1 = nn.Linear(total_input_size, 128)
         self.fc2 = nn.Linear(128, num_actions)
 
-        self.device = device
-
-    def to(self, device):
-        super().to(device)
-        self.device = device
-
-    def forward(self, idx : int, obs : dict[int, list[TensorDict]]) -> torch.Tensor:
-        """
-        Forward pass for the policy network.
-
-        :param idx: the idx of the agent.
-        :param x: dictionary representing the joint observation. Each obs is of the form (batch, obs)
-
-        :return: Q-values for each action
-        """
-        x = obs[idx]
-
-        return self._forward(x)
     
     def _forward(self, obs: TensorDict):
         # Process the vision tensor
