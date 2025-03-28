@@ -22,6 +22,10 @@ class EconConfig:
     init_firm_capital : float = 1000.0 
     base_wage : float = 10.0
 
+
+    neighbor_sampling_threshold : int = 5
+    relation_dims : int = 3
+
     @property
     def total_agents(self):
         return self.n_households + self.n_c_firms + self.n_banks + self.n_k_firms
@@ -60,6 +64,7 @@ class EconomyEnv(gym.Env):
         """Initialize all agents with starting states. Also initialize the different markets treated as relations"""
         self._init_agents()
         self._init_relations()
+        self._initialize_network()
 
     def _init_agents(self):
         """Initialize all agents in the system"""
@@ -68,7 +73,6 @@ class EconomyEnv(gym.Env):
             {
                 "id": i,
                 "money": self.config.init_house_money,
-                "budget": np.zeros(self.config.n_c_product_types),
                 "wants": np.zeros(self.config.n_c_product_types),
                 "inventory": np.zeros(self.config.n_c_product_types),
                 "skills" : np.zeros(self.config.n_skills),
@@ -155,8 +159,69 @@ class EconomyEnv(gym.Env):
         self._goods_market : list[Transaction] = []             # It is assumed that all transactions that happen here are for cgoods only
         self._capital_market : list[Transaction] = []           # It is assumed that all transactions that happen here are for kgoods only
 
+
+    def _initialize_network(self):
+        """
+        Create the relation network.
+        """
         # The general communications network 
-        self._network : Network = Network(self.config.total_agents)
+        self._network : Network = Network(self.config.total_agents, self.config.relation_dims)
+
+        
+        m0 = 2  # Initial number of nodes
+        m = 2   # Number of edges to attach from each new node
+
+        # Initialize degrees array
+        degrees = np.zeros(self.config.total_agents, dtype=int)
+
+        # Initialize the network with m0 nodes connected in a complete graph
+        for i in range(m0):
+            for j in range(i + 1, m0):
+                # Add edges in both directions with random weights
+                weight_i_j = np.random.rand(self.config.relation_dims).astype(np.float32)
+                self._network.add_connection(i, j, weight_i_j)
+                weight_j_i = np.random.rand(self.config.relation_dims).astype(np.float32)
+                self._network.add_connection(j, i, weight_j_i)
+                degrees[i] += 1
+                degrees[j] += 1
+
+        # Add remaining nodes with preferential attachment
+        for new_node in range(m0, self.config.total_agents):
+            available_nodes = list(range(new_node))  # All existing nodes before new_node
+            if not available_nodes:
+                continue  # Skip if no available nodes (unlikely as m0 >= 2)
+
+            # Calculate probabilities based on current degrees
+            total_degree = degrees[available_nodes].sum()
+            if total_degree == 0:
+                # If all available nodes have degree 0, choose uniformly
+                probs = None
+            else:
+                probs = degrees[available_nodes] / total_degree
+
+            # Determine how many edges to add (m or as many as possible)
+            possible_edges = min(m, len(available_nodes))
+            if possible_edges <= 0:
+                continue
+
+            # Select m nodes without replacement
+            selected = np.random.choice(
+                available_nodes,
+                size=possible_edges,
+                replace=False,
+                p=probs
+            )
+
+            for s in selected:
+                # Add edges in both directions with random weights
+                weight_new_s = np.random.rand(self.config.relation_dims).astype(np.float32)
+                self._network.add_connection(new_node, s, weight_new_s)
+                weight_s_new = np.random.rand(self.config.relation_dims).astype(np.float32)
+                self._network.add_connection(s, new_node, weight_s_new)
+
+                # Update degrees
+                degrees[new_node] += 1
+                degrees[s] += 1
 
     def _create_action_space(self):
         """Create composite action space for all agent types"""
@@ -184,30 +249,14 @@ class EconomyEnv(gym.Env):
         return spaces.Dict({
             # Capital and Goods Market 
             
-            "household_budget": spaces.Box(low=0, high=1, shape=(self.config.n_households, self.config.n_c_product_types)),
+            "household_budget": spaces.Box(low=0, high=1, shape=(self.config.n_households, )),               # The budget represents the percentage of money allocated for consumption
             "c_firm_price_quantity": spaces.Box(low=0, high=np.inf, shape=(self.config.n_c_firms, 2)),       # [price, quantity] 
             "k_firm_price_quantity": spaces.Box(low=0, high=np.inf, shape=(self.config.n_k_firms, 2)),       # [price, quantity] 
 
             "c_good_consumption" : spaces.Dict({
                 "seller" : spaces.Box(low = 0, high = np.inf, shape = (self.config.n_households, )) , 
-                "product" : spaces.Box(low = 0, high = self.config.n_c_product_types, shape = (self.config.n_households, )), 
                 "qty" : spaces.Box(low = 0, high = np.inf, shape = (self.config.n_households, )),
-            }), 
-            "k_good_consumption" : spaces.Dict({
-                "seller" : spaces.Box(low = 0, high = np.inf, shape = (self.config.n_c_firms, )) , 
-                "product" : spaces.Box(low = 0, high = self.config.n_k_product_types, shape = (self.config.n_c_firms, )), 
-                "qty" : spaces.Box(low = 0, high = np.inf, shape = (self.config.n_c_firms, )),
-            }), 
-
-            # Labor Market
-            "c_firm_employment" : spaces.Dict({
-                "laborer" :  spaces.Box(low = 0, high = np.inf, shape = (self.config.n_c_firms, )), 
-                "verdict": spaces.Box(low = 0, high = 1, shape = (self.config.n_c_firms,))
-            }),
-            "k_firm_employment" : spaces.Dict({
-                "laborer" :  spaces.Box(low = 0, high = np.inf, shape = (self.config.n_k_firms, )), 
-                "verdict": spaces.Box(low = 0, high = 1, shape = (self.config.n_k_firms, ))
-            }),
+            })
         })
 
     def _create_observation_space(self):
@@ -312,8 +361,7 @@ class EconomyEnv(gym.Env):
     def goods_consumption(self, actions): 
         """ Processes revolving around budgetting and consuming goods"""
         # First set the budget
-        budget = actions["household_budget"]
-        self.households["budget"] =  [np.array(row, dtype=float) for row in budget]
+        self.households["budget"] =  actions["household_budget"]
 
         # TODO: Then buy goods according to the budget and the network
 
@@ -332,7 +380,6 @@ class EconomyEnv(gym.Env):
                 "wage": wage_observations.to_numpy(),
                 "wants": self.households["wants"].to_numpy(),
                 "inventory": np.vstack(self.households["inventory"].values),
-                "budget": np.vstack(self.households["budget"].values)
             }, 
 
             "c_firms" : {

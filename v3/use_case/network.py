@@ -64,3 +64,19 @@ class Network:
             if len(self.neighbors[i]) > 0:
                 adj_tensor[i, self.neighbors[i]] = self.weights[i]
         return adj_tensor
+    
+    def sample(self, vertex, k):
+        """
+        Sample up to k neighbors of the given vertex uniformly at random.
+        """
+        if k <= 0:
+            return np.array([], dtype=np.int32)
+        
+        neighbors = self.neighbors[vertex]
+        n_neighbors = len(neighbors)
+        
+        if n_neighbors <= k:
+            return neighbors.copy()
+        else:
+            # Randomly select k indices without replacement
+            return np.random.choice(neighbors, size=k, replace=False)
