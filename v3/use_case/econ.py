@@ -30,18 +30,11 @@ class EconConfig:
     def total_agents(self):
         return self.n_households + self.n_c_firms + self.n_banks + self.n_k_firms
 
-class FirmType(Enum):
-    C_FIRM = 0
-    K_FIRM = 1
-
-@dataclass
-class Transaction:
-    buyer : int = 0 
-    seller : int = 0 
-    product : int = -1
-    type : FirmType = FirmType.C_FIRM
-    qty : int = 0
-    price : float = 0 
+class AgentType(Enum):
+    HOUSEHOLD = 0
+    C_FIRM = 1
+    K_FIRM = 2
+    BANK = 3
 
 
 
@@ -69,6 +62,8 @@ class EconomyEnv(gym.Env):
     def _init_agents(self):
         """Initialize all agents in the system"""
         n_agents = 0
+        self.agent_indices = {}
+
         self.households = pd.DataFrame([
             {
                 "id": i,
@@ -81,6 +76,7 @@ class EconomyEnv(gym.Env):
         ])
         self.households.set_index("id", inplace= True)
         n_agents = self.config.n_households
+        self.agent_indices[AgentType.HOUSEHOLD] =  self.households.index.to_numpy()
 
         self.c_firms = pd.DataFrame([
             {
@@ -95,6 +91,7 @@ class EconomyEnv(gym.Env):
         ])
         self.c_firms.set_index("id", inplace= True)
         n_agents += self.config.n_c_firms
+        self.agent_indices[AgentType.C_FIRM] = self.c_firms.index.to_numpy()
 
         self.k_firms = pd.DataFrame([
             {
@@ -108,6 +105,7 @@ class EconomyEnv(gym.Env):
         ])
         self.k_firms.set_index("id", inplace= True)
         n_agents += self.config.n_k_firms
+        self.agent_indices[AgentType.K_FIRM] = self.k_firms.index.to_numpy()
 
         self.banks = pd.DataFrame([
             {
@@ -120,6 +118,7 @@ class EconomyEnv(gym.Env):
         ])
 
         self.banks.set_index("id", inplace= True)
+        self.agent_indices[AgentType.BANK] = self.banks.index.to_numpy()
 
 
     def _init_relations(self):
@@ -137,7 +136,7 @@ class EconomyEnv(gym.Env):
                 {
                     "employer": Y[i],
                     "employee": X[i],
-                    "type": FirmType.C_FIRM, 
+                    "type": AgentType.C_FIRM, 
                     "wage": 1,
                 } 
                 for i in range(0, len(Y))
@@ -148,17 +147,12 @@ class EconomyEnv(gym.Env):
                 {
                     "employer": Z[i],
                     "employee": X[i + c_amt], 
-                    "type": FirmType.K_FIRM, 
+                    "type": AgentType.K_FIRM, 
                     "wage": 1,
                 }
                 for i in range(0, len(Z))
             ])
         ])
-
-        # The goods and capital market.
-        self._goods_market : list[Transaction] = []             # It is assumed that all transactions that happen here are for cgoods only
-        self._capital_market : list[Transaction] = []           # It is assumed that all transactions that happen here are for kgoods only
-
 
     def _initialize_network(self):
         """
@@ -252,11 +246,6 @@ class EconomyEnv(gym.Env):
             "household_budget": spaces.Box(low=0, high=1, shape=(self.config.n_households, )),               # The budget represents the percentage of money allocated for consumption
             "c_firm_price_quantity": spaces.Box(low=0, high=np.inf, shape=(self.config.n_c_firms, 2)),       # [price, quantity] 
             "k_firm_price_quantity": spaces.Box(low=0, high=np.inf, shape=(self.config.n_k_firms, 2)),       # [price, quantity] 
-
-            "c_good_consumption" : spaces.Dict({
-                "seller" : spaces.Box(low = 0, high = np.inf, shape = (self.config.n_households, )) , 
-                "qty" : spaces.Box(low = 0, high = np.inf, shape = (self.config.n_households, )),
-            })
         })
 
     def _create_observation_space(self):
@@ -296,8 +285,6 @@ class EconomyEnv(gym.Env):
 
         # Run economic processes
         self._simulate_labor_market()
-        self._simulate_goods_market()
-        self._simulate_capital_market()
         self._simulate_banking_operations()
 
         # Perform the different processes
@@ -319,40 +306,15 @@ class EconomyEnv(gym.Env):
         self.households.loc[employee_wages.index, 'money'] += employee_wages
 
         # Process C_FIRM wage deductions
-        c_firm_mask = self._labor_market['type'] == FirmType.C_FIRM
+        c_firm_mask = self._labor_market['type'] == AgentType.C_FIRM
         c_firm_wages = self._labor_market[c_firm_mask].groupby('employer')['wage'].sum()
         self.c_firms.loc[c_firm_wages.index, 'money'] -= c_firm_wages
 
         # Process K_FIRM wage deductions
-        k_firm_mask = self._labor_market['type'] == FirmType.K_FIRM
+        k_firm_mask = self._labor_market['type'] == AgentType.K_FIRM
         k_firm_wages = self._labor_market[k_firm_mask].groupby('employer')['wage'].sum()
         self.k_firms.loc[k_firm_wages.index, 'money'] -= k_firm_wages
 
-    def _simulate_goods_market(self):
-        """Simulate goods market operations"""
-        for transaction in self._goods_market: 
-            # Resolve all transactions
-            cost = transaction.price * transaction.qty
-            self.households.loc[transaction.buyer]["money"] -= cost 
-            self.c_firms.loc[transaction.seller]["money"] += cost 
-
-            self.households.loc[transaction.buyer]["inventory"][transaction.product] += transaction.qty
-            self.c_firms.loc[transaction.seller]["quantity"] -= transaction.qty
-
-        self._goods_market.clear()
-
-    def _simulate_capital_market(self):
-        """Simulate capital goods market transactions"""
-        for transaction in self._capital_market: 
-            # Resolve all transactions
-            cost = transaction.price * transaction.qty
-            self.c_firms.loc[transaction.buyer]["money"] -= cost 
-            self.k_firms.loc[transaction.seller]["money"] += cost 
-
-            self.c_firms.loc[transaction.buyer]["inventory"][transaction.product] += transaction.qty
-            self.k_firms.loc[transaction.seller]["quantity"] -= transaction.qty
-
-        self._capital_market.clear()
 
     def _simulate_banking_operations(self):
         """Simulate banking system operations"""
@@ -360,14 +322,49 @@ class EconomyEnv(gym.Env):
     
     def goods_consumption(self, actions): 
         """ Processes revolving around budgetting and consuming goods"""
-        # First set the budget
         self.households["budget"] =  actions["household_budget"]
 
-        # TODO: Then buy goods according to the budget and the network
+    def make_transaction(self, buyer, seller, quantity):
+        """Perform a transaction between a household (buyer) and a c_firm (seller)."""
+        # Retrieve seller's product details
+        product_type = self.c_firms.loc[seller, 'product_type']
+        available_qty = self.c_firms.loc[seller, 'quantity']
+        price = self.c_firms.loc[seller, 'price']
+        
+        # Retrieve buyer's available money
+        buyer_money = self.households.loc[buyer, 'money']
+        
+        # Check if transaction is possible
+        if price <= 0 or available_qty <= 0 or buyer_money <= 0:
+            return 0  # No transaction possible
+        
+        # Calculate maximum quantity that can be bought
+        max_qty = min(available_qty, quantity, buyer_money / price)
+        
+        if max_qty <= 0:
+            return 0  # No transaction
+        
+        total_cost = max_qty * price
+        
+        # Update buyer's money
+        self.households.loc[buyer, 'money'] -= total_cost
+        
+        # Update seller's money and quantity
+        self.c_firms.loc[seller, 'money'] += total_cost
+        self.c_firms.loc[seller, 'quantity'] -= max_qty
+        
+        # Update buyer's inventory for the specific product type
+        self.households.loc[buyer, 'inventory'][product_type] += max_qty
+        
+        return max_qty  # Return the actual quantity transacted
 
     def _calculate_rewards(self):
         """Calculate rewards for all agents"""
-        pass
+        return {
+            "household" : self.households["money"].to_numpy() ,
+            "c_firms":  self.c_firms["money"].to_numpy(),
+            "k_firms": self.k_firms["money"].to_numpy(),
+        }
 
     def _get_observations(self):
         """Compile observations for all agents"""
@@ -396,3 +393,8 @@ class EconomyEnv(gym.Env):
             }
 
         }
+    
+    def get_agents(self, agent_type : AgentType):
+        arr : np.ndarray = self.agent_indices[agent_type].copy()
+        np.random.shuffle(arr)
+        return arr 
