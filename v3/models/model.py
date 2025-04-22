@@ -3,6 +3,7 @@ from .hypernet import *
 
 class Model: 
     def __init__(self, config : ParameterSettings):
+        self.config = config
         self.hypernet = HyperNetwork(config)
         self.actor_encoder = ActorEncoder(config)
         self.filter = Filter(config)

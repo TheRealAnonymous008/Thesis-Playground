@@ -6,15 +6,21 @@ For consumption budgeting, instead of having agents learn budgeting strategies (
 
 
 
-How do we handle transactions and selecting which neighbor to interact with? 
-Idea #1: Feed each agent its neighbor (one at a time) and call the relevant function. 
-Downside: What if there are too many neighbors? 
+For firms, set both stock and quantity. For normalization purposes, make the action x instead be of range 0 to 1 so that the quantity sold is 
 
-Idea #2: Same as idea #1 but impose a cutoff (i.e., analogous to context window in transformers). Choose up to k neighbors to consider.
+qty_sold = x * stock
 
-Go with Idea 2
+Any unsold stock gets put back in stock. 
 
 
+
+
+Need to define the production equation for each product. For now we may assume that it is determined purely by labor. 
+
+
+Optimizations: 
+- Instead of using dataframe, just use regular numpy arrays and indexing. 
+- Make a simplifying assumption that wages are fixed per employee regardless of skill. 
 
 
 

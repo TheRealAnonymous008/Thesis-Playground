@@ -22,14 +22,14 @@ class EconConfig:
     init_firm_capital : float = 1000.0 
     base_wage : float = 10.0
 
-
     neighbor_sampling_threshold : int = 5
     relation_dims : int = 3
+    neighbor_selection_prob: float = 0.7 
 
     @property
     def total_agents(self):
         return self.n_households + self.n_c_firms + self.n_banks + self.n_k_firms
-
+    
 class AgentType(Enum):
     HOUSEHOLD = 0
     C_FIRM = 1
@@ -56,6 +56,7 @@ class EconomyEnv(gym.Env):
     def _init_state(self):
         """Initialize all agents with starting states. Also initialize the different markets treated as relations"""
         self._init_agents()
+        self._init_products()
         self._init_relations()
         self._initialize_network()
 
@@ -70,7 +71,7 @@ class EconomyEnv(gym.Env):
                 "money": self.config.init_house_money,
                 "wants": np.zeros(self.config.n_c_product_types),
                 "inventory": np.zeros(self.config.n_c_product_types),
-                "skills" : np.zeros(self.config.n_skills),
+                "skills" : np.random.uniform(0, 5, (self.config.n_skills, )),
             }
             for i in range(self.config.n_households)
         ])
@@ -82,8 +83,8 @@ class EconomyEnv(gym.Env):
             {
                 "id" : n_agents + i,
                 "product_type" : np.random.choice(self.config.n_c_product_types),
-                "quantity": 0,
-                "price": 0, 
+                "quantity": 0.0,
+                "price": 0.0, 
                 "money": self.config.init_firm_capital,
                 "capital_inventory" : np.zeros(self.config.n_k_product_types)
             }
@@ -97,8 +98,8 @@ class EconomyEnv(gym.Env):
             {
                 "id" : n_agents + i,
                 "product_type" : np.random.choice(self.config.n_k_product_types),
-                "quantity": 0,
-                "price": 0, 
+                "quantity": 0.0,
+                "price": 0.0, 
                 "money": self.config.init_firm_capital,
             }
             for i in range(self.config.n_k_firms)
@@ -120,6 +121,9 @@ class EconomyEnv(gym.Env):
         self.banks.set_index("id", inplace= True)
         self.agent_indices[AgentType.BANK] = self.banks.index.to_numpy()
 
+    def _init_products(self):
+        """Create all the production equations for each product"""
+        self.c_product_labor_costs = np.random.uniform(0, 10, (self.config.n_c_product_types))
 
     def _init_relations(self):
         """Initialize the different markets as well as the network topology"""
@@ -208,15 +212,16 @@ class EconomyEnv(gym.Env):
 
             for s in selected:
                 # Add edges in both directions with random weights
-                weight_new_s = np.random.rand(self.config.relation_dims).astype(np.float32)
+                weight_new_s = np.zeros(self.config.relation_dims).astype(np.float32)
                 self._network.add_connection(new_node, s, weight_new_s)
-                weight_s_new = np.random.rand(self.config.relation_dims).astype(np.float32)
+                weight_s_new = np.zeros(self.config.relation_dims).astype(np.float32)
                 self._network.add_connection(s, new_node, weight_s_new)
 
                 # Update degrees
                 degrees[new_node] += 1
                 degrees[s] += 1
 
+    
     def _create_action_space(self):
         """Create composite action space for all agent types"""
 
@@ -289,7 +294,9 @@ class EconomyEnv(gym.Env):
 
         # Perform the different processes
         self.goods_consumption(actions)
-
+    
+        # Finally evolve the network
+        self._evolve_network()
 
         # Get observations and calculate rewards
         obs = self._get_observations()
@@ -298,7 +305,7 @@ class EconomyEnv(gym.Env):
         info = {}
 
         return obs, rewards, done, info
-
+    
     def _simulate_labor_market(self):
         """Simulate labor market operations"""
         # Aggregate wages per employee and update households
@@ -315,6 +322,28 @@ class EconomyEnv(gym.Env):
         k_firm_wages = self._labor_market[k_firm_mask].groupby('employer')['wage'].sum()
         self.k_firms.loc[k_firm_wages.index, 'money'] -= k_firm_wages
 
+        # Simulate production based on employees' skills
+        for idx, row in self._labor_market.iterrows():
+            employer = row['employer']
+            employee = row['employee']
+            employer_type = row['type']
+            
+            if employer_type == AgentType.C_FIRM:
+                # Get the product type of the C_Firm
+                product_type = self.c_firms.loc[employer, 'product_type']
+                # Get the employee's skill for this product type
+                skill_value = self.households.loc[employee, 'skills'][product_type]
+                # Add to the C_Firm's quantity
+                self.c_firms.loc[employer, 'quantity'] += skill_value
+            elif employer_type == AgentType.K_FIRM:
+                # Get the product type of the K_Firm
+                product_type = self.k_firms.loc[employer, 'product_type']
+                # Calculate the index in the skill vector for K products
+                skill_index = self.config.n_c_product_types + product_type
+                # Get the employee's skill for this K product
+                skill_value = self.households.loc[employee, 'skills'][skill_index]
+                # Add to the K_Firm's quantity
+                self.k_firms.loc[employer, 'quantity'] += skill_value
 
     def _simulate_banking_operations(self):
         """Simulate banking system operations"""
@@ -323,6 +352,47 @@ class EconomyEnv(gym.Env):
     def goods_consumption(self, actions): 
         """ Processes revolving around budgetting and consuming goods"""
         self.households["budget"] =  actions["household_budget"]
+
+    def _evolve_network(self):
+        """Evolve the network by adding new connections based on neighbor selection probability."""
+        prob = self.config.neighbor_selection_prob
+        total_agents = self.config.total_agents
+
+        for agent_id in range(total_agents):
+            existing_out_neighbors = set(self._network.neighbors[agent_id])
+            candidates = []
+
+            # Determine candidate selection method
+            if np.random.rand() < prob:
+                # Select neighbor-of-neighbor candidates
+                neighbors = self._network.neighbors[agent_id]
+                if len(neighbors) > 0:
+                    neighbors_of_neighbors = []
+                    for neighbor in neighbors:
+                        neighbors_of_neighbors.extend(self._network.neighbors[neighbor])
+                    # Filter valid candidates (not self, not existing neighbors)
+                    candidates = [
+                        n for n in neighbors_of_neighbors
+                        if n != agent_id and n not in existing_out_neighbors
+                    ]
+
+            # Fallback to random selection if no candidates
+            if not candidates:
+                candidates = [
+                    n for n in range(total_agents)
+                    if n != agent_id and n not in existing_out_neighbors
+                ]
+                if not candidates:
+                    continue  # Skip if no valid targets
+
+            # Randomly select target
+            target = np.random.choice(candidates)
+
+            # Add bidirectional connections with random weights
+            weight_i_j = np.random.rand(self.config.relation_dims).astype(np.float32)
+            self._network.add_connection(agent_id, target, weight_i_j)
+            weight_j_i = np.random.rand(self.config.relation_dims).astype(np.float32)
+            self._network.add_connection(target, agent_id, weight_j_i)
 
     def make_transaction(self, buyer, seller, quantity):
         """Perform a transaction between a household (buyer) and a c_firm (seller)."""
