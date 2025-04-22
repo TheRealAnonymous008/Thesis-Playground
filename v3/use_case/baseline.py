@@ -2,7 +2,7 @@ import numpy as np
 from gymnasium import spaces
 
 class BaselineEnvironment:
-    def __init__(self, n_agents, payoff_i, payoff_j, total_games = 100):
+    def __init__(self, n_agents, payoff_i, payoff_j, total_games = 1):
         # Validate payoff matrices
         assert len(payoff_i.shape) == 2 and len(payoff_j.shape) == 2, "Payoff matrices must be 2D"
         assert payoff_i.shape == payoff_j.shape, "Payoff matrices must have the same shape"
@@ -13,8 +13,8 @@ class BaselineEnvironment:
         self.num_actions = payoff_i.shape[0]
         self.total_games = total_games
         
-        # Define observation space with flattened payoff matrices
-        self.obs_size = 2 * (self.num_actions ** 2)
+        # Define observation space with flattened payoff matrices and an indexer so agents know which player they are.
+        self.obs_size = 2 * (self.num_actions ** 2) + 1
         self.action_space = spaces.Discrete(self.num_actions)
         self.observation_space = spaces.Box(
             low=-np.inf,
@@ -72,12 +72,14 @@ class BaselineEnvironment:
             # Generate observations with both payoff matrices
             obs_a = np.concatenate([
                 self.payoff_i.flatten(),
-                self.payoff_j.flatten()
+                self.payoff_j.flatten(), 
+                [-1]
             ]).astype(np.float32)
             
             obs_b = np.concatenate([
                 self.payoff_j.flatten(),
-                self.payoff_i.flatten()
+                self.payoff_i.flatten(),
+                [1]
             ]).astype(np.float32)
             
             observations[a] = obs_a

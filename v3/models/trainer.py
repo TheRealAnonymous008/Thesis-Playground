@@ -1,5 +1,6 @@
 from .losses import * 
 from .model import * 
+from tests.eval import *
 
 import gymnasium as gym 
 import torch 
@@ -46,18 +47,22 @@ class TrainingParameters:
     learning_rate: float = 1e-3
     gamma: float = 0.99  # Discount factor
     jsd_threshold: float = 0.5  # Threshold for JSD loss
-    experience_buffer_size : int = 1000
+    experience_buffer_size : int = 3         # Warning: You shouldn't make this too big because you will have many agents in the env.
+    entropy_coeff: float = 0.2
 
-def compute_returns(rewards: torch.Tensor, gamma: float) -> torch.Tensor:
-    """JIT-optimized version for long sequences."""
-    rewards = torch.Tensor(rewards)
-    returns = torch.empty_like(rewards)
-    R = torch.tensor(0.0, device=rewards.device)
-    for i in reversed(range(rewards.size(0))):
-        R = rewards[i] + gamma * R
-        returns[i] = R
-    returns = (returns - returns.mean()) / (returns.std() + 1e-8)
-    return returns
+def compute_returns(rewards: np.ndarray, gamma: float) -> torch.Tensor:
+    """Compute discounted returns for each agent and timestep."""
+    n_timesteps, n_agents = rewards.shape
+    returns = np.zeros_like(rewards, dtype=np.float32)
+    
+    # Calculate returns for each agent
+    for agent in range(n_agents):
+        R = 0.0
+        for t in reversed(range(n_timesteps)):
+            R = rewards[t, agent] + gamma * R
+            returns[t, agent] = R
+    
+    return torch.tensor(returns, dtype=torch.float32)
 
 def collect_experiences(model, env, params):
     device = model.config.device
@@ -70,7 +75,8 @@ def collect_experiences(model, env, params):
     batch_wh = []
     done = False
 
-    for _ in range(1000):  # Collect 1000 steps per batch
+    for i in range(params.experience_buffer_size):
+        
         obs_array = np.stack([obs[agent] for agent in env.agents])
         obs_tensor = torch.FloatTensor(obs_array).to(device)
         
@@ -89,7 +95,7 @@ def collect_experiences(model, env, params):
         # Environment step
         next_obs, rewards, dones, _ = env.step(actions_dict)
         rewards = np.array([rewards[agent] for agent in env.agents])
-        
+
         # Store experience
         batch_obs.append(obs_tensor)
         batch_actions.append(actions)
@@ -100,7 +106,7 @@ def collect_experiences(model, env, params):
         
         obs = next_obs
         if any(dones.values()):
-            break
+            obs = env.reset()
     
     # Convert lists to tensors
     batch_obs = torch.stack(batch_obs)
@@ -134,8 +140,7 @@ def train_model(model: Model, env: gym.Env, params: TrainingParameters):
         model.filter.requires_grad_(False)
 
         train_actor(model, env, params, actor_optim)
-        evaluation  = evaluate_policy(model, env)
-        print(f"Average Return: {evaluation}")
+        evaluate_policy(model, env)
         # train_hypernet(model, env, params, hyper_optim)
 
         # TODO: Add filter and decoder training
@@ -148,8 +153,10 @@ def train_actor(model: Model, env: gym.Env, params: TrainingParameters, optim):
         # Calculate policy gradient loss
         dists = Categorical(logits=exp['logits'])
         log_probs = dists.log_prob(exp['actions'])
+        entropy = dists.entropy().mean()  # Calculate entropy
         actor_loss = -(log_probs * exp['returns']).mean()
-        
+        actor_loss = (1 - params.entropy_coeff) * actor_loss +  params.entropy_coeff * entropy 
+
         optim.zero_grad()
         actor_loss.backward()
         optim.step()
@@ -189,78 +196,3 @@ def train_hypernet(model : Model, env : gym.Env, params : TrainingParameters, op
         total_loss.backward()
         optim.step()
     model.hypernet.requires_grad_(False)
-
-
-def evaluate_policy(model, env, num_episodes=10):
-    """Evaluate current policy and return average episode return"""
-    total_returns = []
-    device = model.config.device
-    
-    with torch.no_grad():
-        for _ in range(num_episodes):
-            obs = env.reset()
-            episode_return = 0
-            done = False
-            
-            while not done:
-                obs_array = np.stack([obs[agent] for agent in env.agents])
-                obs_tensor = torch.FloatTensor(obs_array).to(device)
-                
-                # Generate hypernet weights
-                belief = torch.ones((model.config.n_agents, 1), device=device)
-                trait = torch.ones((model.config.n_agents, 1), device=device)
-                com_vector = torch.zeros((model.config.n_agents, model.config.d_comm_state), device=device)
-                lv, wh = model.hypernet(trait, belief)
-                
-                # Get action distribution
-                Q, _, _ = model.actor_encoder(obs_tensor, belief, com_vector, *wh[:3])
-                actions = Q.argmax(dim=-1).cpu().numpy()
-                
-                # Step environment
-                next_obs, rewards, dones, _ = env.step(
-                    {agent: int(actions[i]) for i, agent in enumerate(env.agents)}
-                )
-                episode_return += sum(rewards.values())
-                done = any(dones.values())
-                obs = next_obs
-                
-            total_returns.append(episode_return)
-    
-    return np.mean(total_returns)
-
-def evaluate_policy(model, env, num_episodes=10):
-    """Evaluate current policy and return average episode return"""
-    total_returns = []
-    device = model.config.device
-    
-    with torch.no_grad():
-        for _ in range(num_episodes):
-            obs = env.reset()
-            episode_return = 0
-            done = False
-            
-            while not done:
-                obs_array = np.stack([obs[agent] for agent in env.agents])
-                obs_tensor = torch.FloatTensor(obs_array).to(device)
-                
-                # Generate hypernet weights
-                belief = torch.ones((model.config.n_agents, 1), device=device)
-                trait = torch.ones((model.config.n_agents, 1), device=device)
-                com_vector = torch.zeros((model.config.n_agents, model.config.d_comm_state), device=device)
-                lv, wh = model.hypernet(trait, belief)
-                
-                # Get action distribution
-                Q, _, _ = model.actor_encoder(obs_tensor, belief, com_vector, *wh[:3])
-                actions = Q.argmax(dim=-1).cpu().numpy()
-                
-                # Step environment
-                next_obs, rewards, dones, _ = env.step(
-                    {agent: int(actions[i]) for i, agent in enumerate(env.agents)}
-                )
-                episode_return += sum(rewards.values())
-                done = any(dones.values())
-                obs = next_obs
-                
-            total_returns.append(episode_return)
-    
-    return np.mean(total_returns)
