@@ -47,6 +47,10 @@ def collect_experiences(model : Model, env : gym.Env, params):
     batch_lv = []
     batch_values = []
     batch_wh = []
+    batch_belief = []
+    batch_trait = []
+    batch_com = []
+
     done = False
 
     for i in range(params.experience_buffer_size):
@@ -56,7 +60,7 @@ def collect_experiences(model : Model, env : gym.Env, params):
         
         # Hypernet forward
         belief_vector = torch.ones((model.config.n_agents, 1), device=device)
-        trait_vector = torch.ones((model.config.n_agents, 1), device=device)
+        trait_vector = torch.tensor(np.random.uniform(-1, 1, (model.config.n_agents, 1)), device=device, dtype = torch.float)
         com_vector = torch.zeros((model.config.n_agents, model.config.d_comm_state), device=device)
         lv, wh = model.hypernet(trait_vector, belief_vector)
         
@@ -94,6 +98,10 @@ def collect_experiences(model : Model, env : gym.Env, params):
         batch_lv.append(lv)
         batch_wh.append(wh)
         batch_values.append(values)
+
+        batch_belief.append(belief_vector)
+        batch_trait.append(trait_vector)
+        batch_com.append(com_vector)
         
         obs = next_obs
         if any(dones.values()):
@@ -107,6 +115,11 @@ def collect_experiences(model : Model, env : gym.Env, params):
     batch_lv = torch.stack(batch_lv)
     batch_values = torch.stack(batch_values)
     batch_wh = torch.stack(batch_wh)
+
+    batch_belief = torch.stack(batch_belief)
+    batch_trait = torch.stack(batch_trait)
+    batch_com = torch.stack(batch_com)
+
     # Compute returns
     returns = compute_returns(batch_rewards.cpu().numpy(), params.gamma).to(device)
     return {
@@ -118,6 +131,9 @@ def collect_experiences(model : Model, env : gym.Env, params):
         'wh': batch_wh,
         'returns': returns,
         "values" : batch_values,
+        'belief': batch_belief,
+        'traits': batch_trait, 
+        'com': batch_com,
     }
 
 
@@ -153,7 +169,6 @@ def train_actor(model: Model, env: gym.Env, params: TrainingParameters, optim):
             # Normalize advantages
             advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
-        observations = exp['observations']
         actions = exp['actions']
 
         # PPO training loop
@@ -163,18 +178,14 @@ def train_actor(model: Model, env: gym.Env, params: TrainingParameters, optim):
 
             # Recompute logits and values with current parameters
             for i in range(params.experience_buffer_size):
-                obs_i = observations[i]
-                # Regenerate hypernet outputs (frozen during actor training)
-                belief_vector = torch.ones((model.config.n_agents, 1), device=model.config.device)
-                trait_vector = torch.ones((model.config.n_agents, 1), device=model.config.device)
-                com_vector = torch.zeros((model.config.n_agents, model.config.d_comm_state), device=model.config.device)
+                obs_i = exp["observations"][i]
                 wh = exp['wh'][i]
 
                 # Recompute actor outputs
                 Q_i, _, _ = model.actor_encoder(
                     obs_i,
-                    belief_vector,
-                    com_vector,
+                    exp["belief"][i],
+                    exp["com"][i],
                     wh["policy"],
                     wh["belief"],
                     wh["encoder"]
@@ -184,8 +195,8 @@ def train_actor(model: Model, env: gym.Env, params: TrainingParameters, optim):
                 # Recompute critic outputs
                 V_i = model.actor_encoder_critic(
                     obs_i,
-                    belief_vector,
-                    com_vector,
+                    exp["belief"][i],
+                    exp["com"][i],
                     wh["critic"]
                 )
                 new_values.append(V_i.squeeze(-1))

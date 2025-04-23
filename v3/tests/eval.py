@@ -32,15 +32,15 @@ def evaluate_policy(model : Model, env, num_episodes=10):
                 obs_tensor = torch.FloatTensor(obs_array).to(device)
                 
                 # Generate hypernet weights
-                belief = torch.ones((model.config.n_agents, 1), device=device)
-                trait = torch.ones((model.config.n_agents, 1), device=device)
+                belief_vector = torch.ones((model.config.n_agents, 1), device=device)
+                trait_vector = torch.tensor(np.random.uniform(-1, 1, (model.config.n_agents, 1)), device=device, dtype = torch.float)
                 com_vector = torch.zeros((model.config.n_agents, model.config.d_comm_state), device=device)
-                lv, wh = model.hypernet(trait, belief)
+                lv, wh = model.hypernet(trait_vector, belief_vector)
                 
                 # Get action distribution
                 Q, _, _ = model.actor_encoder.forward(
                     obs_tensor, 
-                    belief, 
+                    belief_vector, 
                     com_vector, 
                     wh["policy"], 
                     wh["belief"], 
@@ -61,7 +61,9 @@ def evaluate_policy(model : Model, env, num_episodes=10):
     
     mean_returns = np.mean(total_returns)
     total_returns = np.sum(total_returns)
-    mean_action_dist = np.histogram(actions, [i for i in range(0, model.config.d_action + 1)])
+    mean_action_dist = np.unique_counts(actions)
     print(f"Average Return: {mean_returns}")
     print(f"Total returns: {total_returns}")
-    print(f"Action Dist, {mean_action_dist}")
+    print("Action Distribution")
+    for x in mean_action_dist:
+        print(x)
