@@ -9,6 +9,7 @@ from .net_maker import *
 class ActorEncoder(nn.Module):
     def __init__(self, config : ParameterSettings):
         super().__init__()
+        self.config = config
         input_dim = config.d_obs + config.d_beliefs + config.d_comm_state
         self.policy_network = make_net([input_dim, 128, 128, 128, 128, 64, config.d_het_weights])
         self.belief_update = make_net([input_dim, 128, 128, 128, 128, 64, config.d_het_weights])
@@ -31,6 +32,24 @@ class ActorEncoder(nn.Module):
         ze = apply_heterogeneous_weights(self.encoder_network(input), e_weights)
 
         return Q, h, ze
+
+class CriticEncoder(nn.Module):
+    def __init__(self, config: ParameterSettings):
+        super().__init__()
+        self.config = config
+        input_dim = config.d_obs + config.d_beliefs + config.d_comm_state
+        
+        # Value estimation core
+        self.value_network = make_net([input_dim,  128, 128, 128, 128, 64, config.d_het_weights])
+
+    def forward(self, o, h, z, crit_weights):
+        """Returns (value_estimate)"""
+        input = torch.cat([o, h, z], dim=1)
+        
+        # Value estimation (primary output)
+        V = apply_heterogeneous_weights(self.value_network(input), crit_weights)
+
+        return V
 
 class Filter(nn.Module):
     def __init__(self, config : ParameterSettings):

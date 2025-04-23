@@ -6,6 +6,8 @@ class Model:
         self.config = config
         self.hypernet = HyperNetwork(config)
         self.actor_encoder = ActorEncoder(config)
+        self.actor_encoder_critic = CriticEncoder(config)
+
         self.filter = Filter(config)
         self.decoder_update = DecoderUpdate(config)
 
@@ -16,8 +18,16 @@ class Model:
 
         self.hypernet.to(device)
         self.actor_encoder.to(device)
+        self.actor_encoder_critic.to(device)
         self.filter.to(device)
         self.decoder_update.to(device)
+
+    def requires_grad_(self, val):
+        self.hypernet.requires_grad_(val)
+        self.actor_encoder.requires_grad_(val)
+        self.actor_encoder_critic.requires_grad_(val)
+        self.filter.requires_grad_(val)
+        self.decoder_update.requires_grad_(val)
 
     def param_count(self):
         hypernet_params = sum(p.numel() for p in self.hypernet.parameters() if p.requires_grad)
@@ -29,6 +39,7 @@ class Model:
         report = f"""
         Hypernet: {hypernet_params} 
         Actor Encoder: {actor_encoder_params} 
+        Acrot Encoder Critic: {actor_encoder_params}
         Filter: {filter_params} 
         Decoder: {decoder_update_params} 
         Total: {total_params}

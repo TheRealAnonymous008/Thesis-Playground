@@ -15,8 +15,6 @@ def find_pure_equilibria(p1_payoff, p2_payoff):
     
     return pure_eq
 
-
-
 def evaluate_policy(model : Model, env, num_episodes=10):
     """Evaluate current policy and return average episode return"""
     total_returns = []
@@ -40,7 +38,14 @@ def evaluate_policy(model : Model, env, num_episodes=10):
                 lv, wh = model.hypernet(trait, belief)
                 
                 # Get action distribution
-                Q, _, _ = model.actor_encoder(obs_tensor, belief, com_vector, *wh[:3])
+                Q, _, _ = model.actor_encoder.forward(
+                    obs_tensor, 
+                    belief, 
+                    com_vector, 
+                    wh["policy"], 
+                    wh["belief"], 
+                    wh["encoder"]
+                )
                 actions = Q.argmax(dim=-1).cpu().numpy()
                 actions_array.append(actions)
                 

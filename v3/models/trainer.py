@@ -8,37 +8,6 @@ from torch.distributions import Categorical
 from dataclasses import dataclass 
 from tqdm import tqdm 
 
-def run_model(model : Model, env : gym.Env):
-    # Hypernet Steps 
-    for _ in tqdm(range(1000)): 
-        params = model.config
-        obs = env.reset()
-
-        device = params.device
-
-        # Network steps
-        belief_vector = torch.ones((params.n_agents, 1), device = device)
-        trait_vector = torch.ones((params.n_agents, 1), device= device)
-        com_vector = torch.zeros((params.n_agents, params.d_comm_state), device = device)
-        lv, wh = model.hypernet.forward(trait_vector, belief_vector)
-        
-        p_weights, b_weights, e_weights, f_weights, d_weights, u_weights  = wh 
-        
-        # Actor encoder phase 
-        for _ in range(1000): 
-            obs_array = np.stack([obs[agent] for agent in env.agents])  # Convert to ndarray
-            obs = torch.FloatTensor(obs_array).to(device)
-
-            Q, h, ze = model.actor_encoder.forward(obs, belief_vector, com_vector, p_weights, b_weights, e_weights)
-            dists = Categorical(logits=Q)
-            actions = dists.sample().cpu().numpy()
-            actions = {agent: int(actions[i]) 
-                        for i, agent in enumerate(env.agents)}
-            
-            # Environment step
-            next_obs, rewards, _, _ = env.step(actions)
-            obs = next_obs
-
 @dataclass
 class TrainingParameters:
     outer_loops: int = 5
@@ -48,7 +17,7 @@ class TrainingParameters:
     gamma: float = 0.99  # Discount factor
     jsd_threshold: float = 0.5  # Threshold for JSD loss
     experience_buffer_size : int = 3         # Warning: You shouldn't make this too big because you will have many agents in the env.
-    entropy_coeff: float = 0.2
+    entropy_coeff: float = 0
 
 def compute_returns(rewards: np.ndarray, gamma: float) -> torch.Tensor:
     """Compute discounted returns for each agent and timestep."""
@@ -64,7 +33,7 @@ def compute_returns(rewards: np.ndarray, gamma: float) -> torch.Tensor:
     
     return torch.tensor(returns, dtype=torch.float32)
 
-def collect_experiences(model, env, params):
+def collect_experiences(model : Model, env : gym.Env, params):
     device = model.config.device
     obs = env.reset()
     batch_obs = []
@@ -72,6 +41,7 @@ def collect_experiences(model, env, params):
     batch_rewards = []
     batch_logits = []
     batch_lv = []
+    batch_values = []
     batch_wh = []
     done = False
 
@@ -87,11 +57,28 @@ def collect_experiences(model, env, params):
         lv, wh = model.hypernet(trait_vector, belief_vector)
         
         # Actor encoder forward
-        Q, h, ze = model.actor_encoder(obs_tensor, belief_vector, com_vector, *wh[:3])
+        Q, _, _ = model.actor_encoder.forward(
+            obs_tensor, 
+            belief_vector, 
+            com_vector, 
+            (torch.ones_like(wh["policy"][0]), torch.ones_like(wh["policy"][1])), 
+
+            wh["belief"], 
+            wh["encoder"]
+        )
+
         dists = Categorical(logits=Q)
         actions = dists.sample().cpu().numpy()
         actions_dict = {agent: int(actions[i]) for i, agent in enumerate(env.agents)}
-        
+
+        # Critic forward
+        V = model.actor_encoder_critic.forward(
+            obs_tensor, 
+            belief_vector, 
+            com_vector,
+            wh["critic"]
+        )
+        values = V.squeeze(-1)  # Remove singleton dimension if needed
         # Environment step
         next_obs, rewards, dones, _ = env.step(actions_dict)
         rewards = np.array([rewards[agent] for agent in env.agents])
@@ -103,6 +90,7 @@ def collect_experiences(model, env, params):
         batch_logits.append(Q)
         batch_lv.append(lv)
         batch_wh.append(wh)
+        batch_values.append(values)
         
         obs = next_obs
         if any(dones.values()):
@@ -114,10 +102,9 @@ def collect_experiences(model, env, params):
     batch_rewards = torch.tensor(np.array(batch_rewards), dtype=torch.float32, device=device)
     batch_logits = torch.stack(batch_logits)
     batch_lv = torch.stack(batch_lv)
-    
+    batch_values = torch.stack(batch_values)
     # Compute returns
     returns = compute_returns(batch_rewards.cpu().numpy(), params.gamma).to(device)
-    
     return {
         'observations': batch_obs,
         'actions': batch_actions,
@@ -125,6 +112,7 @@ def collect_experiences(model, env, params):
         'logits': batch_logits,
         'lv': batch_lv,
         'returns': returns,
+        "values" : batch_values,
     }
 
 
@@ -133,11 +121,8 @@ def train_model(model: Model, env: gym.Env, params: TrainingParameters):
     actor_optim = torch.optim.Adam(model.actor_encoder.parameters(), lr=params.learning_rate)
 
     for i in range(params.outer_loops):
-        print(f"Epock {i}")
-        model.hypernet.requires_grad_(False)
-        model.actor_encoder.requires_grad_(False)
-        model.decoder_update.requires_grad_(False)
-        model.filter.requires_grad_(False)
+        print(f"Epoch {i}")
+        model.requires_grad_(False)
 
         train_actor(model, env, params, actor_optim)
         evaluate_policy(model, env)
@@ -146,21 +131,36 @@ def train_model(model: Model, env: gym.Env, params: TrainingParameters):
         # TODO: Add filter and decoder training
 
 def train_actor(model: Model, env: gym.Env, params: TrainingParameters, optim):
+    # Enable gradients for both actor and critic components
     model.actor_encoder.requires_grad_(True)
-    for _ in tqdm(range(params.actor_training_loops), desc = "Actor Loop"):
-        exp = collect_experiences(model, env, params)
+    model.actor_encoder_critic.requires_grad_(True)
+    
+    for _ in tqdm(range(params.actor_training_loops), desc="Actor-Critic Loop"):
+        exp = collect_experiences(model, env, params)  
         
-        # Calculate policy gradient loss
+        # Calculate policy gradient loss with advantages
         dists = Categorical(logits=exp['logits'])
         log_probs = dists.log_prob(exp['actions'])
-        entropy = dists.entropy().mean()  # Calculate entropy
-        actor_loss = -(log_probs * exp['returns']).mean()
-        actor_loss = (1 - params.entropy_coeff) * actor_loss +  params.entropy_coeff * entropy 
-
+        entropy = dists.entropy().mean()
+        
+        # Compute advantages using critic's value estimates
+        advantages = exp['returns'] - exp['values'].detach()
+        actor_loss_pg = -(log_probs * advantages).mean()
+        actor_loss = (1 - params.entropy_coeff) * actor_loss_pg + params.entropy_coeff * entropy
+        
+        # Calculate critic loss (value function MSE)
+        critic_loss = torch.nn.functional.mse_loss(exp["returns"], exp["values"])
+        
+        # Combine losses and update
+        total_loss = actor_loss + critic_loss
+        
         optim.zero_grad()
-        actor_loss.backward()
+        total_loss.backward()
         optim.step()
+    
+    # Disable gradients after training
     model.actor_encoder.requires_grad_(False)
+    model.actor_encoder_critic.requires_grad_(False)
 
 def train_hypernet(model : Model, env : gym.Env, params : TrainingParameters, optim):
     model.hypernet.requires_grad_(True)
@@ -174,8 +174,13 @@ def train_hypernet(model : Model, env : gym.Env, params : TrainingParameters, op
                                 device=model.config.device)
         
         lv, wh = model.hypernet(trait, belief)
-        Q, _, _ = model.actor_encoder(
-            exp['observations'], belief, com_vector, *wh[:3]
+        Q, _, _ = model.actor_encoder.forward(
+            exp['observations'], 
+            belief, 
+            com_vector, 
+            wh["policy"], 
+            wh["belief"], 
+            wh["encoder"]
         )
         
         # Calculate losses

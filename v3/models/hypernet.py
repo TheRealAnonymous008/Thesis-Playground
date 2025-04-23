@@ -29,6 +29,10 @@ class LatentDecoder(nn.Module):
         self.p_net_weights = make_net([config.d_het_latent, 128, 256, 512, config.d_het_weights * config.d_action])
         self.p_net_biases = make_net([config.d_het_latent, 128, 256, 512, config.d_action])
 
+        # Critic
+        self.crit_weights = make_net([config.d_het_latent, 128, 256, 512, config.d_het_weights])
+        self.crit_biases = make_net([config.d_het_latent, 128, 256, 512, 1])
+
         # Belief
         self.b_net_weights = make_net([config.d_het_latent, 128, 256, 512, config.d_het_weights * config.d_beliefs])
         self.b_net_biases = make_net([config.d_het_latent, 128, 256, 512, config.d_beliefs])
@@ -61,6 +65,11 @@ class LatentDecoder(nn.Module):
         whp = whp.reshape((-1, self.config.d_action, self.config.d_het_weights))
         bp = self.p_net_biases(lv)
 
+        # Critic
+        whc = self.crit_weights(lv)
+        whc = whc.reshape((-1, 1, self.config.d_het_weights))
+        bc = self.crit_biases(lv)
+
         # Belief
         whb = self.b_net_weights(lv)
         whb = whb.reshape((-1, self.config.d_beliefs, self.config.d_het_weights))
@@ -90,8 +99,15 @@ class LatentDecoder(nn.Module):
         whus = whus.reshape((-1, self.config.d_relation, self.config.d_het_weights))
         bus = self.u_bias_net_biases(lv)
 
-        return (whp, bp), (whb, bb), (whe, be), (whf, bf), (whd, bd), (whum, bum, whus, bus)
-
+        return {
+            "policy": (whp, bp),
+            "critic": (whc, bc), 
+            "belief": (whb, bb),
+            "encoder": (whe, be),
+            "filter": (whf, bf), 
+            "decoder": (whd, bd), 
+            "update": (whum, bum, whus, bus)
+        }
 
 class HyperNetwork (nn.Module):
     def __init__(self, config : ParameterSettings):
