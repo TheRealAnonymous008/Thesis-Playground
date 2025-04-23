@@ -73,7 +73,6 @@ def collect_experiences(model : Model, env : gym.Env, params):
             wh["belief"], 
             wh["encoder"]
         )
-
         dists = Categorical(logits=Q)
         actions = dists.sample().cpu().numpy()
         actions_dict = {agent: int(actions[i]) for i, agent in enumerate(env.agents)}

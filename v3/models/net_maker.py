@@ -8,17 +8,19 @@ def make_net(params : list[int]) :
 
     for i in range(0, len(params) - 1): 
         layers.append(nn.Linear(params[i], params[i + 1]))
-        if i < len(params) - 1:
-            layers.append(nn.ReLU())
+        layers.append(nn.ReLU())
+        layers.append(nn.Dropout())
 
     return nn.Sequential(*layers)
 
 def apply_heterogeneous_weights(x, weights):
     w = weights["weight"]
     b = weights["bias"]
+
     y = torch.bmm(w, torch.unsqueeze(x, 2))
     y = torch.squeeze(y, 2) + b
-
+    y = torch.sigmoid(y)
+    
     return y
 
 def expand_weights(batches, idx, weights):
