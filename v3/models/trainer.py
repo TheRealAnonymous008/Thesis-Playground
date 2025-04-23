@@ -18,6 +18,10 @@ class TrainingParameters:
     jsd_threshold: float = 0.5  # Threshold for JSD loss
     experience_buffer_size : int = 3         # Warning: You shouldn't make this too big because you will have many agents in the env.
     entropy_coeff: float = 0
+    # PPO-specific parameters
+    clip_epsilon: float = 0.2
+    ppo_epochs: int = 4
+    value_loss_coeff: float = 0.5
 
 def compute_returns(rewards: np.ndarray, gamma: float) -> torch.Tensor:
     """Compute discounted returns for each agent and timestep."""
@@ -61,8 +65,7 @@ def collect_experiences(model : Model, env : gym.Env, params):
             obs_tensor, 
             belief_vector, 
             com_vector, 
-            (torch.ones_like(wh["policy"][0]), torch.ones_like(wh["policy"][1])), 
-
+            wh["policy"],
             wh["belief"], 
             wh["encoder"]
         )
@@ -103,6 +106,7 @@ def collect_experiences(model : Model, env : gym.Env, params):
     batch_logits = torch.stack(batch_logits)
     batch_lv = torch.stack(batch_lv)
     batch_values = torch.stack(batch_values)
+    batch_wh = torch.stack(batch_wh)
     # Compute returns
     returns = compute_returns(batch_rewards.cpu().numpy(), params.gamma).to(device)
     return {
@@ -111,6 +115,7 @@ def collect_experiences(model : Model, env : gym.Env, params):
         'rewards': batch_rewards,
         'logits': batch_logits,
         'lv': batch_lv,
+        'wh': batch_wh,
         'returns': returns,
         "values" : batch_values,
     }
@@ -131,34 +136,87 @@ def train_model(model: Model, env: gym.Env, params: TrainingParameters):
         # TODO: Add filter and decoder training
 
 def train_actor(model: Model, env: gym.Env, params: TrainingParameters, optim):
-    # Enable gradients for both actor and critic components
     model.actor_encoder.requires_grad_(True)
     model.actor_encoder_critic.requires_grad_(True)
-    
-    for _ in tqdm(range(params.actor_training_loops), desc="Actor-Critic Loop"):
-        exp = collect_experiences(model, env, params)  
-        
-        # Calculate policy gradient loss with advantages
-        dists = Categorical(logits=exp['logits'])
-        log_probs = dists.log_prob(exp['actions'])
-        entropy = dists.entropy().mean()
-        
-        # Compute advantages using critic's value estimates
-        advantages = exp['returns'] - exp['values'].detach()
-        actor_loss_pg = -(log_probs * advantages).mean()
-        actor_loss = (1 - params.entropy_coeff) * actor_loss_pg + params.entropy_coeff * entropy
-        
-        # Calculate critic loss (value function MSE)
-        critic_loss = torch.nn.functional.mse_loss(exp["returns"], exp["values"])
-        
-        # Combine losses and update
-        total_loss = actor_loss + critic_loss
-        
-        optim.zero_grad()
-        total_loss.backward()
-        optim.step()
-    
-    # Disable gradients after training
+
+    for _ in tqdm(range(params.actor_training_loops), desc = "Actor Training"):
+        # Collect experiences once per outer loop
+        exp = collect_experiences(model, env, params)
+
+        # Compute old log probabilities and values
+        with torch.no_grad():
+            old_dists = Categorical(logits=exp['logits'])
+            old_log_probs = old_dists.log_prob(exp['actions'])
+            old_values = exp['values']
+            returns = exp['returns']
+            advantages = returns - old_values
+            # Normalize advantages
+            advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+
+        observations = exp['observations']
+        actions = exp['actions']
+
+        # PPO training loop
+        for _ in range(params.ppo_epochs):
+            new_logits = []
+            new_values = []
+
+            # Recompute logits and values with current parameters
+            for i in range(params.experience_buffer_size):
+                obs_i = observations[i]
+                # Regenerate hypernet outputs (frozen during actor training)
+                belief_vector = torch.ones((model.config.n_agents, 1), device=model.config.device)
+                trait_vector = torch.ones((model.config.n_agents, 1), device=model.config.device)
+                com_vector = torch.zeros((model.config.n_agents, model.config.d_comm_state), device=model.config.device)
+                wh = exp['wh'][i]
+
+                # Recompute actor outputs
+                Q_i, _, _ = model.actor_encoder(
+                    obs_i,
+                    belief_vector,
+                    com_vector,
+                    wh["policy"],
+                    wh["belief"],
+                    wh["encoder"]
+                )
+                new_logits.append(Q_i)
+
+                # Recompute critic outputs
+                V_i = model.actor_encoder_critic(
+                    obs_i,
+                    belief_vector,
+                    com_vector,
+                    wh["critic"]
+                )
+                new_values.append(V_i.squeeze(-1))
+
+            new_logits = torch.stack(new_logits)
+            new_values = torch.stack(new_values)
+
+            # Calculate policy losses
+            new_dists = Categorical(logits=new_logits)
+            new_log_probs = new_dists.log_prob(actions)
+            entropy = new_dists.entropy().mean()
+
+            # PPO core computations
+            ratios = torch.exp(new_log_probs - old_log_probs)
+            surrogate1 = ratios * advantages
+            surrogate2 = torch.clamp(ratios, 1-params.clip_epsilon, 1+params.clip_epsilon) * advantages
+            policy_loss = -torch.min(surrogate1, surrogate2).mean()
+
+            # Value loss
+            value_loss = torch.nn.functional.mse_loss(new_values, returns)
+
+            # Total loss
+            total_loss = (policy_loss +
+                        params.value_loss_coeff * value_loss -
+                        params.entropy_coeff * entropy)
+
+            # Update parameters
+            optim.zero_grad()
+            total_loss.backward()
+            optim.step()
+
     model.actor_encoder.requires_grad_(False)
     model.actor_encoder_critic.requires_grad_(False)
 

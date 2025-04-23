@@ -14,7 +14,8 @@ def make_net(params : list[int]) :
     return nn.Sequential(*layers)
 
 def apply_heterogeneous_weights(x, weights):
-    w, b = weights
+    w = weights["weight"]
+    b = weights["bias"]
     y = torch.bmm(w, torch.unsqueeze(x, 2))
     y = torch.squeeze(y, 2) + b
 

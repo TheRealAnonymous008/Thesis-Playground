@@ -28,4 +28,6 @@ Optimizations:
 # Key Observations
 * For the simplest environment, it only learns quickly if the game is symmetric and the nash equilibrium action for both agents is the same action. Otherwise, convergence is slower. 
 
+* The hypernet might actually be able to generate diversity.
+
 

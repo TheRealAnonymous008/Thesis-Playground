@@ -5,6 +5,7 @@ import numpy as np
 
 from .param_settings import ParameterSettings
 from .net_maker import make_net
+from tensordict import TensorDict
 
 class LatentEncoder(nn.Module): 
     def __init__(self, config: ParameterSettings):
@@ -60,54 +61,29 @@ class LatentDecoder(nn.Module):
         """
         Outputs the heterogeneous weights using the latent variable
         """
-        # Policy
-        whp = self.p_net_weights(lv)
-        whp = whp.reshape((-1, self.config.d_action, self.config.d_het_weights))
-        bp = self.p_net_biases(lv)
+        return TensorDict({
+            "policy": self.get_weights(lv, self.p_net_weights, self.p_net_biases, self.config.d_action),
+            "critic": self.get_weights(lv, self.crit_weights, self.crit_biases, 1), 
+            "belief": self.get_weights(lv, self.b_net_weights, self.b_net_biases, self.config.d_beliefs),
+            "encoder": self.get_weights(lv, self.e_net_weights, self.e_net_biases, self.config.d_comm_state),
+            "filter": self.get_weights(lv, self.f_net_weights, self.f_net_biases, self.config.d_message), 
+            "decoder": self.get_weights(lv, self.d_net_weights, self.d_net_biases, self.config.d_comm_state), 
+            "update_mean": self.get_weights(lv, self.u_mean_net_weights, self.u_mean_net_biases, self.config.d_relation),
+            'update_std': self.get_weights(lv, self.u_bias_net_weights, self.u_bias_net_biases, self.config.d_relation),
+        }, device = self.config.device)
+    
+    def get_weights(self, lv, weight_net, bias_net, dims):
+        w = weight_net(lv)
+        w = w.reshape((-1, dims, self.config.d_het_weights))
+        b = bias_net(lv)
 
-        # Critic
-        whc = self.crit_weights(lv)
-        whc = whc.reshape((-1, 1, self.config.d_het_weights))
-        bc = self.crit_biases(lv)
+        w = w.cpu()
+        b = b.cpu()
+        return TensorDict({
+            "weight": w, 
+            "bias": b,
+        })
 
-        # Belief
-        whb = self.b_net_weights(lv)
-        whb = whb.reshape((-1, self.config.d_beliefs, self.config.d_het_weights))
-        bb = self.b_net_biases(lv)
-
-        # Encoder
-        whe = self.e_net_weights(lv)
-        whe = whe.reshape((-1, self.config.d_comm_state, self.config.d_het_weights))
-        be = self.e_net_biases(lv)
-
-        # Filter
-        whf = self.f_net_weights(lv)
-        whf = whf.reshape((-1, self.config.d_message, self.config.d_het_weights))
-        bf = self.f_net_biases(lv)
-
-        # Decoder
-        whd = self.d_net_weights(lv)
-        whd = whd.reshape((-1, self.config.d_comm_state, self.config.d_het_weights))
-        bd = self.d_net_biases(lv)
-
-        # Update
-        whum = self.u_mean_net_weights(lv)
-        whum = whum.reshape((-1, self.config.d_relation, self.config.d_het_weights))
-        bum = self.u_mean_net_biases(lv)
-
-        whus = self.u_bias_net_weights(lv)
-        whus = whus.reshape((-1, self.config.d_relation, self.config.d_het_weights))
-        bus = self.u_bias_net_biases(lv)
-
-        return {
-            "policy": (whp, bp),
-            "critic": (whc, bc), 
-            "belief": (whb, bb),
-            "encoder": (whe, be),
-            "filter": (whf, bf), 
-            "decoder": (whd, bd), 
-            "update": (whum, bum, whus, bus)
-        }
 
 class HyperNetwork (nn.Module):
     def __init__(self, config : ParameterSettings):
