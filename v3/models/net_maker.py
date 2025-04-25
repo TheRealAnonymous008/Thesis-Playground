@@ -20,7 +20,7 @@ def apply_heterogeneous_weights(x, weights):
     y = torch.bmm(w, torch.unsqueeze(x, 2))
     y = torch.squeeze(y, 2) + b
     y = torch.sigmoid(y)
-    
+
     return y
 
 def expand_weights(batches, idx, weights):

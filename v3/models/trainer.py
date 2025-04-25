@@ -1,5 +1,6 @@
 from .losses import * 
 from .model import * 
+from .base_env import *
 from tests.eval import *
 
 import gymnasium as gym 
@@ -17,7 +18,7 @@ class TrainingParameters:
     gamma: float = 0.99  # Discount factor
     jsd_threshold: float = 0.5  # Threshold for JSD loss
     experience_buffer_size : int = 3         # Warning: You shouldn't make this too big because you will have many agents in the env.
-    entropy_coeff: float = 0
+    entropy_coeff: float = 0.1
     # PPO-specific parameters
     clip_epsilon: float = 0.2
     ppo_epochs: int = 4
@@ -37,7 +38,7 @@ def compute_returns(rewards: np.ndarray, gamma: float) -> torch.Tensor:
     
     return torch.tensor(returns, dtype=torch.float32)
 
-def collect_experiences(model : Model, env : gym.Env, params):
+def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameters):
     device = model.config.device
     obs = env.reset()
     batch_obs = []
@@ -55,13 +56,14 @@ def collect_experiences(model : Model, env : gym.Env, params):
 
     for i in range(params.experience_buffer_size):
         
-        obs_array = np.stack([obs[agent] for agent in env.agents])
+        obs_array = np.stack([obs[agent] for agent in env.get_agents()])
         obs_tensor = torch.FloatTensor(obs_array).to(device)
         
         # Hypernet forward
-        belief_vector = torch.ones((model.config.n_agents, 1), device=device)
-        trait_vector = torch.tensor(np.random.uniform(-1, 1, (model.config.n_agents, 1)), device=device, dtype = torch.float)
+        belief_vector = torch.zeros_like((model.config.n_agents, 1), device=device)
+        trait_vector = torch.tensor(env.get_traits(), device = device)
         com_vector = torch.zeros((model.config.n_agents, model.config.d_comm_state), device=device)
+
         lv, wh = model.hypernet(trait_vector, belief_vector)
         
         # Actor encoder forward
@@ -75,7 +77,7 @@ def collect_experiences(model : Model, env : gym.Env, params):
         )
         dists = Categorical(logits=Q)
         actions = dists.sample().cpu().numpy()
-        actions_dict = {agent: int(actions[i]) for i, agent in enumerate(env.agents)}
+        actions_dict = {agent: int(actions[i]) for i, agent in enumerate(env.get_agents())}
 
         # Critic forward
         V = model.actor_encoder_critic.forward(
@@ -87,7 +89,7 @@ def collect_experiences(model : Model, env : gym.Env, params):
         values = V.squeeze(-1)  # Remove singleton dimension if needed
         # Environment step
         next_obs, rewards, dones, _ = env.step(actions_dict)
-        rewards = np.array([rewards[agent] for agent in env.agents])
+        rewards = np.array([rewards[agent] for agent in env.get_agents()])
 
         # Store experience
         batch_obs.append(obs_tensor)
@@ -136,7 +138,7 @@ def collect_experiences(model : Model, env : gym.Env, params):
     }
 
 
-def train_model(model: Model, env: gym.Env, params: TrainingParameters):
+def train_model(model: Model, env: BaseEnv, params: TrainingParameters):
     hyper_optim = torch.optim.Adam(model.hypernet.parameters(), lr=params.learning_rate)
     actor_optim = torch.optim.Adam(model.actor_encoder.parameters(), lr=params.learning_rate)
 
@@ -146,11 +148,11 @@ def train_model(model: Model, env: gym.Env, params: TrainingParameters):
 
         train_actor(model, env, params, actor_optim)
         evaluate_policy(model, env)
-        # train_hypernet(model, env, params, hyper_optim)
+        train_hypernet(model, env, params, hyper_optim)
 
         # TODO: Add filter and decoder training
 
-def train_actor(model: Model, env: gym.Env, params: TrainingParameters, optim):
+def train_actor(model: Model, env: BaseEnv, params: TrainingParameters, optim):
     model.actor_encoder.requires_grad_(True)
     model.actor_encoder_critic.requires_grad_(True)
 
@@ -230,22 +232,15 @@ def train_actor(model: Model, env: gym.Env, params: TrainingParameters, optim):
     model.actor_encoder.requires_grad_(False)
     model.actor_encoder_critic.requires_grad_(False)
 
-def train_hypernet(model : Model, env : gym.Env, params : TrainingParameters, optim):
+def train_hypernet(model : Model, env : BaseEnv, params : TrainingParameters, optim):
     model.hypernet.requires_grad_(True)
     for _ in tqdm(range(params.hypernet_training_loops), desc = "Hypernet Loop"):
         exp = collect_experiences(model, env, params)
-        
-        # Recompute logits with current hypernet
-        belief = torch.ones((model.config.n_agents, 1), device=model.config.device)
-        trait = torch.ones((model.config.n_agents, 1), device=model.config.device)
-        com_vector = torch.zeros((model.config.n_agents, model.config.d_comm_state), 
-                                device=model.config.device)
-        
-        lv, wh = model.hypernet(trait, belief)
+        lv, wh = model.hypernet.forward(exp["traits"], exp["belief"])
         Q, _, _ = model.actor_encoder.forward(
             exp['observations'], 
-            belief, 
-            com_vector, 
+            exp["belief"], 
+            exp["com"], 
             wh["policy"], 
             wh["belief"], 
             wh["encoder"]
