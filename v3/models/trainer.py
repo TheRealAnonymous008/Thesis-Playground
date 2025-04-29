@@ -24,6 +24,13 @@ class TrainingParameters:
     ppo_epochs: int = 4
     value_loss_coeff: float = 0.5
 
+    # Hypernet specific parameters
+    hypernet_learning_weight : float = 1e-3
+    hypernet_entropy_weight : float = 0.1
+    hypernet_performance_weight : float = 1.0
+    hypernet_jsd_weight : float = 0.2
+    hypernet_num_pair_samples : int = 500
+
 def compute_returns(rewards: np.ndarray, gamma: float) -> torch.Tensor:
     """Compute discounted returns for each agent and timestep."""
     n_timesteps, n_agents = rewards.shape
@@ -60,7 +67,7 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
         obs_tensor = torch.FloatTensor(obs_array).to(device)
         
         # Hypernet forward
-        belief_vector = torch.zeros_like((model.config.n_agents, 1), device=device)
+        belief_vector = torch.zeros((model.config.n_agents, 1), device=device)
         trait_vector = torch.tensor(env.get_traits(), device = device)
         com_vector = torch.zeros((model.config.n_agents, model.config.d_comm_state), device=device)
 
@@ -146,11 +153,30 @@ def train_model(model: Model, env: BaseEnv, params: TrainingParameters):
         print(f"Epoch {i}")
         model.requires_grad_(False)
 
+        train_hypernet(model, env, params, hyper_optim)
+        evaluate_policy(model, env)
         train_actor(model, env, params, actor_optim)
         evaluate_policy(model, env)
-        train_hypernet(model, env, params, hyper_optim)
 
         # TODO: Add filter and decoder training
+
+
+def compute_core_ppo_losses(new_logits: torch.Tensor, new_values: torch.Tensor, 
+                            actions: torch.Tensor, advantages: torch.Tensor,
+                            returns: torch.Tensor, old_log_probs: torch.Tensor,
+                            params: TrainingParameters) -> tuple:
+    """Compute PPO policy loss, value loss, and entropy."""
+    new_dists = Categorical(logits=new_logits)
+    new_log_probs = new_dists.log_prob(actions)
+    entropy = new_dists.entropy().mean()
+
+    ratios = torch.exp(new_log_probs - old_log_probs)
+    surrogate1 = ratios * advantages
+    surrogate2 = torch.clamp(ratios, 1 - params.clip_epsilon, 1 + params.clip_epsilon) * advantages
+    policy_loss = -torch.min(surrogate1, surrogate2).mean()
+    value_loss = torch.nn.functional.mse_loss(new_values, returns)
+    
+    return policy_loss, value_loss, entropy
 
 def train_actor(model: Model, env: BaseEnv, params: TrainingParameters, optim):
     model.actor_encoder.requires_grad_(True)
@@ -207,18 +233,13 @@ def train_actor(model: Model, env: BaseEnv, params: TrainingParameters, optim):
 
             # Calculate policy losses
             new_dists = Categorical(logits=new_logits)
-            new_log_probs = new_dists.log_prob(actions)
             entropy = new_dists.entropy().mean()
 
-            # PPO core computations
-            ratios = torch.exp(new_log_probs - old_log_probs)
-            surrogate1 = ratios * advantages
-            surrogate2 = torch.clamp(ratios, 1-params.clip_epsilon, 1+params.clip_epsilon) * advantages
-            policy_loss = -torch.min(surrogate1, surrogate2).mean()
-
-            # Value loss
-            value_loss = torch.nn.functional.mse_loss(new_values, returns)
-
+            policy_loss, value_loss, entropy = compute_core_ppo_losses(
+                new_logits, new_values, exp['actions'], advantages,
+                exp['returns'], old_log_probs, params
+            )
+            
             # Total loss
             total_loss = (policy_loss +
                         params.value_loss_coeff * value_loss -
@@ -232,35 +253,91 @@ def train_actor(model: Model, env: BaseEnv, params: TrainingParameters, optim):
     model.actor_encoder.requires_grad_(False)
     model.actor_encoder_critic.requires_grad_(False)
 
-def train_hypernet(model : Model, env : BaseEnv, params : TrainingParameters, optim):
+def train_hypernet(model: Model, env: BaseEnv, params: TrainingParameters, optim):
     model.hypernet.requires_grad_(True)
-    for _ in tqdm(range(params.hypernet_training_loops), desc = "Hypernet Loop"):
-        exp = collect_experiences(model, env, params)
-        lv, wh = model.hypernet.forward(exp["traits"], exp["belief"])
-        Q, _, _ = model.actor_encoder.forward(
-            exp['observations'], 
-            exp["belief"], 
-            exp["com"], 
-            wh["policy"], 
-            wh["belief"], 
-            wh["encoder"]
-        )
-        
-        # Calculate losses
-        dists = Categorical(logits=Q)
-        log_probs = dists.log_prob(exp['actions'])
-        rl_loss = -(log_probs * exp['returns']).mean()
-        entropy_loss_val = entropy_loss(lv).mean()
-        
-        # JSD between first and second half of episode
-        p = Q[:len(Q)//2]
-        q = Q[len(Q)//2:]
-        s = torch.norm(exp['observations'][:len(Q)//2] - exp['observations'][len(Q)//2:], dim=-1)
-        jsd_loss = threshed_jsd_loss(p, q, s, params.jsd_threshold)
-        
-        total_loss = rl_loss + entropy_loss_val + jsd_loss
-        
-        optim.zero_grad()
-        total_loss.backward()
-        optim.step()
+    
+    exp = collect_experiences(model, env, params)
+    
+    with torch.no_grad():
+        old_dists = Categorical(logits=exp['logits'])
+        old_log_probs = old_dists.log_prob(exp['actions'])
+        old_values = exp['values']
+        returns = exp['returns']
+        advantages = returns - old_values
+        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+    
+    actions = exp['actions']
+    observations = exp['observations']
+    beliefs = exp['belief']
+    traits = exp['traits']
+    coms = exp['com']
+    
+    for _ in tqdm(range(params.hypernet_training_loops), desc="Hypernet Loop"):
+        for _ in range(params.ppo_epochs):
+            new_logits = []
+            new_values = []
+            lv_list = []
+            
+            for i in range(params.experience_buffer_size):
+                traits_i = traits[i]
+                belief_i = beliefs[i]
+                lv_i, wh_i = model.hypernet(traits_i, belief_i)
+                lv_list.append(lv_i)
+                Q_i, _, _ = model.actor_encoder(
+                    observations[i],
+                    belief_i,
+                    coms[i],
+                    wh_i["policy"],
+                    wh_i["belief"],
+                    wh_i["encoder"]
+                )
+                new_logits.append(Q_i)
+                V_i = model.actor_encoder_critic(
+                    observations[i],
+                    belief_i,
+                    coms[i],
+                    wh_i["critic"]
+                ).squeeze(-1)
+                new_values.append(V_i)
+            
+            new_logits = torch.stack(new_logits)
+            new_values = torch.stack(new_values)
+            lv_all = torch.stack(lv_list)
+            
+            policy_loss, value_loss, entropy = compute_core_ppo_losses(
+                new_logits, new_values, exp['actions'], advantages,
+                exp['returns'], old_log_probs, params
+            )
+            
+            performance_loss = policy_loss + params.value_loss_coeff * value_loss - params.entropy_coeff * entropy
+            entropy_loss_val = entropy_loss(lv_all).mean()
+            
+            # JSD loss computation with sampled pairs
+            # Sample pairs of indices
+            num_pairs = min(env.n_agents **2, params.hypernet_num_pair_samples)
+            indices = torch.randint(0, params.experience_buffer_size, (num_pairs, 2), device=lv_all.device)
+            
+            # Get latent variables for the sampled pairs
+            lv_pairs = lv_all[indices]  # Shape (num_pairs, 2, latent_dim)
+            
+            # Compute cosine similarity between each pair's latent variables
+            similarities = torch.nn.functional.cosine_similarity(lv_pairs[:, 0], lv_pairs[:, 1], dim=-1)
+            
+            # Get corresponding logits for each pair
+            logits_p = new_logits[indices[:, 0]]
+            logits_q = new_logits[indices[:, 1]]
+            
+            # Compute thresholded JSD loss
+            jsd_loss = threshed_jsd_loss(logits_p, logits_q, similarities, params.jsd_threshold)
+            
+            total_loss = params.hypernet_learning_weight * (
+                params.hypernet_performance_weight * performance_loss +
+                params.hypernet_entropy_weight * entropy_loss_val +
+                params.hypernet_jsd_weight * jsd_loss
+            )
+            
+            optim.zero_grad()
+            total_loss.backward()
+            optim.step()
+    
     model.hypernet.requires_grad_(False)
