@@ -97,3 +97,99 @@ class BaselineEnvironment(BaseEnv):
     
     def get_traits(self):
         return self.traits
+
+
+class BaselinePartialObservableEnvironment(BaseEnv):
+    def __init__(self, n_agents, payoff_i, payoff_j, total_games=1):
+        super().__init__(n_agents)
+
+        # Validate payoff matrices
+        assert len(payoff_i.shape) == 2 and len(payoff_j.shape) == 2, "Payoff matrices must be 2D"
+        assert payoff_i.shape == payoff_j.shape, "Payoff matrices must have the same shape"
+        
+        self.payoff_i = payoff_i
+        self.payoff_j = payoff_j
+        self.num_actions = payoff_i.shape[0]
+        self.total_games = total_games
+        
+        # Define observation space: trait (1) + action counts (num_actions) + accumulated reward (1)
+        self.obs_size = 1 + self.num_actions + 1
+        self.action_space = spaces.Discrete(self.num_actions)
+        self.observation_space = spaces.Box(
+            low=-np.inf,
+            high=np.inf,
+            shape=(self.obs_size,),
+            dtype=np.float32
+        )
+        
+        self.agents = [i for i in range(n_agents)]
+        self.action_counts = np.zeros((n_agents, self.num_actions), dtype=int)
+        self.accumulated_rewards = np.zeros(n_agents, dtype=np.float32)
+        self.total_steps = 0
+
+    def reset(self):
+        """Resets the environment, initializing traits and clearing history."""
+        self.action_counts.fill(0)
+        self.accumulated_rewards.fill(0.0)
+        self.total_steps = 0
+        
+        # Assign heterogeneous traits (e.g., alternating -1 and 1)
+        self.traits = np.array([-1 if i % 2 == 0 else 1 for i in range(self.n_agents)], dtype=np.float32)
+        
+        # Initialize observations with trait, action counts, and accumulated reward
+        observations = {}
+        for agent in self.agents:
+            obs = np.concatenate([
+                [self.traits[agent]],
+                self.action_counts[agent].astype(np.float32),
+                [self.accumulated_rewards[agent]]
+            ])
+            observations[agent] = obs.astype(np.float32)
+        return observations
+
+    def step(self, actions):
+        # Validate actions
+        for agent, action in actions.items():
+            assert 0 <= action < self.num_actions, f"Invalid action {action} for {agent}"
+        
+        rewards = {agent: 0.0 for agent in self.agents}
+
+        # Process pairwise interactions
+        for i in range(0, self.n_agents, 2):
+            if i+1 >= self.n_agents:
+                break
+            a, b = i, i+1
+            action_a = actions[a]
+            action_b = actions[b]
+            
+            # Update action counts
+            self.action_counts[a][action_a] += 1
+            self.action_counts[b][action_b] += 1
+
+            # Calculate rewards scaled by traits
+            reward_a = self.payoff_i[action_a, action_b] * self.traits[a]
+            reward_b = self.payoff_j[action_a, action_b] * self.traits[b]
+            rewards[a] = reward_a
+            rewards[b] = reward_b
+        
+        # Update accumulated rewards and prepare observations
+        observations = {}
+        for agent in self.agents:
+            self.accumulated_rewards[agent] += rewards[agent]
+            obs = np.concatenate([
+                [self.traits[agent]],
+                self.action_counts[agent].astype(np.float32),
+                [self.accumulated_rewards[agent]]
+            ])
+            observations[agent] = obs.astype(np.float32)
+
+        self.total_steps += 1
+        done = self.total_steps >= self.total_games
+        
+        return observations, rewards, {agent: done for agent in self.agents}, {}
+
+    def get_agents(self):
+        return self.agents
+    
+    def get_traits(self):
+        return self.traits

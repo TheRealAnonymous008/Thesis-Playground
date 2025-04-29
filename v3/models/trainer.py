@@ -20,6 +20,13 @@ class TrainingParameters:
     experience_buffer_size : int = 3         # Warning: You shouldn't make this too big because you will have many agents in the env.
     entropy_coeff: float = 0.1
 
+    # Exploration specific
+    entropy_target: float = 0.5  # Target entropy for exploration
+    noise_scale: float = 0.1     # Scale for parameter noise
+    epsilon_start: float = 0.1   # Starting probability for epsilon-greedy
+    epsilon_end: float = 0.01    # Ending probability for epsilon-greedy
+    epsilon_decay: float = 0.99  # Decay rate for epsilon
+
     # PPO-specific parameters
     clip_epsilon: float = 0.2
     ppo_epochs: int = 4
@@ -46,6 +53,20 @@ def compute_returns(rewards: np.ndarray, gamma: float) -> torch.Tensor:
             returns[t, agent] = R
     
     return torch.tensor(returns, dtype=torch.float32)
+
+def add_exploration_noise(logits: torch.Tensor, params: TrainingParameters, epoch : int = 0):
+    """Add multiple exploration strategies to policy outputs."""
+    epsilon = max(params.epsilon_end, params.epsilon_start * (params.epsilon_decay ** epoch))
+    if epsilon is None:
+        epsilon = params.epsilon_start
+    
+    # Epsilon-greedy exploration
+    if np.random.rand() < epsilon:
+        return torch.tensor([np.log(1.0 / logits.shape[-1])] * logits.shape[-1], device = logits.device)
+    
+    # Parameter noise
+    noise = torch.normal(0, params.noise_scale, size=logits.shape, device = logits.device)
+    return logits + noise 
 
 def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameters):
     device = model.config.device
@@ -184,13 +205,13 @@ def train_actor(model: Model, env: BaseEnv, params: TrainingParameters, optim):
     model.actor_encoder.requires_grad_(True)
     model.actor_encoder_critic.requires_grad_(True)
 
-    for _ in tqdm(range(params.actor_training_loops), desc = "Actor Training"):
+    for epoch in tqdm(range(params.actor_training_loops), desc = "Actor Training"):
         # Collect experiences once per outer loop
         exp = collect_experiences(model, env, params)
-
+        logits = add_exploration_noise(exp["logits"], params, epoch)
         # Compute old log probabilities and values
         with torch.no_grad():
-            old_dists = Categorical(logits=exp['logits'])
+            old_dists = Categorical(logits=logits)
             old_log_probs = old_dists.log_prob(exp['actions'])
             old_values = exp['values']
             returns = exp['returns']
@@ -249,8 +270,13 @@ def train_actor(model: Model, env: BaseEnv, params: TrainingParameters, optim):
 
             # Update parameters
             optim.zero_grad()
+            
+            # Grad Clipping
+            torch.nn.utils.clip_grad_norm_(model.actor_encoder.parameters(), max_norm=0.5)
+            torch.nn.utils.clip_grad_norm_(model.actor_encoder_critic.parameters(), max_norm=0.5)
             total_loss.backward()
             optim.step()
+    
 
     model.actor_encoder.requires_grad_(False)
     model.actor_encoder_critic.requires_grad_(False)
@@ -261,7 +287,8 @@ def train_hypernet(model: Model, env: BaseEnv, params: TrainingParameters, optim
     exp = collect_experiences(model, env, params)
     
     with torch.no_grad():
-        old_dists = Categorical(logits=exp['logits'])
+        logits = add_exploration_noise(exp['logits'], params)
+        old_dists = Categorical(logits=logits)
         old_log_probs = old_dists.log_prob(exp['actions'])
         old_values = exp['values']
         returns = exp['returns']
@@ -339,6 +366,9 @@ def train_hypernet(model: Model, env: BaseEnv, params: TrainingParameters, optim
             )
             
             optim.zero_grad()
+
+            # Grad Clipping
+            torch.nn.utils.clip_grad_norm_(model.hypernet.parameters(), max_norm=0.5)
             total_loss.backward()
             optim.step()
     
