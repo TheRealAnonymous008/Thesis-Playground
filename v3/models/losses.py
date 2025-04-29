@@ -11,7 +11,8 @@ def entropy_loss(x):
     d = x.size(-1)
     constant_term = d * np.log(2 * np.pi) + 1
     entropy = 0.5 * (sum_log_x + constant_term)
-    return entropy
+
+    return entropy.mean()
 
 def threshed_jsd_loss(p, q, s, thresh):
     """

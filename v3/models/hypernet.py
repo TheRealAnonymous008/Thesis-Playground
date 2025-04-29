@@ -11,7 +11,7 @@ class LatentEncoder(nn.Module):
     def __init__(self, config: ParameterSettings):
         super().__init__()
         input_dim = config.d_traits + config.d_beliefs
-        self.net = make_net([input_dim, 128, 64, 2 * config.d_het_latent])
+        self.net = make_net([input_dim, 128, 256, 256, 256, 128, 2 * config.d_het_latent])
 
     def forward(self, inputs):
         """
@@ -102,6 +102,7 @@ class HyperNetwork (nn.Module):
         Outputs: 
         lv - latent variable. Dimensions (n_agents, d_het_latents)
         wh - heterogeneous weights Dimensions (n_agents, d_het_weights)
+        mu, sigma - the parameters of the latent distribution (n_agents, 2 * d_het_latents)
         """
         inputs = torch.cat([c, h], dim=1)  # Concatenate along feature dimension
         mu, sigma = self.latent_encoder(inputs)
@@ -114,7 +115,7 @@ class HyperNetwork (nn.Module):
         weights  = self.latent_decoder(lv)
 
         # Return the latent variable and the heterogeneous weights
-        return lv, weights
+        return lv, weights, mu, sigma
 
 
 

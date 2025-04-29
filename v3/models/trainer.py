@@ -18,7 +18,9 @@ class TrainingParameters:
 
     gamma: float = 0.99  # Discount factor
     experience_buffer_size : int = 3         # Warning: You shouldn't make this too big because you will have many agents in the env.
+    actor_performance_weight : int = 1.0
     entropy_coeff: float = 0.1
+    grad_clip_norm = 0.5
 
     # Exploration specific
     entropy_target: float = 0.5  # Target entropy for exploration
@@ -54,19 +56,28 @@ def compute_returns(rewards: np.ndarray, gamma: float) -> torch.Tensor:
     
     return torch.tensor(returns, dtype=torch.float32)
 
-def add_exploration_noise(logits: torch.Tensor, params: TrainingParameters, epoch : int = 0):
-    """Add multiple exploration strategies to policy outputs."""
+def add_exploration_noise(logits: torch.Tensor, params: TrainingParameters, epoch: int = 0):
+    """Add independent exploration noise per agent and timestep"""
+    device = logits.device
+    buffer_size, n_agents, n_actions = logits.shape
     epsilon = max(params.epsilon_end, params.epsilon_start * (params.epsilon_decay ** epoch))
-    if epsilon is None:
-        epsilon = params.epsilon_start
     
-    # Epsilon-greedy exploration
-    if np.random.rand() < epsilon:
-        return torch.tensor([np.log(1.0 / logits.shape[-1])] * logits.shape[-1], device = logits.device)
+    # Create exploration mask [buffer, agents]
+    exploration_mask = torch.rand((buffer_size, n_agents), device=device) < epsilon
     
-    # Parameter noise
-    noise = torch.normal(0, params.noise_scale, size=logits.shape, device = logits.device)
-    return logits + noise 
+    # Create uniform logits for entire batch [buffer, agents, actions]
+    uniform_logits = torch.log(torch.ones_like(logits) / n_actions)
+    
+    # Apply epsilon-greedy mask
+    modified_logits = torch.where(
+        exploration_mask.unsqueeze(-1),  # Expand to [buffer, agents, 1]
+        uniform_logits,
+        logits
+    )
+    
+    # Add independent Gaussian noise per agent-timestep pair
+    noise = torch.randn_like(modified_logits) * params.noise_scale
+    return modified_logits + noise
 
 def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameters):
     device = model.config.device
@@ -81,6 +92,8 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
     batch_belief = []
     batch_trait = []
     batch_com = []
+    batch_ld_means = []
+    batch_ld_std = []
 
     done = False
 
@@ -94,7 +107,7 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
         trait_vector = torch.tensor(env.get_traits(), device = device)
         com_vector = torch.zeros((model.config.n_agents, model.config.d_comm_state), device=device)
 
-        lv, wh = model.hypernet(trait_vector, belief_vector)
+        lv, wh, mean, std = model.hypernet.forward(trait_vector, belief_vector)
         
         # Actor encoder forward
         Q, _, _ = model.actor_encoder.forward(
@@ -133,6 +146,9 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
         batch_belief.append(belief_vector)
         batch_trait.append(trait_vector)
         batch_com.append(com_vector)
+
+        batch_ld_means.append(mean)
+        batch_ld_std.append(std)
         
         obs = next_obs
         if any(dones.values()):
@@ -151,6 +167,9 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
     batch_trait = torch.stack(batch_trait)
     batch_com = torch.stack(batch_com)
 
+    batch_means = torch.stack(batch_ld_means)
+    batch_std = torch.stack(batch_ld_std)
+
     # Compute returns
     returns = compute_returns(batch_rewards.cpu().numpy(), params.gamma).to(device)
     return {
@@ -165,6 +184,8 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
         'belief': batch_belief,
         'traits': batch_trait, 
         'com': batch_com,
+        "means": batch_means,
+        "std": batch_std,
     }
 
 
@@ -188,22 +209,37 @@ def compute_core_ppo_losses(new_logits: torch.Tensor, new_values: torch.Tensor,
                             actions: torch.Tensor, advantages: torch.Tensor,
                             returns: torch.Tensor, old_log_probs: torch.Tensor,
                             params: TrainingParameters) -> tuple:
-    """Compute PPO policy loss, value loss, and entropy."""
+    """Compute PPO policy loss, value loss, and entropy with per-agent calculations."""
     new_dists = Categorical(logits=new_logits)
     new_log_probs = new_dists.log_prob(actions)
-    entropy = new_dists.entropy().mean()
-
-    ratios = torch.exp(new_log_probs - old_log_probs)
-    surrogate1 = ratios * advantages
-    surrogate2 = torch.clamp(ratios, 1 - params.clip_epsilon, 1 + params.clip_epsilon) * advantages
-    policy_loss = -torch.min(surrogate1, surrogate2).mean()
-    value_loss = torch.nn.functional.mse_loss(new_values, returns)
     
-    return policy_loss, value_loss, entropy
+    # Per-agent entropy (shape [timesteps, agents])
+    entropy = new_dists.entropy()
+    
+    # Independent policy optimization per agent
+    ratios = torch.exp(new_log_probs - old_log_probs)
+    surr1 = ratios * advantages
+    surr2 = torch.clamp(ratios, 1-params.clip_epsilon, 1+params.clip_epsilon) * advantages
+    
+
+    # Agent-wise policy loss (mean over time first)
+    policy_loss = -torch.min(surr1, surr2).mean(dim=0)  # [agents]
+
+    # Agent-wise value loss
+    value_loss = torch.nn.functional.mse_loss(new_values, returns, reduction='none').mean(dim=0)  # [agents]
+    
+    # Apply per-agent entropy bonus
+    entropy_loss = entropy.mean(dim=0)  # [agents]
+    
+    # Return unaggregated agent-wise losses
+    return policy_loss, value_loss, entropy_loss
 
 def train_actor(model: Model, env: BaseEnv, params: TrainingParameters, optim):
     model.actor_encoder.requires_grad_(True)
     model.actor_encoder_critic.requires_grad_(True)
+
+    avg_entropy_loss = 0
+    avg_policy_loss = 0
 
     for epoch in tqdm(range(params.actor_training_loops), desc = "Actor Training"):
         # Collect experiences once per outer loop
@@ -216,8 +252,9 @@ def train_actor(model: Model, env: BaseEnv, params: TrainingParameters, optim):
             old_values = exp['values']
             returns = exp['returns']
             advantages = returns - old_values
-            # Normalize advantages
-            advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+            advantages_mean = advantages.mean(dim=0, keepdim=True)
+            advantages_std = advantages.std(dim=0, keepdim=True) + 1e-8
+            advantages = (advantages - advantages_mean) / advantages_std
 
         actions = exp['actions']
 
@@ -262,114 +299,145 @@ def train_actor(model: Model, env: BaseEnv, params: TrainingParameters, optim):
                 new_logits, new_values, exp['actions'], advantages,
                 exp['returns'], old_log_probs, params
             )
-            
-            # Total loss
-            total_loss = (policy_loss +
-                        params.value_loss_coeff * value_loss -
-                        params.entropy_coeff * entropy)
+
+            num_agents = policy_loss.shape[0]
+            agent_weights = torch.softmax(torch.randn(num_agents, device = model.device), dim=-1)  # Differentiate agents
+            total_loss = (
+                (agent_weights * (params.actor_performance_weight * policy_loss - params.entropy_coeff * entropy)).sum() +
+                params.value_loss_coeff * (agent_weights * value_loss).sum()
+            )
+
+            avg_policy_loss += policy_loss.mean()
+            avg_entropy_loss += entropy.mean()
 
             # Update parameters
             optim.zero_grad()
             
             # Grad Clipping
-            torch.nn.utils.clip_grad_norm_(model.actor_encoder.parameters(), max_norm=0.5)
-            torch.nn.utils.clip_grad_norm_(model.actor_encoder_critic.parameters(), max_norm=0.5)
+            torch.nn.utils.clip_grad_norm_(model.actor_encoder.parameters(), max_norm=params.grad_clip_norm)
+            torch.nn.utils.clip_grad_norm_(model.actor_encoder_critic.parameters(), max_norm=params.grad_clip_norm)
             total_loss.backward()
             optim.step()
     
+    print(f"""
+    Average Policy Loss: {avg_policy_loss / params.actor_training_loops}
+    Average Entropy Loss: {avg_entropy_loss / params.actor_training_loops} 
+    """)
 
     model.actor_encoder.requires_grad_(False)
     model.actor_encoder_critic.requires_grad_(False)
 
+
 def train_hypernet(model: Model, env: BaseEnv, params: TrainingParameters, optim):
     model.hypernet.requires_grad_(True)
     
-    exp = collect_experiences(model, env, params)
-    
-    with torch.no_grad():
-        logits = add_exploration_noise(exp['logits'], params)
-        old_dists = Categorical(logits=logits)
-        old_log_probs = old_dists.log_prob(exp['actions'])
-        old_values = exp['values']
-        returns = exp['returns']
-        advantages = returns - old_values
-        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
-    
-    actions = exp['actions']
-    observations = exp['observations']
-    beliefs = exp['belief']
-    traits = exp['traits']
-    coms = exp['com']
-    
-    for _ in tqdm(range(params.hypernet_training_loops), desc="Hypernet Loop"):
-        for _ in range(params.ppo_epochs):
-            new_logits = []
-            new_values = []
-            lv_list = []
-            
-            for i in range(params.experience_buffer_size):
-                traits_i = traits[i]
-                belief_i = beliefs[i]
-                lv_i, wh_i = model.hypernet(traits_i, belief_i)
-                lv_list.append(lv_i)
-                Q_i, _, _ = model.actor_encoder(
-                    observations[i],
-                    belief_i,
-                    coms[i],
-                    wh_i["policy"],
-                    wh_i["belief"],
-                    wh_i["encoder"]
-                )
-                new_logits.append(Q_i)
-                V_i = model.actor_encoder_critic(
-                    observations[i],
-                    belief_i,
-                    coms[i],
-                    wh_i["critic"]
-                ).squeeze(-1)
-                new_values.append(V_i)
-            
-            new_logits = torch.stack(new_logits)
-            new_values = torch.stack(new_values)
-            lv_all = torch.stack(lv_list)
-            
-            policy_loss, value_loss, entropy = compute_core_ppo_losses(
-                new_logits, new_values, exp['actions'], advantages,
-                exp['returns'], old_log_probs, params
-            )
-            
-            performance_loss = policy_loss + params.value_loss_coeff * value_loss - params.entropy_coeff * entropy
-            entropy_loss_val = entropy_loss(lv_all).mean()
-            
-            # JSD loss computation with sampled pairs
-            # Sample pairs of indices
-            num_pairs = min(env.n_agents **2, params.hypernet_num_pair_samples)
-            indices = torch.randint(0, params.experience_buffer_size, (num_pairs, 2), device=lv_all.device)
-            
-            # Get latent variables for the sampled pairs
-            lv_pairs = lv_all[indices]  # Shape (num_pairs, 2, latent_dim)
-            
-            # Compute cosine similarity between each pair's latent variables
-            similarities = torch.nn.functional.cosine_similarity(lv_pairs[:, 0], lv_pairs[:, 1], dim=-1)
-            
-            # Get corresponding logits for each pair
-            logits_p = new_logits[indices[:, 0]]
-            logits_q = new_logits[indices[:, 1]]
-            
-            # Compute thresholded JSD loss
-            jsd_loss = threshed_jsd_loss(logits_p, logits_q, similarities, params.hypernet_jsd_threshold)
-            
-            total_loss = params.hypernet_learning_weight * (
-                params.hypernet_performance_weight * performance_loss +
-                params.hypernet_entropy_weight * entropy_loss_val +
-                params.hypernet_jsd_weight * jsd_loss
-            )
-            
-            optim.zero_grad()
+    avg_entropy_loss = 0
+    avg_policy_loss = 0
+    avg_jsd_loss = 0
 
-            # Grad Clipping
-            torch.nn.utils.clip_grad_norm_(model.hypernet.parameters(), max_norm=0.5)
-            total_loss.backward()
-            optim.step()
+    for _ in tqdm(range(params.hypernet_training_loops), desc="Hypernet Loop"):        
+        exp = collect_experiences(model, env, params)
+        with torch.no_grad():
+            logits = add_exploration_noise(exp['logits'], params)
+            old_dists = Categorical(logits=logits)
+            old_log_probs = old_dists.log_prob(exp['actions'])
+            old_values = exp['values']
+            returns = exp['returns']
+            advantages = returns - old_values
+            advantages_mean = advantages.mean(dim=0, keepdim=True)
+            advantages_std = advantages.std(dim=0, keepdim=True) + 1e-8
+            advantages = (advantages - advantages_mean) / advantages_std
+
+        actions = exp['actions']
+        observations = exp['observations']
+        beliefs = exp['belief']
+        traits = exp['traits']
+        coms = exp['com']
+
+        new_logits = []
+        new_values = []
+        lv_list = []
+        
+        for i in range(params.experience_buffer_size):
+            traits_i = traits[i]
+            belief_i = beliefs[i]
+            lv_i, wh_i, _, _= model.hypernet.forward(traits_i, belief_i)
+            lv_list.append(lv_i)
+            Q_i, _, _ = model.actor_encoder(
+                observations[i],
+                belief_i,
+                coms[i],
+                wh_i["policy"],
+                wh_i["belief"],
+                wh_i["encoder"]
+            )
+            new_logits.append(Q_i)
+            V_i = model.actor_encoder_critic(
+                observations[i],
+                belief_i,
+                coms[i],
+                wh_i["critic"]
+            ).squeeze(-1)
+            new_values.append(V_i)
+        
+        new_logits = torch.stack(new_logits)
+        new_values = torch.stack(new_values)
+        
+        policy_loss, value_loss, entropy = compute_core_ppo_losses(
+            new_logits, new_values, exp['actions'], advantages,
+            exp['returns'], old_log_probs, params
+        )
+
+        num_agents = policy_loss.shape[0]
+        agent_weights = torch.softmax(torch.randn(num_agents, device=model.device), dim=-1)
+        performance_loss = (
+            (agent_weights * (policy_loss - params.entropy_coeff * entropy)).sum() +
+            params.value_loss_coeff * (agent_weights * value_loss).sum()
+        )
+        
+        entropy_loss_val = entropy_loss(exp["std"])
+
+        # JSD loss computation with sampled agent pairs within the same timestep
+        num_pairs = min(params.hypernet_num_pair_samples, params.experience_buffer_size * (model.config.n_agents * (model.config.n_agents - 1)))
+
+        # Generate timestep indices and agent pairs ensuring i != j
+        timesteps = torch.randint(0, params.experience_buffer_size, (num_pairs,), device=model.device)
+        agent_i = torch.randint(0, model.config.n_agents, (num_pairs,), device=model.device)
+        agent_j = torch.randint(0, model.config.n_agents - 1, (num_pairs,), device=model.device)
+        agent_j[agent_j >= agent_i] += 1  # Ensure j != i
+
+        # Get trait vectors for each agent pair
+        traits_p = exp["traits"][timesteps, agent_i]
+        traits_q = exp["traits"][timesteps, agent_j]
+
+        # Compute cosine similarity between trait vectors
+        similarities = torch.nn.functional.cosine_similarity(traits_p, traits_q, dim=1)
+
+        # Get logits for each agent in the pairs
+        logits_p = new_logits[timesteps, agent_i]
+        logits_q = new_logits[timesteps, agent_j]
+
+        # Compute JSD loss
+        jsd_loss = threshed_jsd_loss(logits_p, logits_q, similarities, params.hypernet_jsd_threshold)
+
+        avg_policy_loss += policy_loss 
+        avg_entropy_loss += entropy_loss_val
+        avg_jsd_loss += jsd_loss
+
+        total_loss = params.hypernet_learning_weight * (
+            params.hypernet_performance_weight * performance_loss +
+            params.hypernet_entropy_weight * entropy_loss_val +
+            params.hypernet_jsd_weight * jsd_loss
+        )
+        
+        optim.zero_grad()
+        torch.nn.utils.clip_grad_norm_(model.hypernet.parameters(), max_norm=params.grad_clip_norm)
+        total_loss.backward()
+        optim.step()
     
+    print(f"""
+    Average Policy Loss {avg_policy_loss.mean() / params.hypernet_training_loops}
+    Average Entropy Loss: {avg_entropy_loss / params.hypernet_training_loops}
+    Average JSD Loss: {avg_jsd_loss / params.hypernet_training_loops}
+    """)
     model.hypernet.requires_grad_(False)
