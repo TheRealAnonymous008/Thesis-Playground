@@ -14,11 +14,12 @@ class TrainingParameters:
     outer_loops: int = 5
     hypernet_training_loops: int = 5
     actor_training_loops: int = 5
-    learning_rate: float = 1e-3
+    actor_learning_rate: float = 1e-3
+
     gamma: float = 0.99  # Discount factor
-    jsd_threshold: float = 0.5  # Threshold for JSD loss
     experience_buffer_size : int = 3         # Warning: You shouldn't make this too big because you will have many agents in the env.
     entropy_coeff: float = 0.1
+
     # PPO-specific parameters
     clip_epsilon: float = 0.2
     ppo_epochs: int = 4
@@ -28,6 +29,7 @@ class TrainingParameters:
     hypernet_learning_weight : float = 1e-3
     hypernet_entropy_weight : float = 0.1
     hypernet_performance_weight : float = 1.0
+    hypernet_jsd_threshold: float = 0.5  
     hypernet_jsd_weight : float = 0.2
     hypernet_num_pair_samples : int = 500
 
@@ -146,8 +148,8 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
 
 
 def train_model(model: Model, env: BaseEnv, params: TrainingParameters):
-    hyper_optim = torch.optim.Adam(model.hypernet.parameters(), lr=params.learning_rate)
-    actor_optim = torch.optim.Adam(model.actor_encoder.parameters(), lr=params.learning_rate)
+    hyper_optim = torch.optim.Adam(model.hypernet.parameters(), lr=params.actor_learning_rate)
+    actor_optim = torch.optim.Adam(model.actor_encoder.parameters(), lr=params.actor_learning_rate)
 
     for i in range(params.outer_loops):
         print(f"Epoch {i}")
@@ -328,7 +330,7 @@ def train_hypernet(model: Model, env: BaseEnv, params: TrainingParameters, optim
             logits_q = new_logits[indices[:, 1]]
             
             # Compute thresholded JSD loss
-            jsd_loss = threshed_jsd_loss(logits_p, logits_q, similarities, params.jsd_threshold)
+            jsd_loss = threshed_jsd_loss(logits_p, logits_q, similarities, params.hypernet_jsd_threshold)
             
             total_loss = params.hypernet_learning_weight * (
                 params.hypernet_performance_weight * performance_loss +
