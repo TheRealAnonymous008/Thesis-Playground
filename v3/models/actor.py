@@ -47,7 +47,7 @@ class CriticEncoder(nn.Module):
         input = torch.cat([o, h, z], dim=1)
         
         # Value estimation (primary output)
-        V = apply_heterogeneous_weights(self.value_network(input), crit_weights)
+        V = apply_heterogeneous_weights(self.value_network(input), crit_weights, sigmoid = False)
 
         return V
 
