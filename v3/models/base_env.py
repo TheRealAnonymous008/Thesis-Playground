@@ -21,3 +21,12 @@ class BaseEnv:
 
     def get_agents(self) -> list:
         pass 
+
+    def get_beliefs(self) -> np.ndarray: 
+        pass
+
+    def set_beliefs(self, idx : int, belief : np.ndarray):
+        pass 
+
+    def get_belief_matrix(self) -> np.ndarray: 
+        pass 

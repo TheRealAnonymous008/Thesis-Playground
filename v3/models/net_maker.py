@@ -3,18 +3,29 @@ import torch.nn as nn
 import torch.functional as F 
 import numpy as np 
 
-def make_net(params: list[int]) -> nn.Sequential:
+def make_net(params: list[int], last_activation = True, dropout_rate = 0.1, enable_batch_norm = True, enable_spectral_norm = False) -> nn.Sequential:
     layers = []
 
     for i in range(len(params) - 1):
         linear_layer = nn.Linear(params[i], params[i + 1])
-        nn.init.xavier_normal_(linear_layer.weight, gain = nn.init.calculate_gain("leaky_relu"))
-        layers.append(linear_layer)
+        nn.init.xavier_normal_(linear_layer.weight, 
+                               gain=nn.init.calculate_gain('leaky_relu')
+        )
         
-        layers.append(nn.BatchNorm1d(params[i + 1]))
+        # Add spectral norm to deeper layers
+        if enable_spectral_norm and i > 0:
+            linear_layer = nn.utils.spectral_norm(linear_layer)
+            nn.init.orthogonal_(linear_layer.weight)
 
-        layers.append(nn.LeakyReLU())
-        layers.append(nn.Dropout())
+        layers.append(linear_layer)
+
+        if enable_batch_norm:
+            layers.append(nn.BatchNorm1d(params[i + 1]))
+
+        if last_activation and i == len(params) - 1: 
+            layers.append(nn.LeakyReLU())
+        if dropout_rate > 0: 
+            layers.append(nn.Dropout(dropout_rate))
     
     return nn.Sequential(*layers)
 

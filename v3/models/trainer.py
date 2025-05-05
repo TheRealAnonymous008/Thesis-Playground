@@ -42,7 +42,7 @@ class TrainingParameters:
     hypernet_performance_weight : float = 1.0
     hypernet_jsd_threshold: float = 0.5  
     hypernet_jsd_weight : float = 0.2
-    hypernet_num_pair_samples : int = 500
+    hypernet_num_pair_samples : int = 5000
 
 def compute_returns(rewards: np.ndarray, gamma: float) -> torch.Tensor:
     """Compute discounted returns for each agent and timestep."""
@@ -230,7 +230,6 @@ def compute_core_ppo_losses(new_logits: torch.Tensor, new_values: torch.Tensor,
 
     # Agent-wise value loss
     value_loss = torch.nn.functional.huber_loss(new_values, returns, reduction='none', delta = 1.0).mean(dim=0)  # [agents]
-    
     # Apply per-agent entropy bonus
     entropy_loss = entropy.mean(dim=0)  # [agents]
     
@@ -330,7 +329,6 @@ def train_hypernet(model: Model, env: BaseEnv, params: TrainingParameters, optim
     avg_entropy_loss = 0
     avg_policy_loss = 0
     avg_jsd_loss = 0
-
     # TODO: Possibly modify this so that the actor network is trained a few times to see if it is actually good.
     for _ in tqdm(range(params.hypernet_training_loops), desc="Hypernet Loop"):        
         exp = collect_experiences(model, env, params)
@@ -409,22 +407,19 @@ def train_hypernet(model: Model, env: BaseEnv, params: TrainingParameters, optim
 
         # Compute cosine similarity between trait vectors
         similarities = torch.nn.functional.cosine_similarity(traits_p, traits_q, dim=1)
-
         # Get logits for each agent in the pairs
         logits_p = new_logits[timesteps, agent_i]
         logits_q = new_logits[timesteps, agent_j]
-
         # Compute JSD loss
         jsd_loss = threshed_jsd_loss(logits_p, logits_q, similarities, params.hypernet_jsd_threshold)
-
         avg_policy_loss += policy_loss 
         avg_entropy_loss += entropy_loss_val
         avg_jsd_loss += jsd_loss
 
+        
         total_loss = params.hypernet_performance_weight * performance_loss 
         + params.hypernet_entropy_weight * entropy_loss_val 
-        + params.hypernet_jsd_weight * jsd_loss
-        
+        - params.hypernet_jsd_weight * jsd_loss
         
         optim.zero_grad()
         torch.nn.utils.clip_grad_norm_(model.hypernet.parameters(), max_norm=params.grad_clip_norm)

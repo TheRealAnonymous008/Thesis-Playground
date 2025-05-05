@@ -31,6 +31,7 @@ def threshed_jsd_loss(p, q, s, thresh):
     
     mask = (s < thresh).float()
     loss = (jsd * mask).mean()
+
     return loss
 
 def mi_loss(p, q):

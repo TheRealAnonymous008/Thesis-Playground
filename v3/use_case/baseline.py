@@ -28,14 +28,10 @@ class BaselineEnvironment(BaseEnv):
         # Agent identifiers
         self.agents = [i for i in range(n_agents)]
         
-        # Initialize action counts
-        self.action_counts = [np.zeros(self.num_actions, dtype=int) for _ in range(n_agents)]
         self.total_steps = 0
 
     def reset(self):
         """Resets environment with zero-initialized payoff observations"""
-        for counts in self.action_counts:
-            counts.fill(0)
         self.total_steps = 0
         self.traits = np.array([[-1] if i % 2 ==0 else [1] for i in range(self.n_agents)], dtype = np.float16)
         return {agent: np.zeros(self.obs_size, dtype=np.float32) for agent in self.agents}
@@ -64,8 +60,6 @@ class BaselineEnvironment(BaseEnv):
             # Get actions and update counts
             action_a = actions[a]
             action_b = actions[b]
-            self.action_counts[a][action_a] += 1
-            self.action_counts[b][action_b] += 1
 
             # Calculate rewards
             rewards[a] = self.payoff_i[action_a, action_b]
@@ -97,10 +91,106 @@ class BaselineEnvironment(BaseEnv):
     
     def get_traits(self):
         return self.traits
+    
+    def get_beliefs(self):
+        return np.zeros((self.n_agents, 1))
 
+class BaselineHeterogeneous(BaseEnv):
+    def __init__(self, n_agents, n_types, type_payoffs, total_games=1):
+        """
+        The type payoffs should have shape
+        (n_types, n_types, 2, n_actions, n_actions)
+        """
+        super().__init__(n_agents)
 
-class BaselinePartialObservableEnvironment(BaseEnv):
-    def __init__(self, n_agents, payoff_i, payoff_j, total_games=1):
+        # Validate type_payoffs structure
+        assert len(type_payoffs.shape) == 5
+        assert type_payoffs.shape[0] == n_types and type_payoffs.shape[1] == n_types
+        assert type_payoffs.shape[2] == 2
+        self.num_actions = type_payoffs.shape[3]
+        assert type_payoffs.shape[3] == type_payoffs.shape[4]
+        
+        self.n_types = n_types
+        self.type_payoffs = type_payoffs
+        self.total_games = total_games
+        
+        self.obs_size = 1  
+        self.action_space = spaces.Discrete(self.num_actions)
+        self.observation_space = spaces.Box(
+            low=-np.inf,
+            high=np.inf,
+            shape=(self.obs_size,),
+            dtype=np.float32
+        )
+        
+        # Agent identifiers and types
+        self.agents = [i for i in range(n_agents)]
+        self.agent_types = np.random.randint(0, n_types, size=n_agents)
+        
+        self.total_steps = 0
+
+    def reset(self):
+        """Resets environment with zero-initialized payoff observations and one-hot trait vectors"""
+        self.total_steps = 0
+        # Generate one-hot encoded traits based on agent_types
+        self.traits = np.eye(self.n_types, dtype=np.float16)[self.agent_types]
+        return {agent: np.zeros(self.obs_size, dtype=np.float32) for agent in self.agents}
+
+    def step(self, actions):
+        """
+        Executes one timestep with pairwise interactions and indexer-based observations
+        """
+        # Validate actions
+        for agent, action in actions.items():
+            assert 0 <= action < self.num_actions, f"Invalid action {action} for {agent}"
+        
+        # Generate random pairs and initialize observations
+        pairs = []
+        observations = {agent: np.zeros(self.obs_size, dtype=np.float32) for agent in self.agents}
+        rewards = {agent: 0.0 for agent in self.agents}
+
+        # Create pairwise interactions
+        for i in range(0, self.n_agents, 2):
+            if i+1 >= self.n_agents:
+                break
+                
+            a, b = i, i+1
+            pairs.append((a, b))
+            
+            # Get actions and update counts
+            action_a = actions[a]
+            action_b = actions[b]
+
+            # Retrieve agent types and corresponding payoffs
+            t1 = self.agent_types[a]
+            t2 = self.agent_types[b]
+            payoff_i = self.type_payoffs[t1, t2, 0]
+            payoff_j = self.type_payoffs[t1, t2, 1]
+            
+            # Calculate rewards
+            rewards[a] = payoff_i[action_a, action_b]
+            rewards[b] = payoff_j[action_a, action_b]
+            
+            # Generate observations with indexer (agent's own type)
+            observations[a] = np.array([self.agent_types[a]], dtype=np.float32)
+            observations[b] = np.array([self.agent_types[b]], dtype=np.float32)
+
+        self.total_steps += 1
+        done = self.total_steps >= self.total_games
+        
+        return observations, rewards, {agent: done for agent in self.agents}, {agent: {} for agent in self.agents}
+    
+    def get_agents(self):
+        return self.agents
+    
+    def get_traits(self):
+        return self.traits
+    
+    def get_beliefs(self):
+        return np.zeros((self.n_agents, 1))
+
+class BaselineSimpleCommunication(BaseEnv):
+    def __init__(self, n_agents, payoff_i, payoff_j, belief_dims = 8, total_games = 1):
         super().__init__(n_agents)
 
         # Validate payoff matrices
@@ -111,9 +201,10 @@ class BaselinePartialObservableEnvironment(BaseEnv):
         self.payoff_j = payoff_j
         self.num_actions = payoff_i.shape[0]
         self.total_games = total_games
+        self.belief_dims = belief_dims
         
-        # Define observation space: trait (1) + action counts (num_actions) + accumulated reward (1)
-        self.obs_size = 1 + self.num_actions + 1
+        # Define observation space with flattened payoff matrices and an indexer so agents know which player they are.
+        self.obs_size = 2 * (self.num_actions ** 2) + 1
         self.action_space = spaces.Discrete(self.num_actions)
         self.observation_space = spaces.Box(
             low=-np.inf,
@@ -122,74 +213,76 @@ class BaselinePartialObservableEnvironment(BaseEnv):
             dtype=np.float32
         )
         
+        # Agent identifiers
         self.agents = [i for i in range(n_agents)]
-        self.action_counts = np.zeros((n_agents, self.num_actions), dtype=int)
-        self.accumulated_rewards = np.zeros(n_agents, dtype=np.float32)
+        
         self.total_steps = 0
 
     def reset(self):
-        """Resets the environment, initializing traits and clearing history."""
-        self.action_counts.fill(0)
-        self.accumulated_rewards.fill(0.0)
+        """Resets environment with zero-initialized payoff observations"""
         self.total_steps = 0
-        
-        # Assign heterogeneous traits (e.g., alternating -1 and 1)
-        self.traits = np.array([-1 if i % 2 == 0 else 1 for i in range(self.n_agents)], dtype=np.float32)
-        
-        # Initialize observations with trait, action counts, and accumulated reward
-        observations = {}
-        for agent in self.agents:
-            obs = np.concatenate([
-                [self.traits[agent]],
-                self.action_counts[agent].astype(np.float32),
-                [self.accumulated_rewards[agent]]
-            ])
-            observations[agent] = obs.astype(np.float32)
-        return observations
+        self.traits = np.array([[-1] if i % 2 ==0 else [1] for i in range(self.n_agents)], dtype = np.float16)
+        self.beliefs = np.zeros((self.n_agents, self.belief_dims))
+        return {agent: np.zeros(self.obs_size, dtype=np.float32) for agent in self.agents}
 
     def step(self, actions):
+        """
+        Executes one timestep with pairwise interactions and payoff-based observations
+        """
         # Validate actions
         for agent, action in actions.items():
             assert 0 <= action < self.num_actions, f"Invalid action {action} for {agent}"
         
+        # Generate random pairs and initialize observations
+        pairs = []
+        observations = {agent: np.zeros(self.obs_size, dtype=np.float32) for agent in self.agents}
         rewards = {agent: 0.0 for agent in self.agents}
 
-        # Process pairwise interactions
+        # Create pairwise interactions
         for i in range(0, self.n_agents, 2):
             if i+1 >= self.n_agents:
                 break
+                
             a, b = i, i+1
+            pairs.append((a, b))
+            
+            # Get actions and update counts
             action_a = actions[a]
             action_b = actions[b]
-            
-            # Update action counts
-            self.action_counts[a][action_a] += 1
-            self.action_counts[b][action_b] += 1
 
-            # Calculate rewards scaled by traits
-            reward_a = self.payoff_i[action_a, action_b] * self.traits[a]
-            reward_b = self.payoff_j[action_a, action_b] * self.traits[b]
-            rewards[a] = reward_a
-            rewards[b] = reward_b
-        
-        # Update accumulated rewards and prepare observations
-        observations = {}
-        for agent in self.agents:
-            self.accumulated_rewards[agent] += rewards[agent]
-            obs = np.concatenate([
-                [self.traits[agent]],
-                self.action_counts[agent].astype(np.float32),
-                [self.accumulated_rewards[agent]]
-            ])
-            observations[agent] = obs.astype(np.float32)
+            # Calculate rewards
+            rewards[a] = self.payoff_i[action_a, action_b]
+            rewards[b] = self.payoff_j[action_a, action_b]
+            
+            # Generate observations with both payoff matrices
+            obs_a = np.concatenate([
+                self.payoff_i.flatten(),
+                self.payoff_j.flatten(), 
+                [-1]
+            ]).astype(np.float32)
+            
+            obs_b = np.concatenate([
+                self.payoff_j.flatten(),
+                self.payoff_i.flatten(),
+                [1]
+            ]).astype(np.float32)
+            
+            observations[a] = obs_a
+            observations[b] = obs_b
 
         self.total_steps += 1
         done = self.total_steps >= self.total_games
         
-        return observations, rewards, {agent: done for agent in self.agents}, {}
-
+        return observations, rewards, {agent: done for agent in self.agents}, {agent: {} for agent in self.agents}
+    
     def get_agents(self):
         return self.agents
     
     def get_traits(self):
         return self.traits
+    
+    def get_beliefs(self):
+        return self.beliefs
+    
+    def set_beliefs(self, i : int, belief : np.ndarray):
+        self.beliefs[i] = belief
