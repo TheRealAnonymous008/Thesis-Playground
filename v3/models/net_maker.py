@@ -24,11 +24,16 @@ def make_net(params: list[int],
 
         layers.append(linear_layer)
 
+        if last_activation and i == len(params) - 1: 
+            layers.append(nn.LeakyReLU())
+        elif i < len(params) - 1: 
+            layers.append(nn.LeakyReLU())
+
+
         if enable_batch_norm:
             layers.append(nn.BatchNorm1d(params[i + 1]))
 
-        if last_activation and i == len(params) - 1: 
-            layers.append(nn.LeakyReLU())
+
         if dropout_rate > 0: 
             layers.append(nn.Dropout(dropout_rate))
     

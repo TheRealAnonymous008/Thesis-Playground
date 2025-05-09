@@ -1,6 +1,7 @@
 import numpy as np 
 import torch
 from models.model import Model
+from torch.utils.tensorboard import SummaryWriter
 
 def find_pure_equilibria(p1_payoff, p2_payoff):
     """Find pure strategy Nash equilibria"""
@@ -40,7 +41,7 @@ def kmeans(data, k=3, max_iters=100):
         centroids = new_centroids
     return labels, centroids
 
-def evaluate_policy(model: Model, env, num_episodes=10, k = 10):
+def evaluate_policy(model: Model, env, num_episodes=10, k = 10, writer : SummaryWriter =None, global_step=None, tag = "x"):
     """Evaluate current policy and return average episode return with trait cluster breakdown"""
     total_returns = []
     actions_array = []
@@ -108,11 +109,13 @@ def evaluate_policy(model: Model, env, num_episodes=10, k = 10):
                 if label not in cluster_rewards:
                     cluster_rewards[label] = []
                 cluster_rewards[label].append(reward)
-            print("\nBreakdown of average return per agent traits cluster:")
             for cluster in sorted(cluster_rewards.keys()):
                 avg_return = np.mean(cluster_rewards[cluster])
-                count = len(cluster_rewards[cluster])
-                print(f"Cluster {cluster}: {avg_return:.2f} (count: {count})")
+                header = f"Eval/cluster_{cluster}"
+                if writer is not None:
+                    writer.add_scalar(f'{header}/mean_avg', avg_return, global_step)
+
+                
         else:
             print("\nNo clusters formed due to insufficient data.")
     else:
@@ -123,12 +126,9 @@ def evaluate_policy(model: Model, env, num_episodes=10, k = 10):
     total_returns_sum = np.sum(total_returns)
     actions_flat = np.concatenate(actions_array) if actions_array else np.array([])
     unique_actions, counts = np.unique(actions_flat, return_counts=True) if len(actions_flat) > 0 else ([], [])
-    print(f"""
-    Average Return: {mean_returns}
-    Total returns: {total_returns_sum}
-    """)
-    # print("Action Distribution")
-    # for action, count in zip(unique_actions, counts):
-    #     print(f"Action {action}: {count} times")
+     # Log overall metrics
+    if writer is not None:
+        writer.add_scalar(f'Eval/mean_return', mean_returns, global_step)
+        writer.add_histogram(f'Eval/action_distribution', torch.tensor(actions_flat), global_step)
 
     return mean_returns
