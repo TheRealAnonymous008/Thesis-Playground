@@ -3,7 +3,12 @@ import torch.nn as nn
 import torch.functional as F 
 import numpy as np 
 
-def make_net(params: list[int], last_activation = True, dropout_rate = 0.1, enable_batch_norm = True, enable_spectral_norm = False) -> nn.Sequential:
+def make_net(params: list[int], 
+             last_activation = True, 
+             dropout_rate = 0.1, 
+             enable_batch_norm = True, 
+             enable_spectral_norm = False,
+    ) -> nn.Sequential:
     layers = []
 
     for i in range(len(params) - 1):
@@ -29,7 +34,7 @@ def make_net(params: list[int], last_activation = True, dropout_rate = 0.1, enab
     
     return nn.Sequential(*layers)
 
-def apply_heterogeneous_weights(x, weights, sigmoid = False ):
+def apply_heterogeneous_weights(x, weights, sigmoid = True):
     w = weights["weight"]
     b = weights["bias"]
 

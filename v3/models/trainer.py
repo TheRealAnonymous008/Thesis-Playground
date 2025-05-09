@@ -200,10 +200,12 @@ def train_model(model: Model, env: BaseEnv, params: TrainingParameters):
         print(f"Epoch {i}")
         model.requires_grad_(False)
 
-        train_hypernet(model, env, params, hyper_optim)
-        evaluate_policy(model, env)
-        train_actor(model, env, params, actor_optim, critic_optim)
-        evaluate_policy(model, env)
+        if params.hypernet_training_loops > 0: 
+            train_hypernet(model, env, params, hyper_optim)
+            evaluate_policy(model, env)
+        if params.actor_training_loops > 0:
+            train_actor(model, env, params, actor_optim, critic_optim)
+            evaluate_policy(model, env)
 
         # TODO: Add filter and decoder training
 
@@ -215,6 +217,7 @@ def compute_core_ppo_losses(new_logits: torch.Tensor, new_values: torch.Tensor,
     """Compute PPO policy loss, value loss, and entropy with per-agent calculations."""
     new_dists = Categorical(logits=new_logits)
     new_log_probs = new_dists.log_prob(actions)
+
     
     # Per-agent entropy (shape [timesteps, agents])
     entropy = new_dists.entropy()
@@ -229,7 +232,7 @@ def compute_core_ppo_losses(new_logits: torch.Tensor, new_values: torch.Tensor,
     policy_loss = -torch.min(surr1, surr2).mean(dim=0)  # [agents]
 
     # Agent-wise value loss
-    value_loss = torch.nn.functional.huber_loss(new_values, returns, reduction='none', delta = 1.0).mean(dim=0)  # [agents]
+    value_loss = torch.nn.functional.huber_loss(new_values.mean(dim=0), returns.mean(dim=0), reduction='none', delta = 1.0) # [agents]
     # Apply per-agent entropy bonus
     entropy_loss = entropy.mean(dim=0)  # [agents]
     
@@ -315,9 +318,9 @@ def train_actor(model: Model, env: BaseEnv, params: TrainingParameters, actor_op
             avg_value_loss += value_loss.mean().item()
 
     print(f"""
-    Average Policy Loss: {avg_policy_loss / params.actor_training_loops}
-    Average Value Loss: {avg_value_loss / params.actor_training_loops}
-    Average Entropy Loss: {avg_entropy_loss / params.actor_training_loops} 
+    Average Policy Loss: {avg_policy_loss / (params.actor_training_loops * params.ppo_epochs)}
+    Average Value Loss: {avg_value_loss / (params.actor_training_loops * params.ppo_epochs)}
+    Average Entropy Loss: {avg_entropy_loss / (params.actor_training_loops * params.ppo_epochs)}
     """)
 
     model.actor_encoder.requires_grad_(False)

@@ -48,8 +48,6 @@ def evaluate_policy(model: Model, env, num_episodes=10, k = 10):
     all_rewards = []
     device = model.config.device
 
-
-
     with torch.no_grad():
         for _ in range(num_episodes):
             obs = env.reset()

@@ -32,14 +32,15 @@ class Model:
     def param_count(self):
         hypernet_params = sum(p.numel() for p in self.hypernet.parameters() if p.requires_grad)
         actor_encoder_params = sum(p.numel() for p in self.actor_encoder.parameters() if p.requires_grad)
+        actor_critic_params = sum(p.numel() for p in self.actor_encoder_critic.parameters() if p.requires_grad)
         filter_params = sum(p.numel() for p in self.filter.parameters() if p.requires_grad)
         decoder_update_params = sum(p.numel() for p in self.decoder_update.parameters() if p.requires_grad)
-        total_params = hypernet_params + actor_encoder_params + filter_params + decoder_update_params
+        total_params = hypernet_params + actor_encoder_params + actor_critic_params +  filter_params + decoder_update_params
 
         report = f"""
         Hypernet: {hypernet_params} 
         Actor Encoder: {actor_encoder_params} 
-        Acrot Encoder Critic: {actor_encoder_params}
+        Acrot Encoder Critic: {actor_critic_params}
         Filter: {filter_params} 
         Decoder: {decoder_update_params} 
         Total: {total_params}
