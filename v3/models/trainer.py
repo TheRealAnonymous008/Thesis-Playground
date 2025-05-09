@@ -45,7 +45,9 @@ class TrainingParameters:
     hypernet_jsd_weight : float = 0.2
     hypernet_num_pair_samples : int = 5000
 
-def compute_returns(rewards: np.ndarray, gamma: float) -> torch.Tensor:
+    sampled_agents : int = 500
+
+def compute_returns(rewards: np.ndarray, dones : torch.Tensor, gamma: float) -> torch.Tensor:
     """Compute discounted returns for each agent and timestep."""
     n_timesteps, n_agents = rewards.shape
     returns = np.zeros_like(rewards, dtype=np.float32)
@@ -62,11 +64,11 @@ def compute_returns(rewards: np.ndarray, gamma: float) -> torch.Tensor:
 def add_exploration_noise(logits: torch.Tensor, params: TrainingParameters, epoch: int = 0):
     """Add independent exploration noise per agent and timestep"""
     device = logits.device
-    buffer_size, n_agents, n_actions = logits.shape
+    n_agents, n_actions = logits.shape
     epsilon = max(params.epsilon_end, params.epsilon_start * (params.epsilon_decay ** epoch))
     
     # Create exploration mask [buffer, agents]
-    exploration_mask = torch.rand((buffer_size, n_agents), device=device) < epsilon
+    exploration_mask = torch.rand((n_agents), device=device) < epsilon
     
     # Create uniform logits for entire batch [buffer, agents, actions]
     uniform_logits = torch.log(torch.ones_like(logits) / n_actions)
@@ -82,7 +84,23 @@ def add_exploration_noise(logits: torch.Tensor, params: TrainingParameters, epoc
     noise = torch.randn_like(modified_logits) * params.noise_scale
     return modified_logits + noise
 
-def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameters):
+def select_weights(wh : TensorDict, indices : list) -> TensorDict:
+    return TensorDict(
+    {
+        key: TensorDict(
+            {
+                "weight": wh[key]["weight"][indices],
+                "bias": wh[key]["bias"][indices]
+            }, 
+            batch_size=[len(indices)]
+        )
+        for key in wh.keys()
+    }, 
+    batch_size=[len(indices)],
+    device=wh.device
+    )
+
+def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameters, epoch = 1):
     device = model.config.device
     obs = env.reset()
     batch_obs = []
@@ -99,6 +117,7 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
     batch_ld_std = []
     batch_dones = []
 
+    indices = np.random.choice(env.n_agents, size = params.sampled_agents, replace = False)
     for i in range(params.experience_buffer_size):
         
         obs_array = np.stack([obs[agent] for agent in env.get_agents()])
@@ -110,7 +129,6 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
         com_vector = torch.zeros((model.config.n_agents, model.config.d_comm_state), device=device)
 
         lv, wh, mean, std = model.hypernet.forward(trait_vector, belief_vector)
-        
         # Actor encoder forward
         Q, _, _ = model.actor_encoder.forward(
             obs_tensor, 
@@ -120,6 +138,8 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
             wh["belief"], 
             wh["encoder"]
         )
+        Q = add_exploration_noise(Q, params, epoch)
+
         dists = Categorical(logits=Q)
         actions = dists.sample().cpu().numpy()
         actions_dict = {agent: int(actions[i]) for i, agent in enumerate(env.get_agents())}
@@ -143,20 +163,20 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
             obs = env.reset()
 
         # Store experience
-        batch_obs.append(obs_tensor)
-        batch_actions.append(actions)
-        batch_rewards.append(rewards)
-        batch_logits.append(Q)
-        batch_lv.append(lv)
-        batch_wh.append(wh)
-        batch_values.append(values)
+        batch_obs.append(obs_tensor[indices])
+        batch_actions.append(actions[indices])
+        batch_rewards.append(rewards[indices])
+        batch_logits.append(Q[indices])
+        batch_lv.append(lv[indices])
+        batch_wh.append(select_weights(wh, indices))
+        batch_values.append(values[indices])
 
-        batch_belief.append(belief_vector)
-        batch_trait.append(trait_vector)
-        batch_com.append(com_vector)
+        batch_belief.append(belief_vector[indices])
+        batch_trait.append(trait_vector[indices])
+        batch_com.append(com_vector[indices])
 
-        batch_ld_means.append(mean)
-        batch_ld_std.append(std)
+        batch_ld_means.append(mean[indices])
+        batch_ld_std.append(std[indices])
         batch_dones.append(torch.tensor(done, dtype = torch.bool))
         
     
@@ -178,7 +198,8 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
     batch_dones = torch.stack(batch_dones)
 
     # Compute returns
-    returns = compute_returns(batch_rewards.cpu().numpy(), params.gamma).to(device)
+    returns = compute_returns(batch_rewards.cpu().numpy(), batch_dones.cpu().numpy(), params.gamma).to(device)
+
     return {
         'observations': batch_obs,
         'actions': batch_actions,
@@ -254,7 +275,7 @@ def train_actor(model: Model, env: BaseEnv, params: TrainingParameters, actor_op
     avg_value_loss = 0
 
     for epoch in tqdm(range(params.actor_training_loops), desc="Actor Training"):
-        exp = collect_experiences(model, env, params)
+        exp = collect_experiences(model, env, params, epoch)
         logits = exp["logits"]
         
         with torch.no_grad():
@@ -340,8 +361,8 @@ def train_hypernet(model: Model, env: BaseEnv, params: TrainingParameters, optim
     avg_policy_loss = 0
     avg_jsd_loss = 0
     # TODO: Possibly modify this so that the actor network is trained a few times to see if it is actually good.
-    for _ in tqdm(range(params.hypernet_training_loops), desc="Hypernet Loop"):        
-        exp = collect_experiences(model, env, params)
+    for epoch in tqdm(range(params.hypernet_training_loops), desc="Hypernet Loop"):        
+        exp = collect_experiences(model, env, params, epoch)
         with torch.no_grad():
             logits = exp["logits"]
             old_dists = Categorical(logits=logits)
@@ -403,12 +424,12 @@ def train_hypernet(model: Model, env: BaseEnv, params: TrainingParameters, optim
         entropy_loss_val = entropy_loss(exp["std"])
 
         # JSD loss computation with sampled agent pairs within the same timestep
-        num_pairs = min(params.hypernet_num_pair_samples, params.experience_buffer_size * (model.config.n_agents * (model.config.n_agents - 1)))
+        num_pairs = min(params.hypernet_num_pair_samples, params.experience_buffer_size * (num_agents * (num_agents - 1)))
 
         # Generate timestep indices and agent pairs ensuring i != j
         timesteps = torch.randint(0, params.experience_buffer_size, (num_pairs,), device=model.device)
-        agent_i = torch.randint(0, model.config.n_agents, (num_pairs,), device=model.device)
-        agent_j = torch.randint(0, model.config.n_agents - 1, (num_pairs,), device=model.device)
+        agent_i = torch.randint(0, num_agents, (num_pairs,), device=model.device)
+        agent_j = torch.randint(0, num_agents - 1, (num_pairs,), device=model.device)
         agent_j[agent_j >= agent_i] += 1  # Ensure j != i
 
         # Get trait vectors for each agent pair

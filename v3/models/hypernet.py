@@ -61,6 +61,7 @@ class LatentDecoder(nn.Module):
         """
         Outputs the heterogeneous weights using the latent variable
         """
+
         return TensorDict({
             "policy": self.get_weights(lv, self.p_net_weights, self.p_net_biases, self.config.d_action),
             "critic": self.get_weights(lv, self.crit_weights, self.crit_biases, 1), 
