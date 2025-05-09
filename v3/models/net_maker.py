@@ -6,7 +6,7 @@ import numpy as np
 def make_net(params: list[int], 
              last_activation = True, 
              dropout_rate = 0.1, 
-             enable_batch_norm = True, 
+             enable_batch_norm = False, 
              enable_spectral_norm = False,
     ) -> nn.Sequential:
     layers = []

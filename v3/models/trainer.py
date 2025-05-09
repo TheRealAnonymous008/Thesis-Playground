@@ -27,7 +27,7 @@ class TrainingParameters:
     experience_sampling_steps : int = 100
     actor_performance_weight : int = 1.0
     entropy_coeff: float = 0.1
-    grad_clip_norm = 0.5
+    grad_clip_norm = 10.0
 
     # Exploration specific
     entropy_target: float = 0.5  # Target entropy for exploration
@@ -38,7 +38,7 @@ class TrainingParameters:
 
     # PPO-specific parameters
     clip_epsilon: float = 0.2
-    ppo_epochs: int = 4
+    ppo_epochs: int = 15
     value_loss_coeff: float = 1.0
 
     # Hypernet specific parameters
@@ -80,7 +80,7 @@ def add_exploration_noise(logits: torch.Tensor, params: TrainingParameters, epoc
     exploration_mask = torch.rand((n_agents), device=device) < epsilon
     
     # Create uniform logits for entire batch [buffer, agents, actions]
-    uniform_logits = torch.log(torch.ones_like(logits) / n_actions)
+    uniform_logits = torch.log(torch.ones_like(logits) , n_actions)
     
     # Apply epsilon-greedy mask
     modified_logits = torch.where(
@@ -226,6 +226,11 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
         "done": batch_dones
     }
 
+def normalize_advantages(advantages : torch.Tensor):
+    advantages_mean = advantages.mean(dim=0, keepdim=True)
+    advantages_std = advantages.std(dim=0, keepdim=True) + 1e-8
+    advantages = (advantages - advantages_mean) / advantages_std
+    return advantages 
 
 def train_model(model: Model, env: BaseEnv, params: TrainingParameters):
     writer = SummaryWriter()  # Initialize TensorBoard writer
@@ -250,10 +255,14 @@ def train_model(model: Model, env: BaseEnv, params: TrainingParameters):
         # TODO: Add filter and decoder training
     writer.close()  # Close the writer
 
-def compute_core_ppo_losses(new_logits: torch.Tensor, new_values: torch.Tensor, 
-                            actions: torch.Tensor, advantages: torch.Tensor,
-                            returns: torch.Tensor, old_log_probs: torch.Tensor,
-                            params: TrainingParameters) -> tuple:
+def compute_core_ppo_losses(new_logits: torch.Tensor, 
+                            new_values: torch.Tensor, 
+                            actions: torch.Tensor, 
+                            advantages: torch.Tensor,
+                            returns: torch.Tensor, 
+                            old_log_probs: torch.Tensor,
+                            params: TrainingParameters
+                            ) -> tuple:
     """Compute PPO policy loss, value loss, and entropy with per-agent calculations."""
     new_dists = Categorical(logits=new_logits)
     new_log_probs = new_dists.log_prob(actions)
@@ -272,7 +281,7 @@ def compute_core_ppo_losses(new_logits: torch.Tensor, new_values: torch.Tensor,
     policy_loss = -torch.min(surr1, surr2).mean(dim=0)  # [agents]
 
     # Agent-wise value loss
-    value_loss = torch.nn.functional.huber_loss(new_values.mean(dim=0), returns.mean(dim=0), reduction='none', delta = 1.0) # [agents]
+    value_loss = torch.nn.functional.huber_loss(new_values.mean(dim=0), returns.mean(dim=0), reduction='none', delta = 10.0) # [agents]
     # Apply per-agent entropy bonus
     entropy_loss = entropy.mean(dim=0)  # [agents]
     
@@ -285,14 +294,11 @@ def train_actor(model: Model, env: BaseEnv, params: TrainingParameters, actor_op
 
     for epoch in tqdm(range(params.actor_training_loops), desc="Actor Training"):
         exp = collect_experiences(model, env, params, epoch)
-        logits = exp["logits"]
-        
+
         with torch.no_grad():
-            old_dists = Categorical(logits=logits)
+            old_dists = Categorical(logits=exp["logits"])
             old_log_probs = old_dists.log_prob(exp['actions'])
-            returns = exp['returns']
-            advantages = returns - exp['values']
-            advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+            advantages = normalize_advantages(exp["returns"] - exp["values"])
 
 
         # PPO training loop
@@ -320,16 +326,15 @@ def train_actor(model: Model, env: BaseEnv, params: TrainingParameters, actor_op
                     exp["belief"][i],
                     exp["com"][i],
                     wh["critic"]
-                )
-                new_values.append(V_i.squeeze(-1))
+                ).squeeze(-1)
+                new_values.append(V_i)
 
-            new_logits = torch.stack(new_logits)
-            new_values = torch.stack(new_values)
+            new_logits, new_values = torch.stack(new_logits), torch.stack(new_values)
 
             # Calculate losses
             policy_loss, value_loss, entropy = compute_core_ppo_losses(
                 new_logits, new_values, exp['actions'], advantages,
-                returns, old_log_probs, params
+                exp["returns"], old_log_probs, params
             )
 
             # Actor update
@@ -365,50 +370,37 @@ def train_hypernet(model: Model, env: BaseEnv, params: TrainingParameters, optim
     for epoch in tqdm(range(params.hypernet_training_loops), desc="Hypernet Loop"):        
         exp = collect_experiences(model, env, params, epoch)
         with torch.no_grad():
-            logits = exp["logits"]
-            old_dists = Categorical(logits=logits)
+            old_dists = Categorical(logits=exp["logits"])
             old_log_probs = old_dists.log_prob(exp['actions'])
-            old_values = exp['values']
-            returns = exp['returns']
-            advantages = returns - old_values
-            advantages_mean = advantages.mean(dim=0, keepdim=True)
-            advantages_std = advantages.std(dim=0, keepdim=True) + 1e-8
-            advantages = (advantages - advantages_mean) / advantages_std
-
-        actions = exp['actions']
-        observations = exp['observations']
-        beliefs = exp['belief']
-        traits = exp['traits']
-        coms = exp['com']
+            advantages = normalize_advantages(exp["returns"] - exp["values"])
 
         new_logits = []
         new_values = []
         lv_list = []
         
         for i in range(params.experience_buffer_size):
-            traits_i = traits[i]
-            belief_i = beliefs[i]
+            traits_i = exp["traits"][i]
+            belief_i = exp["belief"][i]
             lv_i, wh_i, _, _= model.hypernet.forward(traits_i, belief_i)
             lv_list.append(lv_i)
             Q_i, _, _ = model.actor_encoder(
-                observations[i],
+                exp["observations"][i],
                 belief_i,
-                coms[i],
+                exp["com"][i],
                 wh_i["policy"],
                 wh_i["belief"],
                 wh_i["encoder"]
             )
             new_logits.append(Q_i)
             V_i = model.actor_encoder_critic(
-                observations[i],
+                exp["observations"][i],
                 belief_i,
-                coms[i],
+                exp["com"][i],
                 wh_i["critic"]
             ).squeeze(-1)
             new_values.append(V_i)
         
-        new_logits = torch.stack(new_logits)
-        new_values = torch.stack(new_values)
+        new_logits, new_values = torch.stack(new_logits), torch.stack(new_values)
         
         policy_loss, value_loss, entropy = compute_core_ppo_losses(
             new_logits, new_values, exp['actions'], advantages,
