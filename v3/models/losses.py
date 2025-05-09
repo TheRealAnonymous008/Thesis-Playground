@@ -24,7 +24,6 @@ def threshed_jsd_loss(p, q, s, thresh):
     m = (p_prob + q_prob) / 2 + 1e-8  # Avoid log(0)
     log_m = torch.log(m)
     
-    # Compute KL divergences using PyTorch's kl_div
     kl_p = F.kl_div(log_m, p_prob, log_target=False, reduction='none').sum(-1)
     kl_q = F.kl_div(log_m, q_prob, log_target=False, reduction='none').sum(-1)
     jsd = 0.5 * (kl_p + kl_q)

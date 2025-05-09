@@ -416,10 +416,9 @@ def train_hypernet(model: Model, env: BaseEnv, params: TrainingParameters, optim
         )
 
         num_agents = policy_loss.shape[0]
-        agent_weights = torch.softmax(torch.randn(num_agents, device=model.device), dim=-1)
         performance_loss = (
-            (agent_weights * (policy_loss - params.entropy_coeff * entropy)).sum() +
-            params.value_loss_coeff * (agent_weights * value_loss).sum()
+            (policy_loss - params.entropy_coeff * entropy).sum() +
+            params.value_loss_coeff * value_loss.sum()
         )
         
         entropy_loss_val = entropy_loss(exp["std"])

@@ -11,9 +11,9 @@ class ActorEncoder(nn.Module):
         super().__init__()
         self.config = config
         input_dim = config.d_obs + config.d_beliefs + config.d_comm_state
-        self.policy_network = make_net([input_dim, 128, 128, 128, 128, 64, config.d_het_weights])
-        self.belief_update = make_net([input_dim, 128, 128, 128, 128, 64, config.d_het_weights])
-        self.encoder_network = make_net([input_dim, 128, 128, 128, 128, 64, config.d_het_weights])
+        self.policy_network = make_net([input_dim, 128, 128, 64, config.d_het_weights])
+        self.belief_update = make_net([input_dim, 128, 128, 64, config.d_het_weights])
+        self.encoder_network = make_net([input_dim, 128, 128, 64, config.d_het_weights])
 
     def forward(self, o, h, z, p_weights, b_weights, e_weights): 
         """

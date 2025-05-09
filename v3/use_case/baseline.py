@@ -111,7 +111,7 @@ class BaselineHeterogeneous(BaseEnv):
         self.type_payoffs = type_payoffs
         self.total_games = total_games
         
-        self.obs_size = 1  
+        self.obs_size = 2  
         self.action_space = spaces.Discrete(self.num_actions)
         self.observation_space = spaces.Box(
             low=-np.inf,
@@ -169,8 +169,8 @@ class BaselineHeterogeneous(BaseEnv):
             rewards[b] = payoff_j[action_a, action_b]
             
             # Generate observations with indexer (agent's own type)
-            observations[a] = np.array([self.agent_types[a]], dtype=np.float32)
-            observations[b] = np.array([self.agent_types[b]], dtype=np.float32)
+            observations[a] = np.array([self.agent_types[a], self.agent_types[b]], dtype=np.float32)
+            observations[b] = np.array([self.agent_types[b], self.agent_types[a]], dtype=np.float32)
 
         self.total_steps += 1
         done = self.total_steps >= self.total_games
