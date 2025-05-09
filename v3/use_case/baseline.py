@@ -91,9 +91,6 @@ class BaselineEnvironment(BaseEnv):
     
     def get_traits(self):
         return self.traits
-    
-    def get_beliefs(self):
-        return np.zeros((self.n_agents, 1))
 
 class BaselineHeterogeneous(BaseEnv):
     def __init__(self, n_agents, n_types, type_payoffs, total_games=1):
@@ -186,9 +183,6 @@ class BaselineHeterogeneous(BaseEnv):
     def get_traits(self):
         return self.traits
     
-    def get_beliefs(self):
-        return np.zeros((self.n_agents, 1))
-
 class BaselineSimpleCommunication(BaseEnv):
     def __init__(self, n_agents, payoff_i, payoff_j, belief_dims = 8, total_games = 1):
         super().__init__(n_agents)

@@ -62,7 +62,7 @@ def evaluate_policy(model: Model, env, num_episodes=10, k = 10):
                 obs_tensor = torch.FloatTensor(obs_array).to(device)
 
                 # Generate hypernet weights
-                belief_vector = torch.ones((model.config.n_agents, 1), device=device)
+                belief_vector = torch.tensor(env.get_beliefs(), device = device)
                 com_vector = torch.zeros((model.config.n_agents, model.config.d_comm_state), device=device)
                 lv, wh, _, _ = model.hypernet(trait_vector, belief_vector)
 

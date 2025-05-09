@@ -23,7 +23,7 @@ class BaseEnv:
         pass 
 
     def get_beliefs(self) -> np.ndarray: 
-        pass
+        return np.zeros((self.n_agents, 1), dtype=np.float32)
 
     def set_beliefs(self, idx : int, belief : np.ndarray):
         pass 

@@ -19,7 +19,8 @@ class TrainingParameters:
     critic_learning_rate : float = 1e-3
 
     gamma: float = 0.99  # Discount factor
-    experience_buffer_size : int = 3         # Warning: You shouldn't make this too big because you will have many agents in the env.
+    experience_buffer_size : int = 3         # Warning: You shouldn't make this too big because you will have many agents in the env
+    experience_sampling_steps : int = 100
     actor_performance_weight : int = 1.0
     entropy_coeff: float = 0.1
     grad_clip_norm = 0.5
@@ -96,8 +97,7 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
     batch_com = []
     batch_ld_means = []
     batch_ld_std = []
-
-    done = False
+    batch_dones = []
 
     for i in range(params.experience_buffer_size):
         
@@ -105,7 +105,7 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
         obs_tensor = torch.FloatTensor(obs_array).to(device)
         
         # Hypernet forward
-        belief_vector = torch.zeros((model.config.n_agents, 1), device=device)
+        belief_vector = torch.tensor(env.get_beliefs(), device = device)
         trait_vector = torch.tensor(env.get_traits(), device = device)
         com_vector = torch.zeros((model.config.n_agents, model.config.d_comm_state), device=device)
 
@@ -136,6 +136,12 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
         next_obs, rewards, dones, _ = env.step(actions_dict)
         rewards = np.array([rewards[agent] for agent in env.get_agents()])
 
+        obs = next_obs
+        done = np.any(dones.values()) or i == params.experience_sampling_steps - 1
+
+        if done:
+            obs = env.reset()
+
         # Store experience
         batch_obs.append(obs_tensor)
         batch_actions.append(actions)
@@ -151,10 +157,8 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
 
         batch_ld_means.append(mean)
         batch_ld_std.append(std)
+        batch_dones.append(torch.tensor(done, dtype = torch.bool))
         
-        obs = next_obs
-        if any(dones.values()):
-            obs = env.reset()
     
     # Convert lists to tensors
     batch_obs = torch.stack(batch_obs)
@@ -171,6 +175,7 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
 
     batch_means = torch.stack(batch_ld_means)
     batch_std = torch.stack(batch_ld_std)
+    batch_dones = torch.stack(batch_dones)
 
     # Compute returns
     returns = compute_returns(batch_rewards.cpu().numpy(), params.gamma).to(device)
@@ -188,6 +193,7 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
         'com': batch_com,
         "means": batch_means,
         "std": batch_std,
+        "done": batch_dones
     }
 
 
@@ -249,7 +255,7 @@ def train_actor(model: Model, env: BaseEnv, params: TrainingParameters, actor_op
 
     for epoch in tqdm(range(params.actor_training_loops), desc="Actor Training"):
         exp = collect_experiences(model, env, params)
-        logits = add_exploration_noise(exp["logits"], params, epoch)
+        logits = exp["logits"]
         
         with torch.no_grad():
             old_dists = Categorical(logits=logits)
@@ -306,7 +312,6 @@ def train_actor(model: Model, env: BaseEnv, params: TrainingParameters, actor_op
 
             # Critic update
             critic_loss = params.value_loss_coeff * value_loss.mean()
-            
             critic_optim.zero_grad()
             critic_loss.backward()
             torch.nn.utils.clip_grad_norm_(model.actor_encoder_critic.parameters(), params.grad_clip_norm)
@@ -317,10 +322,12 @@ def train_actor(model: Model, env: BaseEnv, params: TrainingParameters, actor_op
             avg_entropy_loss += entropy.mean().item()
             avg_value_loss += value_loss.mean().item()
 
+    total_iters = params.actor_training_loops * params.ppo_epochs
+
     print(f"""
-    Average Policy Loss: {avg_policy_loss / (params.actor_training_loops * params.ppo_epochs)}
-    Average Value Loss: {avg_value_loss / (params.actor_training_loops * params.ppo_epochs)}
-    Average Entropy Loss: {avg_entropy_loss / (params.actor_training_loops * params.ppo_epochs)}
+    Average Policy Loss: {avg_policy_loss / total_iters}
+    Average Value Loss: {avg_value_loss / total_iters}
+    Average Entropy Loss: {avg_entropy_loss / total_iters}
     """)
 
     model.actor_encoder.requires_grad_(False)
@@ -336,7 +343,7 @@ def train_hypernet(model: Model, env: BaseEnv, params: TrainingParameters, optim
     for _ in tqdm(range(params.hypernet_training_loops), desc="Hypernet Loop"):        
         exp = collect_experiences(model, env, params)
         with torch.no_grad():
-            logits = add_exploration_noise(exp['logits'], params)
+            logits = exp["logits"]
             old_dists = Categorical(logits=logits)
             old_log_probs = old_dists.log_prob(exp['actions'])
             old_values = exp['values']
