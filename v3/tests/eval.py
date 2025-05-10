@@ -41,7 +41,7 @@ def kmeans(data, k=3, max_iters=100):
         centroids = new_centroids
     return labels, centroids
 
-def evaluate_policy(model: Model, env, num_episodes=10, k = 10, writer : SummaryWriter =None, global_step=None, tag = "x"):
+def evaluate_policy(model: Model, env, num_episodes=10, k = 10, writer : SummaryWriter =None, global_step=None):
     """Evaluate current policy and return average episode return with trait cluster breakdown"""
     total_returns = []
     actions_array = []
@@ -123,12 +123,11 @@ def evaluate_policy(model: Model, env, num_episodes=10, k = 10, writer : Summary
 
     # Original outputs
     mean_returns = np.mean(total_returns)
-    total_returns_sum = np.sum(total_returns)
     actions_flat = np.concatenate(actions_array) if actions_array else np.array([])
-    unique_actions, counts = np.unique(actions_flat, return_counts=True) if len(actions_flat) > 0 else ([], [])
+    
      # Log overall metrics
     if writer is not None:
-        writer.add_scalar(f'Eval/mean_return', mean_returns, global_step)
+        writer.add_scalar(f'Eval/total_rewards', mean_returns, global_step)
         writer.add_histogram(f'Eval/action_distribution', torch.tensor(actions_flat), global_step)
 
     return mean_returns

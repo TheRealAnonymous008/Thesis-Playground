@@ -11,8 +11,12 @@ Instead, precompute everything homogeneous before applying heterogeneous weights
 
 
 
-# TODOs
-* Hypernet should copy PPO and have steps for optimizing towards target
+# TO Test
+* Modify SND to be grouped based on observations (via clustering)
+
+* Use LayerNorm for the hypernet 
 * Use GAE. 
+
+* Use a scheduler for the exploration noise.
 * Change activation from LeakyRELU to RELU
 * Change the SND metric and normalize it by dividing by the number of agent pairs used. 

@@ -20,6 +20,9 @@ class LatentEncoder(nn.Module):
         out = self.net(inputs)
         mu, log_var = torch.chunk(out, 2, dim=1)
         sigma = torch.exp(log_var)  # Convert log variance to variance
+
+        # Ensure sigma is positive
+        sigma = torch.abs(sigma)
         return mu, sigma
 
 class LatentDecoder(nn.Module): 
@@ -78,6 +81,9 @@ class LatentDecoder(nn.Module):
         w = w.reshape((-1, dims, self.config.d_het_weights))
         b = bias_net(lv)
 
+        # w = torch.nn.functional.layer_norm(w, [self.config.d_het_weights])
+        # b = torch.nn.functional.layer_norm(b, [dims])
+
         w = w.cpu()
         b = b.cpu()
         return TensorDict({
@@ -109,9 +115,10 @@ class HyperNetwork (nn.Module):
         mu, sigma = self.latent_encoder(inputs)
 
         # Reparameterization trick to sample latent variable
-        std = torch.sqrt(sigma)
-        eps = torch.randn_like(std)
-        lv = mu + eps * std
+        with torch.no_grad():
+            std = torch.sqrt(sigma)
+            eps = torch.randn_like(std)
+            lv = mu + eps * std
 
         weights  = self.latent_decoder(lv)
 

@@ -1,36 +1,35 @@
 import torch
 import torch.nn.functional as F
 import numpy as np
+import math
 
-def entropy_loss(x):
+def entropy_loss(means: torch.Tensor, stds: torch.Tensor, entropy_target):
     """
-    Returns the entropy of the distribution parameterized by x
-    Since the distributions are assumed multivariate normal, x represents the variances.
+    Returns the entropy of the distribution
     """
-    sum_log_x = torch.sum(torch.log(x), dim=-1)
-    d = x.size(-1)
-    constant_term = d * np.log(2 * np.pi) + 1
-    entropy = 0.5 * (sum_log_x + constant_term)
-
-    return entropy.mean()
+    sum_log_std = torch.log(stds).sum(dim=-1)
+    entropy = sum_log_std               # Technically prop to a constant but we don't need said constant
+    
+    return torch.clamp_min(entropy.mean(), entropy_target)
 
 def threshed_jsd_loss(p, q, s, thresh):
     """
     Returns the Jensen-Shannon Divergence loss between the two logits p and q.
     If the similarity s is less than the threshold, use the JSD; otherwise, output 0.
     """
-    p_prob = F.softmax(p, dim=-1)
-    q_prob = F.softmax(q, dim=-1)
-    m = (p_prob + q_prob) / 2 + 1e-8  # Avoid log(0)
-    log_m = torch.log(m)
-    
-    kl_p = F.kl_div(log_m, p_prob, log_target=False, reduction='none').sum(-1)
-    kl_q = F.kl_div(log_m, q_prob, log_target=False, reduction='none').sum(-1)
+    p_prob = F.log_softmax(p, dim= -1)
+    q_prob = F.log_softmax(q, dim= -1)
+    m = (F.softmax(p, dim=-1) +  F.softmax(q, dim=-1)) / 2 + 1e-8  # Avoid log(0)
+    m = torch.log(m)
+
+    kl_p = F.kl_div(m, p_prob, reduction='none', log_target = True).sum(-1)
+    kl_q = F.kl_div(m, q_prob, reduction='none', log_target = True).sum(-1)
     jsd = 0.5 * (kl_p + kl_q)
+
     
     mask = (s < thresh).float()
-    loss = (jsd * mask).mean()
-
+    loss = (jsd * mask).sum() / mask.sum()
+    
     return loss
 
 def mi_loss(p, q):

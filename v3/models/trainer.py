@@ -5,6 +5,7 @@ from tests.eval import *
 
 import gymnasium as gym 
 import torch 
+from tensordict import cat
 from torch.distributions import Categorical
 from dataclasses import dataclass 
 from tqdm import tqdm 
@@ -29,7 +30,7 @@ class TrainingParameters:
     grad_clip_norm = 10.0
 
     # Exploration specific
-    entropy_target: float = 0.5  # Target entropy for exploration
+    entropy_target: float = 0.5  # Target entropy for exploration. Used in the hypernet.
     noise_scale: float = 0.1     # Scale for parameter noise
     epsilon_start: float = 0.1   # Starting probability for epsilon-greedy
     epsilon_end: float = 0.01    # Ending probability for epsilon-greedy
@@ -50,6 +51,9 @@ class TrainingParameters:
     hypernet_steps : int = 15
 
     sampled_agents : int = 500
+
+    filter_learning_rate : float = 1e-3
+    decoder_learning_rate : float = 1e-3
 
     # Control training flow here
     should_train_hypernet : bool = True,
@@ -130,7 +134,7 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
     batch_dones = []
 
     indices = np.random.choice(env.n_agents, size = params.sampled_agents, replace = False)
-    for i in range(params.experience_buffer_size):
+    for i in range(params.experience_sampling_steps):
         
         obs_array = np.stack([obs[agent] for agent in env.get_agents()])
         obs_tensor = torch.FloatTensor(obs_array).to(device)
@@ -269,39 +273,59 @@ def compute_core_ppo_losses(new_logits: torch.Tensor,
     return policy_loss, value_loss, entropy_loss
 
 def train_model(model: Model, env: BaseEnv, params: TrainingParameters):
-    writer = SummaryWriter()  # Initialize TensorBoard writer
+    writer = SummaryWriter()
     optim = torch.optim.Adam([
         {'params': model.actor_encoder.parameters(), 'lr': params.actor_learning_rate},
         {'params': model.actor_encoder_critic.parameters(), 'lr': params.critic_learning_rate},
-        {'params': model.hypernet.parameters(), 'lr': params.hypernet_learning_rate}
+        {'params': model.hypernet.parameters(), 'lr': params.hypernet_learning_rate},
+        {'params': model.filter.parameters(), 'lr': params.filter_learning_rate}, 
+        {'params': model.decoder_update.parameters(), 'lr': params.decoder_learning_rate}
     ])  
 
     params.global_steps = 0
-
+    experiences = TensorDict({})  # Initialize empty experience buffer
     for i in tqdm(range(params.outer_loops)):
         model.requires_grad_(True)
-        exp = collect_experiences(model, env, params, i)
-        exp = TensorDict(exp)
-
+        
+        # Collect new experiences and explicitly detach+clone
+        new_exp = collect_experiences(model, env, params, i)
+        
+        # Create detached clone of all tensors in the experience
+        detached_exp = TensorDict({
+            k: v.detach().clone() for k, v in new_exp.items()
+        }, batch_size=[params.experience_sampling_steps])
+        
+        # Append to buffer
+        if len(experiences) == 0:
+            experiences = detached_exp
+        else:
+            experiences = torch.cat([experiences, detached_exp], dim=0)
+        
+        # Trim buffer while maintaining computational graph isolation
+        if len(experiences) > params.experience_buffer_size:
+            keep_from = len(experiences) - params.experience_buffer_size
+            experiences = TensorDict(
+                {k: v[keep_from:] for k, v in experiences.items()},
+                batch_size=[params.experience_buffer_size]
+            )
+        
+        # Training logic remains the same
         total_loss = 0
         if params.should_train_actor:
-            total_loss += train_actor(model, env, exp.clone(), params, writer = writer)
-        if params.should_train_hypernet: 
-            total_loss += train_hypernet(model, env, exp.clone(), params, writer = writer)
+            total_loss += train_actor(model, env, experiences, params, writer=writer)
+        if params.should_train_hypernet:
+            total_loss += train_hypernet(model, env, experiences, params, writer=writer)
 
-        model.requires_grad_(False)
-        evaluate_policy(model, env,  writer = writer, global_step= params.global_steps)
-        params.global_steps += 1
-
-        # TODO: Add filter and decoder training
-
-        # Step everything
         optim.zero_grad()
         total_loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), params.grad_clip_norm)
         optim.step()
+        
+        model.requires_grad_(False)
+        evaluate_policy(model, env, writer=writer, global_step=params.global_steps)
+        params.global_steps += 1
 
-    writer.close()  # Close the writer
+    writer.close()
 
 def train_actor(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingParameters, writer : SummaryWriter =None):
     old_logits = exp["logits"]
@@ -311,7 +335,7 @@ def train_actor(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingPar
 
     # Regenerate outputs with current parameters
     new_logits, new_values = [], []
-    for i in range(params.experience_buffer_size):
+    for i in range(len(exp)):
         obs_i = exp["observations"][i]
         wh = exp['wh'][i]
         
@@ -350,22 +374,22 @@ def train_actor(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingPar
     if writer is not None:
         writer.add_scalar('Actor/Policy Loss', policy_loss.mean().item(), global_step = params.global_steps)
         writer.add_scalar('Actor/Value Loss', value_loss.mean().item(), global_step = params.global_steps)
-        writer.add_scalar('Actor/Entropy Loss', entropy.mean().item(), global_step= params.global_steps)
-        writer.add_scalar('Actor/Mean Reward', exp['rewards'].sum(dim=0).mean(), global_step= params.global_steps)
+        writer.add_scalar('Actor/Entropy', entropy.mean().item(), global_step= params.global_steps)
 
     return total_loss
 
 def train_hypernet(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingParameters, writer : SummaryWriter =None):
     num_agents = params.sampled_agents
-    entropy_loss_val = entropy_loss(exp["std"])
+    entropy_loss_val = entropy_loss(exp["means"], exp["std"], params.entropy_target)
 
     old_logits = exp["logits"]
 
     # JSD loss computation with sampled agent pairs within the same timestep
-    num_pairs = min(params.hypernet_num_pair_samples, params.experience_buffer_size * (num_agents * (num_agents - 1)))
+    buffer_length = len(exp)
+    num_pairs = min(params.hypernet_num_pair_samples, buffer_length * (num_agents * (num_agents - 1)))
 
     # Generate timestep indices and agent pairs ensuring i != j
-    timesteps = torch.randint(0, params.experience_buffer_size, (num_pairs,), device=model.device)
+    timesteps = torch.randint(0, buffer_length, (num_pairs,), device=model.device)
     agent_i = torch.randint(0, num_agents, (num_pairs,), device=model.device)
     agent_j = torch.randint(0, num_agents - 1, (num_pairs,), device=model.device)
     agent_j[agent_j >= agent_i] += 1  # Ensure j != i
@@ -374,8 +398,8 @@ def train_hypernet(model: Model, env: BaseEnv, exp: TensorDict, params: Training
     traits_p = exp["traits"][timesteps, agent_i]
     traits_q = exp["traits"][timesteps, agent_j]
 
-    # Compute cosine similarity between trait vectors
-    similarities = torch.nn.functional.cosine_similarity(traits_p, traits_q, dim=1)
+    # Compute cosine similarity between trait vectors normalized to be between 0 and 1
+    similarities = 0.5 * (1 + torch.nn.functional.cosine_similarity(traits_p, traits_q, dim=1))
     # Get logits for each agent in the pairs
     logits_p = old_logits[timesteps, agent_i]
     logits_q = old_logits[timesteps, agent_j]
@@ -387,7 +411,6 @@ def train_hypernet(model: Model, env: BaseEnv, exp: TensorDict, params: Training
     if writer is not None:
         writer.add_scalar('Hypernet/Entropy Loss', entropy_loss_val.item(), global_step = params.global_steps)
         writer.add_scalar('Hypernet/JSD Loss', jsd_loss.item(), global_step = params.global_steps)
-        writer.add_scalar('Hypernet/Mean Reward', exp['rewards'].sum(dim=0).mean(), global_step= params.global_steps)
 
     return total_loss
 
