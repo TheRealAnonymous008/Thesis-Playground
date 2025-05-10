@@ -11,6 +11,12 @@ class Model:
         self.filter = Filter(config)
         self.decoder_update = DecoderUpdate(config)
 
+        self._parameters = list(self.hypernet.parameters()) + \
+            list(self.actor_encoder.parameters())  + \
+            list(self.actor_encoder_critic.parameters()) + \
+            list(self.filter.parameters()) + \
+            list(self.decoder_update.parameters())
+
         self.to(config.device)
 
     def to(self, device):
@@ -46,3 +52,6 @@ class Model:
         Total: {total_params}
         """ 
         print(report)
+
+    def parameters(self):
+        return self._parameters

@@ -78,8 +78,6 @@ class LatentDecoder(nn.Module):
         w = w.reshape((-1, dims, self.config.d_het_weights))
         b = bias_net(lv)
 
-        w = torch.nn.functional.layer_norm(w, [self.config.d_het_weights])
-
         w = w.cpu()
         b = b.cpu()
         return TensorDict({

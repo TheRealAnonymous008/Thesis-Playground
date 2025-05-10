@@ -12,7 +12,7 @@ Instead, precompute everything homogeneous before applying heterogeneous weights
 
 
 # TODOs
-* Change the scheme to have everything train per batch rather than independently.
+* Hypernet should copy PPO and have steps for optimizing towards target
 * Use GAE. 
 * Change activation from LeakyRELU to RELU
 * Change the SND metric and normalize it by dividing by the number of agent pairs used. 

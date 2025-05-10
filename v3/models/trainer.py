@@ -9,6 +9,7 @@ from torch.distributions import Categorical
 from dataclasses import dataclass 
 from tqdm import tqdm 
 from torch.utils.tensorboard import SummaryWriter
+from copy import deepcopy
 
 # Temporary fix to avoid OMP duplicates. Not ideal though.
 import os
@@ -17,8 +18,6 @@ os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 @dataclass
 class TrainingParameters:
     outer_loops: int = 5
-    hypernet_training_loops: int = 5
-    actor_training_loops: int = 5
     actor_learning_rate: float = 1e-3
     critic_learning_rate : float = 1e-3
 
@@ -48,12 +47,16 @@ class TrainingParameters:
     hypernet_jsd_threshold: float = 0.5  
     hypernet_jsd_weight : float = 0.2
     hypernet_num_pair_samples : int = 5000
+    hypernet_steps : int = 15
 
     sampled_agents : int = 500
 
-    # Do not modify these
-    global_actor_steps : int = 0
-    global_hypernet_steps : int = 0
+    # Control training flow here
+    should_train_hypernet : bool = True,
+    should_train_actor : bool = True 
+
+    # Do not change this
+    global_steps : int = 0
 
 def compute_returns(rewards: np.ndarray, dones : torch.Tensor, gamma: float) -> torch.Tensor:
     """Compute discounted returns for each agent and timestep."""
@@ -80,7 +83,7 @@ def add_exploration_noise(logits: torch.Tensor, params: TrainingParameters, epoc
     exploration_mask = torch.rand((n_agents), device=device) < epsilon
     
     # Create uniform logits for entire batch [buffer, agents, actions]
-    uniform_logits = torch.log(torch.ones_like(logits) , n_actions)
+    uniform_logits = torch.log(torch.ones_like(logits) / n_actions)
     
     # Apply epsilon-greedy mask
     modified_logits = torch.where(
@@ -232,29 +235,6 @@ def normalize_advantages(advantages : torch.Tensor):
     advantages = (advantages - advantages_mean) / advantages_std
     return advantages 
 
-def train_model(model: Model, env: BaseEnv, params: TrainingParameters):
-    writer = SummaryWriter()  # Initialize TensorBoard writer
-    hyper_optim = torch.optim.Adam(model.hypernet.parameters(), lr=params.hypernet_learning_rate)
-    actor_optim = torch.optim.Adam(model.actor_encoder.parameters(), lr=params.actor_learning_rate)
-    critic_optim = torch.optim.Adam(model.actor_encoder_critic.parameters(), lr = params.critic_learning_rate)
-
-    params.global_actor_steps = 0
-    params.global_hypernet_steps = 0
-
-    for i in range(params.outer_loops):
-        print(f"Epoch {i}")
-        model.requires_grad_(False)
-
-        if params.hypernet_training_loops > 0: 
-            train_hypernet(model, env, params, hyper_optim, writer = writer)
-            evaluate_policy(model, env,  writer = writer, tag = "hypernet", global_step= i)
-        if params.actor_training_loops > 0:
-            train_actor(model, env, params, actor_optim, critic_optim,  writer = writer)
-            evaluate_policy(model, env,  writer = writer, tag = "actor", global_step = i)
-
-        # TODO: Add filter and decoder training
-    writer.close()  # Close the writer
-
 def compute_core_ppo_losses(new_logits: torch.Tensor, 
                             new_values: torch.Tensor, 
                             actions: torch.Tensor, 
@@ -288,169 +268,124 @@ def compute_core_ppo_losses(new_logits: torch.Tensor,
     # Return unaggregated agent-wise losses
     return policy_loss, value_loss, entropy_loss
 
-def train_actor(model: Model, env: BaseEnv, params: TrainingParameters, actor_optim, critic_optim, writer : SummaryWriter =None):
-    model.actor_encoder.requires_grad_(True)
-    model.actor_encoder_critic.requires_grad_(True)
+def train_model(model: Model, env: BaseEnv, params: TrainingParameters):
+    writer = SummaryWriter()  # Initialize TensorBoard writer
+    optim = torch.optim.Adam([
+        {'params': model.actor_encoder.parameters(), 'lr': params.actor_learning_rate},
+        {'params': model.actor_encoder_critic.parameters(), 'lr': params.critic_learning_rate},
+        {'params': model.hypernet.parameters(), 'lr': params.hypernet_learning_rate}
+    ])  
 
-    for epoch in tqdm(range(params.actor_training_loops), desc="Actor Training"):
-        exp = collect_experiences(model, env, params, epoch)
+    params.global_steps = 0
 
-        with torch.no_grad():
-            old_dists = Categorical(logits=exp["logits"])
-            old_log_probs = old_dists.log_prob(exp['actions'])
-            advantages = normalize_advantages(exp["returns"] - exp["values"])
+    for i in tqdm(range(params.outer_loops)):
+        model.requires_grad_(True)
+        exp = collect_experiences(model, env, params, i)
+        exp = TensorDict(exp)
+
+        if params.should_train_actor:
+            train_actor(model, env, exp.clone(), params, optim,  writer = writer)
+        if params.should_train_hypernet: 
+            train_hypernet(model, env, exp.clone(), params, optim, writer = writer)
+
+        model.requires_grad_(False)
+        evaluate_policy(model, env,  writer = writer, global_step= params.global_steps)
+        params.global_steps += 1
+
+        # TODO: Add filter and decoder training
+
+    writer.close()  # Close the writer
+
+def train_actor(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingParameters, optim, writer : SummaryWriter =None):
+    old_dists = Categorical(logits=exp["logits"])
+    old_log_probs = old_dists.log_prob(exp['actions'])
+    advantages = normalize_advantages(exp["returns"] - exp["values"])
+
+    # Regenerate outputs with current parameters
+    new_logits, new_values = [], []
+    for i in range(params.experience_buffer_size):
+        obs_i = exp["observations"][i]
+        wh = exp['wh'][i]
+        
+        # Actor forward
+        Q_i, _, _ = model.actor_encoder(
+            obs_i,
+            exp["belief"][i],
+            exp["com"][i],
+            wh["policy"],
+            wh["belief"],
+            wh["encoder"]
+        )
+        new_logits.append(Q_i)
+        
+        # Critic forward
+        V_i = model.actor_encoder_critic(
+            obs_i,
+            exp["belief"][i],
+            exp["com"][i],
+            wh["critic"]
+        ).squeeze(-1)
+        new_values.append(V_i)
+
+    new_logits, new_values = torch.stack(new_logits), torch.stack(new_values)
+
+    # Calculate losses
+    policy_loss, value_loss, entropy = compute_core_ppo_losses(
+        new_logits, new_values, exp['actions'], advantages,
+        exp["returns"], old_log_probs, params
+    )
+
+    actor_loss = (params.actor_performance_weight * policy_loss - params.entropy_coeff * entropy).mean()
+    critic_loss = params.value_loss_coeff * value_loss.mean()
+    total_loss = actor_loss + critic_loss
+
+    optim.zero_grad()
+    total_loss.backward()
+    torch.nn.utils.clip_grad_norm_(model.parameters(), params.grad_clip_norm)
+    optim.step()
+
+    if writer is not None:
+        writer.add_scalar('Actor/Policy Loss', policy_loss.mean().item(), global_step = params.global_steps)
+        writer.add_scalar('Actor/Value Loss', value_loss.mean().item(), global_step = params.global_steps)
+        writer.add_scalar('Actor/Entropy Loss', entropy.mean().item(), global_step= params.global_steps)
+        writer.add_scalar('Actor/Mean Reward', exp['rewards'].sum(dim=0).mean(), global_step= params.global_steps)
 
 
-        # PPO training loop
-        for i in range(params.ppo_epochs):
-            # Regenerate outputs with current parameters
-            new_logits, new_values = [], []
-            for i in range(params.experience_buffer_size):
-                obs_i = exp["observations"][i]
-                wh = exp['wh'][i]
-                
-                # Actor forward
-                Q_i, _, _ = model.actor_encoder(
-                    obs_i,
-                    exp["belief"][i],
-                    exp["com"][i],
-                    wh["policy"],
-                    wh["belief"],
-                    wh["encoder"]
-                )
-                new_logits.append(Q_i)
-                
-                # Critic forward
-                V_i = model.actor_encoder_critic(
-                    obs_i,
-                    exp["belief"][i],
-                    exp["com"][i],
-                    wh["critic"]
-                ).squeeze(-1)
-                new_values.append(V_i)
+def train_hypernet(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingParameters, optim, writer : SummaryWriter =None):
+    num_agents = params.sampled_agents
+    entropy_loss_val = entropy_loss(exp["std"])
 
-            new_logits, new_values = torch.stack(new_logits), torch.stack(new_values)
+    # JSD loss computation with sampled agent pairs within the same timestep
+    num_pairs = min(params.hypernet_num_pair_samples, params.experience_buffer_size * (num_agents * (num_agents - 1)))
 
-            # Calculate losses
-            policy_loss, value_loss, entropy = compute_core_ppo_losses(
-                new_logits, new_values, exp['actions'], advantages,
-                exp["returns"], old_log_probs, params
-            )
+    # Generate timestep indices and agent pairs ensuring i != j
+    timesteps = torch.randint(0, params.experience_buffer_size, (num_pairs,), device=model.device)
+    agent_i = torch.randint(0, num_agents, (num_pairs,), device=model.device)
+    agent_j = torch.randint(0, num_agents - 1, (num_pairs,), device=model.device)
+    agent_j[agent_j >= agent_i] += 1  # Ensure j != i
 
-            # Actor update
-            actor_loss = (params.actor_performance_weight * policy_loss - params.entropy_coeff * entropy).mean()
-            
-            actor_optim.zero_grad()
-            actor_loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.actor_encoder.parameters(), params.grad_clip_norm)
-            actor_optim.step()
+    # Get trait vectors for each agent pair
+    traits_p = exp["traits"][timesteps, agent_i]
+    traits_q = exp["traits"][timesteps, agent_j]
 
-            # Critic update
-            critic_loss = params.value_loss_coeff * value_loss.mean()
-            critic_optim.zero_grad()
-            critic_loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.actor_encoder_critic.parameters(), params.grad_clip_norm)
-            critic_optim.step()
-
-            if writer is not None:
-                writer.add_scalar('Actor/Policy Loss', policy_loss.mean().item(), global_step = params.global_actor_steps)
-                writer.add_scalar('Actor/Value Loss', value_loss.mean().item(), global_step = params.global_actor_steps)
-                writer.add_scalar('Actor/Entropy Loss', entropy.mean().item(), global_step= params.global_actor_steps)
-                writer.add_scalar('Actor/Mean Reward', exp['rewards'].sum(dim=0).mean(), global_step= params.global_actor_steps)
-
-                params.global_actor_steps += 1
-
-    model.actor_encoder.requires_grad_(False)
-    model.actor_encoder_critic.requires_grad_(False)
-
-def train_hypernet(model: Model, env: BaseEnv, params: TrainingParameters, optim, writer : SummaryWriter =None):
-    model.hypernet.requires_grad_(True)
+    # Compute cosine similarity between trait vectors
+    similarities = torch.nn.functional.cosine_similarity(traits_p, traits_q, dim=1)
+    # Get logits for each agent in the pairs
+    logits_p = exp["logits"][timesteps, agent_i]
+    logits_q = exp["logits"][timesteps, agent_j]
+    # Compute JSD loss
+    jsd_loss = threshed_jsd_loss(logits_p, logits_q, similarities, params.hypernet_jsd_threshold)
     
-    # TODO: Possibly modify this so that the actor network is trained a few times to see if it is actually good.
-    for epoch in tqdm(range(params.hypernet_training_loops), desc="Hypernet Loop"):        
-        exp = collect_experiences(model, env, params, epoch)
-        with torch.no_grad():
-            old_dists = Categorical(logits=exp["logits"])
-            old_log_probs = old_dists.log_prob(exp['actions'])
-            advantages = normalize_advantages(exp["returns"] - exp["values"])
+    total_loss =params.hypernet_entropy_weight * entropy_loss_val  - params.hypernet_jsd_weight * jsd_loss
 
-        new_logits = []
-        new_values = []
-        lv_list = []
-        
-        for i in range(params.experience_buffer_size):
-            traits_i = exp["traits"][i]
-            belief_i = exp["belief"][i]
-            lv_i, wh_i, _, _= model.hypernet.forward(traits_i, belief_i)
-            lv_list.append(lv_i)
-            Q_i, _, _ = model.actor_encoder(
-                exp["observations"][i],
-                belief_i,
-                exp["com"][i],
-                wh_i["policy"],
-                wh_i["belief"],
-                wh_i["encoder"]
-            )
-            new_logits.append(Q_i)
-            V_i = model.actor_encoder_critic(
-                exp["observations"][i],
-                belief_i,
-                exp["com"][i],
-                wh_i["critic"]
-            ).squeeze(-1)
-            new_values.append(V_i)
-        
-        new_logits, new_values = torch.stack(new_logits), torch.stack(new_values)
-        
-        policy_loss, value_loss, entropy = compute_core_ppo_losses(
-            new_logits, new_values, exp['actions'], advantages,
-            exp['returns'], old_log_probs, params
-        )
+    optim.zero_grad()
+    torch.nn.utils.clip_grad_norm_(model.hypernet.parameters(), max_norm=params.grad_clip_norm)
+    total_loss.backward()
+    optim.step()
 
-        num_agents = policy_loss.shape[0]
-        performance_loss = (
-            (policy_loss - params.entropy_coeff * entropy).sum() +
-            params.value_loss_coeff * value_loss.sum()
-        )
-        
-        entropy_loss_val = entropy_loss(exp["std"])
+    if writer is not None:
+        writer.add_scalar('Hypernet/Entropy Loss', entropy_loss_val.item(), global_step = params.global_steps)
+        writer.add_scalar('Hypernet/JSD Loss', jsd_loss.item(), global_step = params.global_steps)
+        writer.add_scalar('Hypernet/Mean Reward', exp['rewards'].sum(dim=0).mean(), global_step= params.global_steps)
 
-        # JSD loss computation with sampled agent pairs within the same timestep
-        num_pairs = min(params.hypernet_num_pair_samples, params.experience_buffer_size * (num_agents * (num_agents - 1)))
 
-        # Generate timestep indices and agent pairs ensuring i != j
-        timesteps = torch.randint(0, params.experience_buffer_size, (num_pairs,), device=model.device)
-        agent_i = torch.randint(0, num_agents, (num_pairs,), device=model.device)
-        agent_j = torch.randint(0, num_agents - 1, (num_pairs,), device=model.device)
-        agent_j[agent_j >= agent_i] += 1  # Ensure j != i
-
-        # Get trait vectors for each agent pair
-        traits_p = exp["traits"][timesteps, agent_i]
-        traits_q = exp["traits"][timesteps, agent_j]
-
-        # Compute cosine similarity between trait vectors
-        similarities = torch.nn.functional.cosine_similarity(traits_p, traits_q, dim=1)
-        # Get logits for each agent in the pairs
-        logits_p = new_logits[timesteps, agent_i]
-        logits_q = new_logits[timesteps, agent_j]
-        # Compute JSD loss
-        jsd_loss = threshed_jsd_loss(logits_p, logits_q, similarities, params.hypernet_jsd_threshold)
-        
-        total_loss = params.hypernet_performance_weight * performance_loss 
-        + params.hypernet_entropy_weight * entropy_loss_val 
-        - params.hypernet_jsd_weight * jsd_loss
-        
-
-        if writer is not None:
-            writer.add_scalar('Hypernet/Policy Loss', policy_loss.mean().item(), global_step = params.global_hypernet_steps)
-            writer.add_scalar('Hypernet/Entropy Loss', entropy_loss_val.item(), global_step = params.global_hypernet_steps)
-            writer.add_scalar('Hypernet/JSD Loss', jsd_loss.item(), global_step = params.global_hypernet_steps)
-            writer.add_scalar('Hypernet/Mean Reward', exp['rewards'].sum(dim=0).mean(), global_step= params.global_hypernet_steps)
-            params.global_hypernet_steps += 1
-
-        optim.zero_grad()
-        torch.nn.utils.clip_grad_norm_(model.hypernet.parameters(), max_norm=params.grad_clip_norm)
-        total_loss.backward()
-        optim.step()
-
-    model.hypernet.requires_grad_(False)
