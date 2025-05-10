@@ -283,10 +283,11 @@ def train_model(model: Model, env: BaseEnv, params: TrainingParameters):
         exp = collect_experiences(model, env, params, i)
         exp = TensorDict(exp)
 
+        total_loss = 0
         if params.should_train_actor:
-            train_actor(model, env, exp.clone(), params, optim,  writer = writer)
+            total_loss += train_actor(model, env, exp.clone(), params, writer = writer)
         if params.should_train_hypernet: 
-            train_hypernet(model, env, exp.clone(), params, optim, writer = writer)
+            total_loss += train_hypernet(model, env, exp.clone(), params, writer = writer)
 
         model.requires_grad_(False)
         evaluate_policy(model, env,  writer = writer, global_step= params.global_steps)
@@ -294,10 +295,17 @@ def train_model(model: Model, env: BaseEnv, params: TrainingParameters):
 
         # TODO: Add filter and decoder training
 
+        # Step everything
+        optim.zero_grad()
+        total_loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), params.grad_clip_norm)
+        optim.step()
+
     writer.close()  # Close the writer
 
-def train_actor(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingParameters, optim, writer : SummaryWriter =None):
-    old_dists = Categorical(logits=exp["logits"])
+def train_actor(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingParameters, writer : SummaryWriter =None):
+    old_logits = exp["logits"]
+    old_dists = Categorical(logits=old_logits)
     old_log_probs = old_dists.log_prob(exp['actions'])
     advantages = normalize_advantages(exp["returns"] - exp["values"])
 
@@ -339,21 +347,19 @@ def train_actor(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingPar
     critic_loss = params.value_loss_coeff * value_loss.mean()
     total_loss = actor_loss + critic_loss
 
-    optim.zero_grad()
-    total_loss.backward()
-    torch.nn.utils.clip_grad_norm_(model.parameters(), params.grad_clip_norm)
-    optim.step()
-
     if writer is not None:
         writer.add_scalar('Actor/Policy Loss', policy_loss.mean().item(), global_step = params.global_steps)
         writer.add_scalar('Actor/Value Loss', value_loss.mean().item(), global_step = params.global_steps)
         writer.add_scalar('Actor/Entropy Loss', entropy.mean().item(), global_step= params.global_steps)
         writer.add_scalar('Actor/Mean Reward', exp['rewards'].sum(dim=0).mean(), global_step= params.global_steps)
 
+    return total_loss
 
-def train_hypernet(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingParameters, optim, writer : SummaryWriter =None):
+def train_hypernet(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingParameters, writer : SummaryWriter =None):
     num_agents = params.sampled_agents
     entropy_loss_val = entropy_loss(exp["std"])
+
+    old_logits = exp["logits"]
 
     # JSD loss computation with sampled agent pairs within the same timestep
     num_pairs = min(params.hypernet_num_pair_samples, params.experience_buffer_size * (num_agents * (num_agents - 1)))
@@ -371,21 +377,17 @@ def train_hypernet(model: Model, env: BaseEnv, exp: TensorDict, params: Training
     # Compute cosine similarity between trait vectors
     similarities = torch.nn.functional.cosine_similarity(traits_p, traits_q, dim=1)
     # Get logits for each agent in the pairs
-    logits_p = exp["logits"][timesteps, agent_i]
-    logits_q = exp["logits"][timesteps, agent_j]
+    logits_p = old_logits[timesteps, agent_i]
+    logits_q = old_logits[timesteps, agent_j]
     # Compute JSD loss
     jsd_loss = threshed_jsd_loss(logits_p, logits_q, similarities, params.hypernet_jsd_threshold)
     
     total_loss =params.hypernet_entropy_weight * entropy_loss_val  - params.hypernet_jsd_weight * jsd_loss
-
-    optim.zero_grad()
-    torch.nn.utils.clip_grad_norm_(model.hypernet.parameters(), max_norm=params.grad_clip_norm)
-    total_loss.backward()
-    optim.step()
 
     if writer is not None:
         writer.add_scalar('Hypernet/Entropy Loss', entropy_loss_val.item(), global_step = params.global_steps)
         writer.add_scalar('Hypernet/JSD Loss', jsd_loss.item(), global_step = params.global_steps)
         writer.add_scalar('Hypernet/Mean Reward', exp['rewards'].sum(dim=0).mean(), global_step= params.global_steps)
 
+    return total_loss
 
