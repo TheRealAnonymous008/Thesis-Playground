@@ -19,4 +19,3 @@ Instead, precompute everything homogeneous before applying heterogeneous weights
 
 * Use a scheduler for the exploration noise.
 * Change activation from LeakyRELU to RELU
-* Change the SND metric and normalize it by dividing by the number of agent pairs used. 

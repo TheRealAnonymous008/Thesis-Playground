@@ -35,7 +35,9 @@ class TrainingParameters:
     epsilon_start: float = 0.1   # Starting probability for epsilon-greedy
     epsilon_end: float = 0.01    # Ending probability for epsilon-greedy
     epsilon_decay: float = 0.99  # Decay rate for epsilon
-
+    epsilon_period: int = 250    # period for cosine scheduling. If 0, doesn't use cosine scheduling
+    
+    
     # PPO-specific parameters
     clip_epsilon: float = 0.2
     ppo_epochs: int = 15
@@ -61,6 +63,7 @@ class TrainingParameters:
 
     # Do not change this
     global_steps : int = 0
+    epsilon : float = 0 
 
 def compute_returns(rewards: np.ndarray, dones : torch.Tensor, gamma: float) -> torch.Tensor:
     """Compute discounted returns for each agent and timestep."""
@@ -68,10 +71,10 @@ def compute_returns(rewards: np.ndarray, dones : torch.Tensor, gamma: float) -> 
     returns = np.zeros_like(rewards, dtype=np.float32)
     
     # Calculate returns for each agent
-    for t in reversed(range(n_timesteps)):
-        if dones[t]:
-            R = 0.0
-        for agent in range(n_agents):
+    for agent in range(n_agents):
+        for t in reversed(range(n_timesteps)):
+            if dones[t]:
+                R = 0.0
             R = rewards[t, agent] + gamma * R
             returns[t, agent] = R
     
@@ -81,10 +84,14 @@ def add_exploration_noise(logits: torch.Tensor, params: TrainingParameters, epoc
     """Add independent exploration noise per agent and timestep"""
     device = logits.device
     n_agents, n_actions = logits.shape
-    epsilon = max(params.epsilon_end, params.epsilon_start * (params.epsilon_decay ** epoch))
-    
+
+    if params.epsilon_period > 1:
+        epoch %= params.epsilon_period
+
+    params.epsilon = max(params.epsilon_end, params.epsilon_start * (params.epsilon_decay ** epoch))
+
     # Create exploration mask [buffer, agents]
-    exploration_mask = torch.rand((n_agents), device=device) < epsilon
+    exploration_mask = torch.rand((n_agents), device=device) < params.epsilon
     
     # Create uniform logits for entire batch [buffer, agents, actions]
     uniform_logits = torch.log(torch.ones_like(logits) / n_actions)
@@ -268,6 +275,7 @@ def compute_core_ppo_losses(new_logits: torch.Tensor,
     value_loss = torch.nn.functional.huber_loss(new_values.mean(dim=0), returns.mean(dim=0), reduction='none', delta = 10.0) # [agents]
     # Apply per-agent entropy bonus
     entropy_loss = entropy.mean(dim=0)  # [agents]
+
     
     # Return unaggregated agent-wise losses
     return policy_loss, value_loss, entropy_loss
@@ -315,6 +323,10 @@ def train_model(model: Model, env: BaseEnv, params: TrainingParameters):
             total_loss += train_actor(model, env, experiences, params, writer=writer)
         if params.should_train_hypernet:
             total_loss += train_hypernet(model, env, experiences, params, writer=writer)
+
+        
+        if writer is not None:
+            writer.add_scalar('State/Epsilon', params.epsilon, global_step = params.global_steps)
 
         optim.zero_grad()
         total_loss.backward()
@@ -375,6 +387,7 @@ def train_actor(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingPar
         writer.add_scalar('Actor/Policy Loss', policy_loss.mean().item(), global_step = params.global_steps)
         writer.add_scalar('Actor/Value Loss', value_loss.mean().item(), global_step = params.global_steps)
         writer.add_scalar('Actor/Entropy', entropy.mean().item(), global_step= params.global_steps)
+        writer.add_scalar("Actor/Total Loss", total_loss.item(), global_step= params.global_steps)
 
     return total_loss
 
