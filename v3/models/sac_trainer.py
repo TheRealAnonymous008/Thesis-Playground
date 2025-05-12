@@ -18,7 +18,12 @@ def compute_core_sac_losses(current_q1: torch.Tensor,
     """Compute SAC Q losses, policy loss, and alpha loss if applicable."""
     q1_loss = torch.nn.functional.mse_loss(current_q1, target_q)
     q2_loss = torch.nn.functional.mse_loss(current_q2, target_q)
-    
+
+    if type(alpha) is torch.Tensor:
+        alpha = alpha.to(log_probs.device)
+    else:
+        alpha = torch.tensor(alpha, device = log_probs.device)
+
     if automatic_entropy_tuning:
         alpha_loss = -(log_probs + target_entropy).detach() * alpha
         alpha_loss = alpha_loss.mean()
@@ -46,20 +51,25 @@ def train_sac_actor(model: Model, env: BaseEnv, exp: TensorDict, params: Trainin
     
     # Compute next actions and log probabilities (target policy)
     with torch.no_grad():
-        next_actions, next_log_probs = model.actor_encoder(
+        next_actions, _, _ = model.actor_encoder(
             next_obs_all, belief_actor, com_all,
             wh_all["policy"], wh_all["belief"], wh_all["encoder"]
         )
+
+        dists = Categorical(logits = next_actions)
+        a =  dists.sample().view(-1, 1)
+        dones = dones.float().repeat_interleave(env.n_agents, dim=0).to(model.device)  # Reshape here
         
         # Compute target Q values
-        target_q1 = model.target_q1(next_obs_all, next_actions, wh_all["target_q1"])
-        target_q2 = model.target_q2(next_obs_all, next_actions, wh_all["target_q2"])
-        target_q = torch.min(target_q1, target_q2) - params.alpha * next_log_probs
+        # TODO: This is placeholder. It really should be the next belief and com state.
+        target_q1 = model.target_q1(next_obs_all,  belief_actor, com_all, wh_all["critic"])
+        target_q2 = model.target_q2(next_obs_all,  belief_actor, com_all, wh_all["q2"])
+        target_q = torch.min(target_q1, target_q2) - params.alpha * a
         target_q = rewards + params.gamma * (1 - dones) * target_q
     
     # Compute current Q estimates
-    current_q1 = model.q1(obs_all, actions, wh_all["q1"])
-    current_q2 = model.q2(obs_all, actions, wh_all["q2"])
+    current_q1 = model.q1(obs_all,  belief_actor, com_all, wh_all["critic"])
+    current_q2 = model.q2(obs_all, belief_actor, com_all , wh_all["q2"])
     
     # Freeze Q parameters for policy update
     for param in model.q1.parameters():
@@ -68,18 +78,18 @@ def train_sac_actor(model: Model, env: BaseEnv, exp: TensorDict, params: Trainin
         param.requires_grad = False
     
     # Sample new actions for policy update
-    new_actions, log_probs = model.actor_encoder(
+    Q, _, _  = model.actor_encoder(
         obs_all, belief_actor, com_all,
         wh_all["policy"], wh_all["belief"], wh_all["encoder"]
     )
     
     # Compute Q values for new actions
-    q1_new = model.q1(obs_all, new_actions, wh_all["q1"])
-    q2_new = model.q2(obs_all, new_actions, wh_all["q2"])
+    q1_new = model.q1(obs_all, belief_actor, com_all, wh_all["critic"])
+    q2_new = model.q2(obs_all, belief_actor, com_all, wh_all["q2"])
     q_new = torch.min(q1_new, q2_new)
     
     # Policy loss
-    policy_loss = (params.alpha * log_probs - q_new).mean()
+    policy_loss = (params.alpha * Q - q_new).mean()
     
     # Unfreeze Q parameters
     for param in model.q1.parameters():
@@ -91,25 +101,8 @@ def train_sac_actor(model: Model, env: BaseEnv, exp: TensorDict, params: Trainin
     q1_loss, q2_loss, policy_loss, alpha_loss = compute_core_sac_losses(
         current_q1, current_q2, target_q.detach(), policy_loss,
         model.log_alpha if params.automatic_entropy_tuning else params.alpha,
-        log_probs, params.target_entropy, params.automatic_entropy_tuning
+        Q, params.target_entropy, params.automatic_entropy_tuning
     )
-    
-    # Optimize Q networks
-    model.q_optimizer.zero_grad()
-    (q1_loss + q2_loss).backward()
-    model.q_optimizer.step()
-    
-    # Optimize policy
-    model.actor_optimizer.zero_grad()
-    policy_loss.backward()
-    model.actor_optimizer.step()
-    
-    # Optimize alpha
-    if params.automatic_entropy_tuning:
-        model.alpha_optimizer.zero_grad()
-        alpha_loss.backward()
-        model.alpha_optimizer.step()
-        params.alpha = model.log_alpha.exp().item()
     
     # Update target networks
     with torch.no_grad():

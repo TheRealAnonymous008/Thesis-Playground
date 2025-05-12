@@ -72,3 +72,10 @@ class TrainingParameters:
     # Do not change this
     global_steps : int = 0
     epsilon : float = 0 
+
+
+    # SAC Specific 
+    alpha : float = 0.2
+    automatic_entropy_tuning : bool = True 
+    target_entropy : float = 0.4
+    tau : float = 0.005

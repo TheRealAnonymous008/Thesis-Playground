@@ -7,6 +7,7 @@ class Model:
         self.hypernet = HyperNetwork(config)
         self.actor_encoder = ActorEncoder(config)
         self.actor_encoder_critic = CriticEncoder(config)
+        self.second_critic = CriticEncoder(config)
 
         self.filter = Filter(config)
         self.decoder_update = DecoderUpdate(config)
@@ -17,7 +18,20 @@ class Model:
             list(self.filter.parameters()) + \
             list(self.decoder_update.parameters())
 
+        self.target_q1 = CriticEncoder(config)
+        self.target_q2 = CriticEncoder(config)
+
+
+        self.log_alpha = torch.Tensor([0.1])
         self.to(config.device)
+
+    @property 
+    def q1(self):
+        return self.actor_encoder_critic
+    
+    @property 
+    def q2(self):
+        return self.second_critic
 
     def to(self, device):
         self.device = device
@@ -25,15 +39,24 @@ class Model:
         self.hypernet.to(device)
         self.actor_encoder.to(device)
         self.actor_encoder_critic.to(device)
+        self.second_critic.to(device)
         self.filter.to(device)
         self.decoder_update.to(device)
+
+        self.target_q1.to(device)
+        self.target_q2.to(device)
+
+        self.log_alpha.to(device)
 
     def requires_grad_(self, val):
         self.hypernet.requires_grad_(val)
         self.actor_encoder.requires_grad_(val)
         self.actor_encoder_critic.requires_grad_(val)
+        self.actor_encoder_critic.requires_grad_(val)
         self.filter.requires_grad_(val)
         self.decoder_update.requires_grad_(val)
+
+        self.log_alpha.requires_grad_(val)
 
     def param_count(self):
         hypernet_params = sum(p.numel() for p in self.hypernet.parameters() if p.requires_grad)

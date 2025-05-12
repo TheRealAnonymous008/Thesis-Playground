@@ -9,6 +9,7 @@ from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 from .param_settings import TrainingParameters
 from .ppo_trainer import *
+from .sac_trainer import *
 
 # Temporary fix to avoid OMP duplicates. Not ideal though.
 import os
@@ -31,6 +32,11 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
     batch_ld_means = []
     batch_ld_std = []
     batch_dones = []
+
+    # Nexts
+    batch_next_obs = []
+    batch_next_belief = []
+    batch_next_com = []
 
     sampled_agents = int(params.sampled_agents_proportion * env.n_agents)
     indices = np.random.choice(env.n_agents, size = sampled_agents, replace = False)
@@ -79,8 +85,11 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
         if done:
             obs = env.reset()
 
+        next_obs_tensor = torch.FloatTensor(np.stack([obs[agent] for agent in env.get_agents()])).to(device)
+
         # Store experience
         batch_obs.append(obs_tensor[indices])
+        batch_next_obs.append(next_obs_tensor[indices])
         batch_actions.append(actions[indices])
         batch_rewards.append(rewards[indices])
         batch_logits.append(Q[indices])
@@ -114,7 +123,7 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
     batch_std = torch.stack(batch_ld_std)
     batch_dones = torch.stack(batch_dones)
 
-    # Compute returns
+    batch_next_obs = torch.stack(batch_next_obs)
 
     return {
         'observations': batch_obs,
@@ -129,7 +138,9 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
         'com': batch_com,
         "means": batch_means,
         "std": batch_std,
-        "done": batch_dones
+        "done": batch_dones,
+        "next_observations": batch_next_obs,
+
     }
 
 def train_model(model: Model, env: BaseEnv, params: TrainingParameters):
@@ -177,7 +188,7 @@ def train_model(model: Model, env: BaseEnv, params: TrainingParameters):
         total_loss = torch.tensor(0.0, requires_grad = True)
 
         if params.should_train_actor:
-            total_loss = total_loss + train_ppo_actor(model, env, experiences, params, writer=writer)
+            total_loss = total_loss + train_sac_actor(model, env, experiences, params, writer=writer)
         
         if params.should_train_hypernet:
             total_loss = total_loss + train_hypernet(model, env, experiences, params, writer=writer)

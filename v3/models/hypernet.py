@@ -69,6 +69,7 @@ class LatentDecoder(nn.Module):
         return TensorDict({
             "policy": self.get_weights(lv, self.p_net_weights, self.p_net_biases, self.config.d_action),
             "critic": self.get_weights(lv, self.crit_weights, self.crit_biases, 1), 
+            "q2": self.get_weights(lv, self.crit_weights, self.crit_biases, 1),
             "belief": self.get_weights(lv, self.b_net_weights, self.b_net_biases, self.config.d_beliefs),
             "encoder": self.get_weights(lv, self.e_net_weights, self.e_net_biases, self.config.d_comm_state),
             "filter": self.get_weights(lv, self.f_net_weights, self.f_net_biases, self.config.d_message), 
