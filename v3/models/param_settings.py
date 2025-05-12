@@ -27,6 +27,7 @@ class TrainingParameters:
     outer_loops: int = 5
     actor_learning_rate: float = 1e-3
     critic_learning_rate : float = 1e-3
+    device : str = "cuda"
 
     gamma: float = 0.99  # Discount factor
     experience_buffer_size : int = 3         # Warning: You shouldn't make this too big because you will have many agents in the env
@@ -69,13 +70,17 @@ class TrainingParameters:
     ppo_epochs: int = 15
     hypernet_steps : int = 15
 
+
+    # SAC Specific 
+    alpha : float = 0.2
+    automatic_entropy_tuning : bool = True
+    target_entropy : float = 0.01
+    tau : float = 0.005
+
+
     # Do not change this
     global_steps : int = 0
     epsilon : float = 0 
 
-
-    # SAC Specific 
-    alpha : float = 0.2
-    automatic_entropy_tuning : bool = True 
-    target_entropy : float = 0.4
-    tau : float = 0.005
+    # Other stuff
+    eval_temp : float = 1.0

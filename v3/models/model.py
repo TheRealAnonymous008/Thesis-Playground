@@ -1,45 +1,45 @@
 from .actor import * 
 from .hypernet import * 
 
-class Model: 
+class SACModel: 
     def __init__(self, config : ParameterSettings):
         self.config = config
         self.hypernet = HyperNetwork(config)
         self.actor_encoder = ActorEncoder(config)
-        self.actor_encoder_critic = CriticEncoder(config)
-        self.second_critic = CriticEncoder(config)
+        self.q1 = CriticEncoder(config)
+        self.q2 = CriticEncoder(config)
 
         self.filter = Filter(config)
         self.decoder_update = DecoderUpdate(config)
 
-        self._parameters = list(self.hypernet.parameters()) + \
-            list(self.actor_encoder.parameters())  + \
-            list(self.actor_encoder_critic.parameters()) + \
-            list(self.filter.parameters()) + \
-            list(self.decoder_update.parameters())
-
         self.target_q1 = CriticEncoder(config)
         self.target_q2 = CriticEncoder(config)
 
-
-        self.log_alpha = torch.Tensor([0.1])
+        self.log_alpha = nn.Parameter(torch.tensor(0.2, dtype = torch.float16), requires_grad=True)
         self.to(config.device)
 
-    @property 
-    def q1(self):
-        return self.actor_encoder_critic
+        self._parameters = list(self.hypernet.parameters()) + \
+            list(self.actor_encoder.parameters())  + \
+            list(self.q1.parameters()) + \
+            list(self.q2.parameters()) + \
+            list(self.filter.parameters()) + \
+            list(self.decoder_update.parameters()) + \
+            list([self.log_alpha])
     
-    @property 
-    def q2(self):
-        return self.second_critic
+    @property
+    def alpha(self):
+        return self.log_alpha.exp()
+    
+    def set_alpha(self, x ):
+        self.log_alpha = torch.tensor(x, dtype = torch.float16, device = self.device, requires_grad=True)
 
     def to(self, device):
         self.device = device
 
         self.hypernet.to(device)
         self.actor_encoder.to(device)
-        self.actor_encoder_critic.to(device)
-        self.second_critic.to(device)
+        self.q1.to(device)
+        self.q2.to(device)
         self.filter.to(device)
         self.decoder_update.to(device)
 
@@ -51,8 +51,8 @@ class Model:
     def requires_grad_(self, val):
         self.hypernet.requires_grad_(val)
         self.actor_encoder.requires_grad_(val)
-        self.actor_encoder_critic.requires_grad_(val)
-        self.actor_encoder_critic.requires_grad_(val)
+        self.q1.requires_grad_(val)
+        self.q2.requires_grad_(val)
         self.filter.requires_grad_(val)
         self.decoder_update.requires_grad_(val)
 
@@ -61,7 +61,7 @@ class Model:
     def param_count(self):
         hypernet_params = sum(p.numel() for p in self.hypernet.parameters() if p.requires_grad)
         actor_encoder_params = sum(p.numel() for p in self.actor_encoder.parameters() if p.requires_grad)
-        actor_critic_params = sum(p.numel() for p in self.actor_encoder_critic.parameters() if p.requires_grad)
+        actor_critic_params = sum(p.numel() for p in self.q1.parameters() if p.requires_grad)
         filter_params = sum(p.numel() for p in self.filter.parameters() if p.requires_grad)
         decoder_update_params = sum(p.numel() for p in self.decoder_update.parameters() if p.requires_grad)
         total_params = hypernet_params + actor_encoder_params + actor_critic_params +  filter_params + decoder_update_params

@@ -41,7 +41,7 @@ def compute_core_ppo_losses(new_logits: torch.Tensor,
     return policy_loss, value_loss, entropy_loss
 
 
-def train_ppo_actor(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingParameters, writer : SummaryWriter =None):
+def train_ppo_actor(model: SACModel, env: BaseEnv, exp: TensorDict, params: TrainingParameters, writer : SummaryWriter =None):
     old_logits = exp["logits"]
     rewards = normalize_tensor(exp["rewards"])
     returns = compute_returns(rewards.detach().cpu().numpy(), exp["done"], params.gamma).to(exp["rewards"].device)
@@ -76,7 +76,7 @@ def train_ppo_actor(model: Model, env: BaseEnv, exp: TensorDict, params: Trainin
     new_logits = Q_all.view(buffer_size, agent_no, -1)  # Adjust dimensions as needed
 
     # Critic forward pass
-    V_all = model.actor_encoder_critic(
+    V_all = model.q1(
         obs_all,
         belief_actor,
         com_all,

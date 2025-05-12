@@ -1,6 +1,6 @@
 import numpy as np 
 import torch
-from models.model import Model
+from models.model import SACModel
 from torch.utils.tensorboard import SummaryWriter
 from torch.distributions import Categorical
 
@@ -42,7 +42,7 @@ def kmeans(data, k=3, max_iters=100):
         centroids = new_centroids
     return labels, centroids
 
-def evaluate_policy(model: Model, env, num_episodes=10, k = 2, writer : SummaryWriter =None, global_step=None, temperature = 2):
+def evaluate_policy(model: SACModel, env, num_episodes=10, k = 2, writer : SummaryWriter =None, global_step=None, temperature = -1):
     """Evaluate current policy and return average episode return with trait cluster breakdown"""
     total_returns = []
     actions_array = []

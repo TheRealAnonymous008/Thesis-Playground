@@ -11,19 +11,14 @@ def compute_core_sac_losses(current_q1: torch.Tensor,
                             current_q2: torch.Tensor,
                             target_q: torch.Tensor,
                             policy_loss: torch.Tensor,
-                            alpha: float,
+                            alpha: torch.Tensor,
                             log_probs: torch.Tensor,
                             target_entropy: float,
                             automatic_entropy_tuning: bool) -> tuple:
     """Compute SAC Q losses, policy loss, and alpha loss if applicable."""
     q1_loss = torch.nn.functional.mse_loss(current_q1, target_q)
     q2_loss = torch.nn.functional.mse_loss(current_q2, target_q)
-
-    if type(alpha) is torch.Tensor:
-        alpha = alpha.to(log_probs.device)
-    else:
-        alpha = torch.tensor(alpha, device = log_probs.device)
-
+    
     if automatic_entropy_tuning:
         alpha_loss = -(log_probs + target_entropy).detach() * alpha
         alpha_loss = alpha_loss.mean()
@@ -32,7 +27,7 @@ def compute_core_sac_losses(current_q1: torch.Tensor,
     
     return q1_loss, q2_loss, policy_loss, alpha_loss
 
-def train_sac_actor(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingParameters, writer: SummaryWriter = None):
+def train_sac_actor(model: SACModel, env: BaseEnv, exp: TensorDict, params: TrainingParameters, writer: SummaryWriter = None):
     # Reshape inputs for hypernetwork
     traits_all = exp["traits"].view(-1, exp["traits"].shape[-1])
     belief_hyper = exp["belief"].view(-1, exp["belief"].shape[-1])
@@ -64,7 +59,7 @@ def train_sac_actor(model: Model, env: BaseEnv, exp: TensorDict, params: Trainin
         # TODO: This is placeholder. It really should be the next belief and com state.
         target_q1 = model.target_q1(next_obs_all,  belief_actor, com_all, wh_all["critic"])
         target_q2 = model.target_q2(next_obs_all,  belief_actor, com_all, wh_all["q2"])
-        target_q = torch.min(target_q1, target_q2) - params.alpha * a
+        target_q = torch.min(target_q1, target_q2) - model.alpha * a
         target_q = rewards + params.gamma * (1 - dones) * target_q
     
     # Compute current Q estimates
@@ -89,7 +84,7 @@ def train_sac_actor(model: Model, env: BaseEnv, exp: TensorDict, params: Trainin
     q_new = torch.min(q1_new, q2_new)
     
     # Policy loss
-    policy_loss = (params.alpha * Q - q_new).mean()
+    policy_loss = (model.alpha * Q - q_new).mean()
     
     # Unfreeze Q parameters
     for param in model.q1.parameters():
@@ -100,7 +95,7 @@ def train_sac_actor(model: Model, env: BaseEnv, exp: TensorDict, params: Trainin
     # Compute losses
     q1_loss, q2_loss, policy_loss, alpha_loss = compute_core_sac_losses(
         current_q1, current_q2, target_q.detach(), policy_loss,
-        model.log_alpha if params.automatic_entropy_tuning else params.alpha,
+        model.alpha if params.automatic_entropy_tuning else params.alpha,
         Q, params.target_entropy, params.automatic_entropy_tuning
     )
     
@@ -116,9 +111,9 @@ def train_sac_actor(model: Model, env: BaseEnv, exp: TensorDict, params: Trainin
         writer.add_scalar('Loss/Q1', q1_loss.item(), params.global_steps)
         writer.add_scalar('Loss/Q2', q2_loss.item(), params.global_steps)
         writer.add_scalar('Loss/Policy', policy_loss.item(), params.global_steps)
-        writer.add_scalar('Entropy/Alpha', params.alpha, params.global_steps)
+        writer.add_scalar('Entropy/Alpha', model.alpha, params.global_steps)
         if params.automatic_entropy_tuning:
             writer.add_scalar('Loss/Alpha', alpha_loss.item(), params.global_steps)
     
-    total_loss = q1_loss + q2_loss + policy_loss
+    total_loss = q1_loss + q2_loss + policy_loss + alpha_loss
     return total_loss
