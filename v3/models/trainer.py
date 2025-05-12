@@ -32,7 +32,7 @@ class TrainingParameters:
     entropy_target: float = 0.1  # Target entropy for exploration. Used in the hypernet.
     noise_scale: float = 0.1     # Scale for parameter noise
     epsilon_start: float = 0.8   # Starting probability for epsilon-greedy
-    epsilon_end: float = 0    # Ending probability for epsilon-greedy
+    epsilon_end: float = 0.1    # Ending probability for epsilon-greedy
     epsilon_decay: float = 0.99  # Decay rate for epsilon
     epsilon_period: int = 250    # period for cosine scheduling. If 0, doesn't use cosine scheduling
     
@@ -40,8 +40,8 @@ class TrainingParameters:
     # PPO-specific parameters
     clip_epsilon: float = 0.2
     ppo_epochs: int = 15
-    value_loss_coeff: float = 0.2
-    entropy_coeff: float = 0.01
+    value_loss_coeff: float = 0.5
+    entropy_coeff: float = 0.4
 
     # Hypernet specific parameters
     hypernet_learning_rate : float = 1e-3
@@ -65,7 +65,7 @@ class TrainingParameters:
     global_steps : int = 0
     epsilon : float = 0 
 
-def normalize_rewards(rewards : torch.Tensor):
+def normalize_tensor(rewards : torch.Tensor):
     reward_mean = rewards.mean(dim=1, keepdim=True)
     reward_std = rewards.std(dim=1, keepdim=True) + 1e-8
     rewards = (rewards - reward_mean) / reward_std
@@ -111,7 +111,7 @@ def add_exploration_noise(logits: torch.Tensor, params: TrainingParameters, epoc
     # Add independent Gaussian noise per agent-timestep pair
     noise = torch.randn_like(modified_logits) * params.noise_scale
 
-    return modified_logits
+    return modified_logits + noise
 
 def select_weights(wh : TensorDict, indices : list) -> TensorDict:
     return TensorDict(
@@ -229,8 +229,6 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
     batch_dones = torch.stack(batch_dones)
 
     # Compute returns
-    batch_rewards = normalize_rewards(batch_rewards)
-    returns = compute_returns(batch_rewards.cpu().numpy(), batch_dones.cpu().numpy(), params.gamma).to(device)
 
     return {
         'observations': batch_obs,
@@ -239,7 +237,6 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
         'logits': batch_logits,
         'lv': batch_lv,
         'wh': batch_wh,
-        'returns': returns,
         "values" : batch_values,
         'belief': batch_belief,
         'traits': batch_trait, 
@@ -248,12 +245,6 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
         "std": batch_std,
         "done": batch_dones
     }
-
-def normalize_advantages(advantages : torch.Tensor):
-    advantages_mean = advantages.mean(dim=0, keepdim=True)
-    advantages_std = advantages.std(dim=0, keepdim=True) + 1e-8
-    advantages = (advantages - advantages_mean) / advantages_std
-    return advantages 
 
 def compute_core_ppo_losses(new_logits: torch.Tensor, 
                             new_values: torch.Tensor, 
@@ -266,25 +257,23 @@ def compute_core_ppo_losses(new_logits: torch.Tensor,
     """Compute PPO policy loss, value loss, and entropy with per-agent calculations."""
     new_dists = Categorical(logits=new_logits)
     new_log_probs = new_dists.log_prob(actions)
-
     
     # Per-agent entropy (shape [timesteps, agents])
-    entropy = new_dists.entropy()
     
     # Independent policy optimization per agent
     ratios = torch.exp(new_log_probs - old_log_probs)
     surr1 = ratios * advantages
     surr2 = torch.clamp(ratios, 1-params.clip_epsilon, 1+params.clip_epsilon) * advantages
-    
 
     # Agent-wise policy loss (mean over time first)
     policy_loss = -torch.min(surr1, surr2).mean(dim=0)  # [agents]
 
     # Agent-wise value loss
     value_loss = torch.nn.functional.huber_loss(new_values.mean(dim=0), returns.mean(dim=0), reduction='none', delta = 10.0) # [agents]
+    
     # Apply per-agent entropy bonus
+    entropy = new_dists.entropy()
     entropy_loss = entropy.mean(dim=0)  # [agents]
-
     
     # Return unaggregated agent-wise losses
     return policy_loss, value_loss, entropy_loss
@@ -330,7 +319,6 @@ def train_model(model: Model, env: BaseEnv, params: TrainingParameters):
                 batch_size=[params.experience_buffer_size]
             )
         
-        # Training logic remains the same
         total_loss = 0
         if params.should_train_actor:
             total_loss += train_actor(model, env, experiences, params, writer=writer)
@@ -356,13 +344,19 @@ def train_actor(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingPar
     old_logits = exp["logits"]
     old_dists = Categorical(logits=old_logits)
     old_log_probs = old_dists.log_prob(exp['actions'])
-    advantages = normalize_advantages(exp["returns"] - exp["values"])
+
+    rewards = normalize_tensor(exp["rewards"])
+    returns = compute_returns(rewards.detach().cpu().numpy(), exp["done"], params.gamma).to(exp["rewards"].device)
+    values = normalize_tensor(exp["values"])
+
+    advantages = normalize_tensor(returns - values)
 
     # Regenerate outputs with current parameters
     new_logits, new_values = [], []
     for i in range(len(exp)):
         obs_i = exp["observations"][i]
-        wh = exp['wh'][i]
+
+        _, wh, _ , _  = model.hypernet.forward(exp["traits"][i], exp["belief"][i])
         
         # Actor forward
         Q_i, _, _ = model.actor_encoder(
@@ -388,8 +382,7 @@ def train_actor(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingPar
 
     # Calculate losses
     policy_loss, value_loss, entropy = compute_core_ppo_losses(
-        new_logits, new_values, exp['actions'], advantages,
-        exp["returns"], old_log_probs, params
+        new_logits, new_values, exp['actions'], advantages, returns, old_log_probs, params
     )
 
     policy_loss =  params.actor_performance_weight * policy_loss.mean()

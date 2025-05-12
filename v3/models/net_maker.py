@@ -4,7 +4,7 @@ import torch.functional as F
 import numpy as np 
 
 def make_net(params: list[int], 
-             last_activation = True, 
+             last_activation : str = "leaky", 
              dropout_rate = 0.1, 
              enable_batch_norm = False, 
              enable_spectral_norm = False,
@@ -24,8 +24,12 @@ def make_net(params: list[int],
 
         layers.append(linear_layer)
 
-        if last_activation and i == len(params) - 1: 
-            layers.append(nn.LeakyReLU())
+        if i == len(params) - 1: 
+            if last_activation == "leaky":
+                layers.append(nn.LeakyReLU())
+            else: 
+                pass 
+            
         elif i < len(params) - 1: 
             layers.append(nn.LeakyReLU())
 
