@@ -438,7 +438,9 @@ def train_hypernet(model: Model, env: BaseEnv, exp: TensorDict, params: Training
     # Compute JSD loss
     jsd_loss = threshed_jsd_loss(logits_p, logits_q, similarities, params.hypernet_jsd_threshold)
     
-    total_loss = params.hypernet_entropy_weight * entropy_loss_val  - params.hypernet_jsd_weight * jsd_loss
+    e_loss =  params.hypernet_entropy_weight * entropy_loss_val
+    j_loss = params.hypernet_jsd_weight * jsd_loss
+    total_loss = e_loss - j_loss
 
     if writer is not None:
         writer.add_scalar('Hypernet/Entropy Loss', entropy_loss_val.item(), global_step = params.global_steps)
