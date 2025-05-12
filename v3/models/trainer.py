@@ -32,7 +32,7 @@ class TrainingParameters:
     entropy_target: float = 0.1  # Target entropy for exploration. Used in the hypernet.
     noise_scale: float = 0.1     # Scale for parameter noise
     epsilon_start: float = 0.8   # Starting probability for epsilon-greedy
-    epsilon_end: float = 0.1    # Ending probability for epsilon-greedy
+    epsilon_end: float = 0.2    # Ending probability for epsilon-greedy
     epsilon_decay: float = 0.99  # Decay rate for epsilon
     epsilon_period: int = 250    # period for cosine scheduling. If 0, doesn't use cosine scheduling
     
@@ -258,7 +258,6 @@ def compute_core_ppo_losses(new_logits: torch.Tensor,
     new_dists = Categorical(logits=new_logits)
     new_log_probs = new_dists.log_prob(actions)
     
-    # Per-agent entropy (shape [timesteps, agents])
     
     # Independent policy optimization per agent
     ratios = torch.exp(new_log_probs - old_log_probs)
@@ -270,8 +269,7 @@ def compute_core_ppo_losses(new_logits: torch.Tensor,
 
     # Agent-wise value loss
     value_loss = torch.nn.functional.huber_loss(new_values.mean(dim=0), returns.mean(dim=0), reduction='none', delta = 10.0) # [agents]
-    
-    # Apply per-agent entropy bonus
+
     entropy = new_dists.entropy()
     entropy_loss = entropy.mean(dim=0)  # [agents]
     
@@ -351,36 +349,42 @@ def train_actor(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingPar
 
     advantages = normalize_tensor(returns - values)
 
-    # Regenerate outputs with current parameters
-    new_logits, new_values = [], []
-    for i in range(len(exp)):
-        obs_i = exp["observations"][i]
+    # Reshape all inputs to combine buffer_size and agent_no into a single batch dimension
+    buffer_size, agent_no, *_ = exp["traits"].shape  # Get dimensions
+    traits_all = exp["traits"].view(-1, exp["traits"].shape[-1])
+    belief_hyper = exp["belief"].view(-1, exp["belief"].shape[-1])
 
-        _, wh, _ , _  = model.hypernet.forward(exp["traits"][i], exp["belief"][i])
-        
-        # Actor forward
-        Q_i, _, _ = model.actor_encoder(
-            obs_i,
-            exp["belief"][i],
-            exp["com"][i],
-            wh["policy"],
-            wh["belief"],
-            wh["encoder"]
-        )
-        new_logits.append(Q_i)
-        
-        # Critic forward
-        V_i = model.actor_encoder_critic(
-            obs_i,
-            exp["belief"][i],
-            exp["com"][i],
-            wh["critic"]
-        ).squeeze(-1)
-        new_values.append(V_i)
+    # Compute hypernet outputs for all agents and buffer entries in one batch
+    _, wh_all, _, _ = model.hypernet.forward(traits_all, belief_hyper)
 
-    new_logits, new_values = torch.stack(new_logits), torch.stack(new_values)
-    new_values = normalize_tensor(new_values)
+    # Reshape other inputs for actor and critic
+    obs_all = exp["observations"].view(-1, exp["observations"].shape[-1])
+    belief_actor = exp["belief"].view(-1, exp["belief"].shape[-1])
+    com_all = exp["com"].view(-1, exp["com"].shape[-1])
 
+    # Actor forward pass for all entries
+    Q_all, _, _ = model.actor_encoder(
+        obs_all,
+        belief_actor,
+        com_all,
+        wh_all["policy"],
+        wh_all["belief"],
+        wh_all["encoder"]
+    )
+
+    # Reshape Q outputs to (buffer_size, agent_no, ...)
+    new_logits = Q_all.view(buffer_size, agent_no, -1)  # Adjust dimensions as needed
+
+    # Critic forward pass
+    V_all = model.actor_encoder_critic(
+        obs_all,
+        belief_actor,
+        com_all,
+        wh_all["critic"]
+    ).squeeze(-1)
+
+    # Reshape V outputs to (buffer_size, agent_no)
+    new_values = V_all.view(buffer_size, agent_no)
     # Calculate losses
     policy_loss, value_loss, entropy = compute_core_ppo_losses(
         new_logits, new_values, exp['actions'], advantages, returns, old_log_probs, params

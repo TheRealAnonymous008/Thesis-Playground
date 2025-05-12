@@ -28,8 +28,8 @@ class ActorEncoder(nn.Module):
         Q = self.policy_network(input)
         # Get the logits for the actions
         Q = apply_heterogeneous_weights(Q, p_weights, sigmoid = False )
-        h = apply_heterogeneous_weights(self.belief_update(input), b_weights)
-        ze = apply_heterogeneous_weights(self.encoder_network(input), e_weights)
+        h = apply_heterogeneous_weights(self.belief_update(input), b_weights, sigmoid = False )
+        ze = apply_heterogeneous_weights(self.encoder_network(input), e_weights, sigmoid = False )
 
         return Q, h, ze
 
@@ -64,7 +64,7 @@ class Filter(nn.Module):
         """
         zei = torch.Tensor.expand(zei, (Mij.shape[0], -1))
         input = torch.cat([zei, Mij], dim = 1)
-        message = apply_heterogeneous_weights(self.net(input), f_weights)
+        message = apply_heterogeneous_weights(self.net(input), f_weights, sigmoid = False )
 
         return message 
     
@@ -84,9 +84,9 @@ class DecoderUpdate(nn.Module):
         um_weights = (whum, bum)
         us_weights = (whus, bus)
 
-        zdj = apply_heterogeneous_weights(self.dec_net(input), d_weights)
-        mu = apply_heterogeneous_weights(self.update_mean_net(input), um_weights)
-        sigma = apply_heterogeneous_weights(self.update_cov_net(input), us_weights)
+        zdj = apply_heterogeneous_weights(self.dec_net(input), d_weights, sigmoid = False )
+        mu = apply_heterogeneous_weights(self.update_mean_net(input), um_weights, sigma = False)
+        sigma = apply_heterogeneous_weights(self.update_cov_net(input), us_weights, sigma = False)
 
         std = torch.sqrt(sigma)
         eps = torch.randn_like(std)
