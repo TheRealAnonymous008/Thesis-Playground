@@ -39,7 +39,6 @@ class TrainingParameters:
     
     # PPO-specific parameters
     clip_epsilon: float = 0.2
-    ppo_epochs: int = 15
     value_loss_coeff: float = 1.0
     entropy_coeff: float = 0.2
 
@@ -48,8 +47,8 @@ class TrainingParameters:
     hypernet_entropy_weight : float = 0.1
     hypernet_jsd_threshold: float = 0.5  
     hypernet_jsd_weight : float = 1.0
+    hypernet_diversity_weight : float = 0.5
     hypernet_samples_per_batch : float = 1.0         # A constant determining how many to sample
-    hypernet_steps : int = 15
 
     sampled_agents_proportion : float = 1.0
 
@@ -60,6 +59,9 @@ class TrainingParameters:
     should_train_hypernet : bool = True,
     should_train_actor : bool = True 
     verbose : bool = True
+
+    ppo_epochs: int = 15
+    hypernet_steps : int = 15
 
     # Do not change this
     global_steps : int = 0
@@ -170,8 +172,8 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
         Q = add_exploration_noise(Q, params, epoch)
 
         dists = Categorical(logits=Q)
-
         actions = dists.sample().cpu().numpy()
+
         actions_dict = {agent: int(actions[i]) for i, agent in enumerate(env.get_agents())}
 
         # Critic forward
@@ -294,6 +296,7 @@ def train_model(model: Model, env: BaseEnv, params: TrainingParameters):
 
     params.global_steps = 0
     experiences = TensorDict({})  # Initialize empty experience buffer
+
     for i in tqdm(range(params.outer_loops)):
         model.requires_grad_(True)
         
@@ -319,12 +322,13 @@ def train_model(model: Model, env: BaseEnv, params: TrainingParameters):
                 batch_size=[params.experience_buffer_size]
             )
         
-        total_loss = 0
-        if params.should_train_actor:
-            total_loss += train_actor(model, env, experiences, params, writer=writer)
-        if params.should_train_hypernet:
-            total_loss += train_hypernet(model, env, experiences, params, writer=writer)
+        total_loss = torch.tensor(0.0, requires_grad = True)
 
+        if params.should_train_hypernet:
+            total_loss = total_loss + train_hypernet(model, env, experiences, params, writer=writer)
+        if params.should_train_actor:
+            total_loss = total_loss +  train_actor(model, env, experiences, params, writer=writer)
+        
         
         if writer is not None:
             writer.add_scalar('State/Epsilon', params.epsilon, global_step = params.global_steps)
@@ -400,13 +404,11 @@ def train_actor(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingPar
     total_loss = actor_loss + critic_loss
 
     if writer is not None:
-        writer.add_scalars('Actor/Metrics', {
-            'Policy Loss' : policy_loss.item(), 
-            'Actor Loss': actor_loss.item(),
-            'Critic Loss': critic_loss.item(),
-            'Entropy': entropy_regularization.item(),
-            'Total Loss': total_loss.item()
-        }, global_step=params.global_steps)
+        writer.add_scalar('Actor/Metrics/Policy Loss', policy_loss.item(), global_step= params.global_steps)
+        writer.add_scalar('Actor/Metrics/Actor Loss', actor_loss.item(), global_step= params.global_steps)
+        writer.add_scalar('Actor/Metrics/Critic Loss', critic_loss.item(), global_step= params.global_steps)
+        writer.add_scalar('Actor/Metrics/Entropy', entropy_regularization.item(), global_step= params.global_steps)
+        writer.add_scalar('Actor/Metrics/Total Loss', total_loss.item(), global_step= params.global_steps)
 
     return total_loss
 
@@ -438,13 +440,22 @@ def train_hypernet(model: Model, env: BaseEnv, exp: TensorDict, params: Training
     # Compute JSD loss
     jsd_loss = threshed_jsd_loss(logits_p, logits_q, similarities, params.hypernet_jsd_threshold)
     
+    lv_i = exp["lv"][timesteps, agent_i]
+    lv_j = exp["lv"][timesteps, agent_j]
+    # Compute the diversity of latent variables generated
+    div_sim = 1.0 - 0.5 * (1 + torch.nn.functional.cosine_similarity(lv_i, lv_j))
+    div_sim = div_sim.mean()
+
     e_loss =  params.hypernet_entropy_weight * entropy_loss_val
     j_loss = params.hypernet_jsd_weight * jsd_loss
-    total_loss = e_loss - j_loss
+    d_loss = params.hypernet_diversity_weight * div_sim
+    total_loss = e_loss - d_loss + j_loss
 
     if writer is not None:
-        writer.add_scalar('Hypernet/Entropy Loss', entropy_loss_val.item(), global_step = params.global_steps)
-        writer.add_scalar('Hypernet/JSD Loss', jsd_loss.item(), global_step = params.global_steps)
+        writer.add_scalar('Hypernet/Entropy Loss', e_loss.item(), global_step = params.global_steps)
+        writer.add_scalar('Hypernet/JSD Loss', j_loss.item(), global_step = params.global_steps)
+        writer.add_scalar('Hypernet/Diversity', d_loss.item(), global_step = params.global_steps)
+        writer.add_scalar('Hypernet/Total Loss', total_loss.item(), global_step = params.global_steps)
 
     return total_loss
 

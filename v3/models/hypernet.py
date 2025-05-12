@@ -115,11 +115,9 @@ class HyperNetwork (nn.Module):
         inputs = torch.cat([c, h], dim=1)  # Concatenate along feature dimension
         mu, sigma = self.latent_encoder(inputs)
 
-        # Reparameterization trick to sample latent variable
-        with torch.no_grad():
-            std = torch.sqrt(sigma)
-            eps = torch.randn_like(std)
-            lv = mu + eps * std
+        cov_matrix = torch.diag_embed(torch.sqrt(sigma))  # Create diagonal covariance matrix from variances
+        dist = torch.distributions.MultivariateNormal(mu, covariance_matrix=cov_matrix)
+        lv = dist.rsample() 
 
         weights  = self.latent_decoder(lv)
         # Return the latent variable and the heterogeneous weights
