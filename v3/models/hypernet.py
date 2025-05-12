@@ -11,7 +11,7 @@ class LatentEncoder(nn.Module):
     def __init__(self, config: ParameterSettings):
         super().__init__()
         input_dim = config.d_traits + config.d_beliefs
-        self.net = make_net([input_dim, 128, 256, 256, 256, 128, 2 * config.d_het_latent], last_activation=False)
+        self.net = make_net([input_dim, 256, 2 * config.d_het_latent], last_activation=False)
 
     def forward(self, inputs):
         """
@@ -29,36 +29,37 @@ class LatentDecoder(nn.Module):
     def __init__(self, config: ParameterSettings):
         super().__init__()
         self.config = config
+        self.enable_spectral_norm = True
         # Policy
-        self.p_net_weights = make_net([config.d_het_latent, 128, 256, 512, config.d_het_weights * config.d_action], enable_spectral_norm= True, last_activation = False)
-        self.p_net_biases = make_net([config.d_het_latent, 128, 256, 512, config.d_action], enable_spectral_norm= True, last_activation = False)
+        self.p_net_weights = make_net([config.d_het_latent, 256, 256, 256, config.d_het_weights * config.d_action], enable_spectral_norm= self.enable_spectral_norm, last_activation = False)
+        self.p_net_biases = make_net([config.d_het_latent, 256, 256, 256, config.d_action], enable_spectral_norm= self.enable_spectral_norm, last_activation = False)
 
         # Critic
-        self.crit_weights = make_net([config.d_het_latent, 128, 256, 512, config.d_het_weights], enable_spectral_norm= True, last_activation = False)
-        self.crit_biases = make_net([config.d_het_latent, 128, 256, 512, 1] , enable_spectral_norm= True, last_activation = False)
+        self.crit_weights = make_net([config.d_het_latent, 256, 256, 256, config.d_het_weights], enable_spectral_norm= self.enable_spectral_norm, last_activation = False)
+        self.crit_biases = make_net([config.d_het_latent, 256, 256, 256, 1] , enable_spectral_norm= self.enable_spectral_norm, last_activation = False)
 
         # Belief
-        self.b_net_weights = make_net([config.d_het_latent, 128, 256, 512, config.d_het_weights * config.d_beliefs] , enable_spectral_norm= True, last_activation = False)
-        self.b_net_biases = make_net([config.d_het_latent, 128, 256, 512, config.d_beliefs] , enable_spectral_norm= True, last_activation = False)
+        self.b_net_weights = make_net([config.d_het_latent, 256, 256, 256, config.d_het_weights * config.d_beliefs] , enable_spectral_norm= self.enable_spectral_norm, last_activation = False)
+        self.b_net_biases = make_net([config.d_het_latent, 256, 256, 256, config.d_beliefs] , enable_spectral_norm= self.enable_spectral_norm, last_activation = False)
 
         # Encoder
-        self.e_net_weights = make_net([config.d_het_latent, 128, 256, 512, config.d_het_weights * config.d_comm_state] , enable_spectral_norm= True, last_activation = False)
-        self.e_net_biases = make_net([config.d_het_latent, 128, 256, 512, config.d_comm_state] , enable_spectral_norm= True, last_activation = False)
+        self.e_net_weights = make_net([config.d_het_latent, 256, 256, 256, config.d_het_weights * config.d_comm_state] , enable_spectral_norm= self.enable_spectral_norm, last_activation = False)
+        self.e_net_biases = make_net([config.d_het_latent, 256, 256, 256, config.d_comm_state] , enable_spectral_norm= self.enable_spectral_norm, last_activation = False)
 
         # Filter
-        self.f_net_weights = make_net([config.d_het_latent, 128, 256, 512, config.d_het_weights * config.d_message] , enable_spectral_norm= True , last_activation = False)
-        self.f_net_biases = make_net([config.d_het_latent, 128, 256, 512, config.d_message] , enable_spectral_norm= True, last_activation = False)
+        self.f_net_weights = make_net([config.d_het_latent, 256, 256, 256, config.d_het_weights * config.d_message] , enable_spectral_norm= self.enable_spectral_norm , last_activation = False)
+        self.f_net_biases = make_net([config.d_het_latent, 256, 256, 256, config.d_message] , enable_spectral_norm= self.enable_spectral_norm, last_activation = False)
 
         # Decoder
-        self.d_net_weights = make_net([config.d_het_latent, 128, 256, 512, config.d_het_weights * config.d_comm_state] , enable_spectral_norm= True, last_activation = False)
-        self.d_net_biases = make_net([config.d_het_latent, 128, 256, 512, config.d_comm_state] , enable_spectral_norm= True, last_activation = False)
+        self.d_net_weights = make_net([config.d_het_latent, 256, 256, 256, config.d_het_weights * config.d_comm_state] , enable_spectral_norm= self.enable_spectral_norm, last_activation = False)
+        self.d_net_biases = make_net([config.d_het_latent, 256, 256, 256, config.d_comm_state] , enable_spectral_norm= self.enable_spectral_norm, last_activation = False)
 
         # Update
-        self.u_mean_net_weights = make_net([config.d_het_latent, 128, 256, 512, config.d_het_weights * config.d_relation] , enable_spectral_norm= True, last_activation = False)
-        self.u_mean_net_biases = make_net([config.d_het_latent, 128, 256, 512, config.d_relation] , enable_spectral_norm= True, last_activation = False)
+        self.u_mean_net_weights = make_net([config.d_het_latent, 256, 256, 256, config.d_het_weights * config.d_relation] , enable_spectral_norm= self.enable_spectral_norm, last_activation = False)
+        self.u_mean_net_biases = make_net([config.d_het_latent, 256, 256, 256, config.d_relation] , enable_spectral_norm= self.enable_spectral_norm, last_activation = False)
         
-        self.u_bias_net_weights = make_net([config.d_het_latent, 128, 256, 512, config.d_het_weights * config.d_relation] , enable_spectral_norm= True, last_activation = False)
-        self.u_bias_net_biases = make_net([config.d_het_latent, 128, 256, 512, config.d_relation] , enable_spectral_norm= True, last_activation = False)
+        self.u_bias_net_weights = make_net([config.d_het_latent, 256, 256, 256, config.d_het_weights * config.d_relation] , enable_spectral_norm= self.enable_spectral_norm, last_activation = False)
+        self.u_bias_net_biases = make_net([config.d_het_latent, 256, 256, 256, config.d_relation] , enable_spectral_norm= self.enable_spectral_norm, last_activation = False)
 
     def forward(self, lv):
         """
@@ -83,9 +84,9 @@ class LatentDecoder(nn.Module):
 
         # w = torch.nn.functional.layer_norm(w, [self.config.d_het_weights])
         # b = torch.nn.functional.layer_norm(b, [dims])
+        w = w.cpu() * self.config.hypernet_scale_factor
+        b = b.cpu() * self.config.hypernet_scale_factor
 
-        w = w.cpu()
-        b = b.cpu()
         return TensorDict({
             "weight": w, 
             "bias": b,
@@ -121,7 +122,6 @@ class HyperNetwork (nn.Module):
             lv = mu + eps * std
 
         weights  = self.latent_decoder(lv)
-
         # Return the latent variable and the heterogeneous weights
         return lv, weights, mu, sigma
 

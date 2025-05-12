@@ -24,16 +24,15 @@ class TrainingParameters:
 
     gamma: float = 0.99  # Discount factor
     experience_buffer_size : int = 3         # Warning: You shouldn't make this too big because you will have many agents in the env
+    actor_performance_weight : float = 1.0
     experience_sampling_steps : int = 100
-    actor_performance_weight : int = 1.0
-    entropy_coeff: float = 0.1
     grad_clip_norm = 10.0
 
     # Exploration specific
     entropy_target: float = 0.5  # Target entropy for exploration. Used in the hypernet.
     noise_scale: float = 0.1     # Scale for parameter noise
-    epsilon_start: float = 0.1   # Starting probability for epsilon-greedy
-    epsilon_end: float = 0.01    # Ending probability for epsilon-greedy
+    epsilon_start: float = 0.8   # Starting probability for epsilon-greedy
+    epsilon_end: float = 0    # Ending probability for epsilon-greedy
     epsilon_decay: float = 0.99  # Decay rate for epsilon
     epsilon_period: int = 250    # period for cosine scheduling. If 0, doesn't use cosine scheduling
     
@@ -41,18 +40,18 @@ class TrainingParameters:
     # PPO-specific parameters
     clip_epsilon: float = 0.2
     ppo_epochs: int = 15
-    value_loss_coeff: float = 1.0
+    value_loss_coeff: float = 0.2
+    entropy_coeff: float = 0.01
 
     # Hypernet specific parameters
     hypernet_learning_rate : float = 1e-3
     hypernet_entropy_weight : float = 0.1
-    hypernet_performance_weight : float = 1.0
     hypernet_jsd_threshold: float = 0.5  
     hypernet_jsd_weight : float = 0.2
     hypernet_num_pair_samples : int = 5000
     hypernet_steps : int = 15
 
-    sampled_agents : int = 500
+    sampled_agents_proportion : float = 1.0
 
     filter_learning_rate : float = 1e-3
     decoder_learning_rate : float = 1e-3
@@ -60,6 +59,7 @@ class TrainingParameters:
     # Control training flow here
     should_train_hypernet : bool = True,
     should_train_actor : bool = True 
+    verbose : bool = True
 
     # Do not change this
     global_steps : int = 0
@@ -75,7 +75,7 @@ def compute_returns(rewards: np.ndarray, dones : torch.Tensor, gamma: float) -> 
         for t in reversed(range(n_timesteps)):
             if dones[t]:
                 R = 0.0
-            R = rewards[t, agent] + gamma * R
+            R = rewards[t, agent] + gamma * R          # Augment rewards to incentivize maximization
             returns[t, agent] = R
     
     return torch.tensor(returns, dtype=torch.float32)
@@ -85,11 +85,10 @@ def add_exploration_noise(logits: torch.Tensor, params: TrainingParameters, epoc
     device = logits.device
     n_agents, n_actions = logits.shape
 
-    if params.epsilon_period > 1:
-        epoch %= params.epsilon_period
-
-    params.epsilon = max(params.epsilon_end, params.epsilon_start * (params.epsilon_decay ** epoch))
-
+    if params.epsilon_period > 1: 
+        epoch = epoch % params.epsilon_period
+        params.epsilon = max(params.epsilon_end, params.epsilon_start * (params.epsilon_decay ** epoch))
+    
     # Create exploration mask [buffer, agents]
     exploration_mask = torch.rand((n_agents), device=device) < params.epsilon
     
@@ -105,7 +104,8 @@ def add_exploration_noise(logits: torch.Tensor, params: TrainingParameters, epoc
     
     # Add independent Gaussian noise per agent-timestep pair
     noise = torch.randn_like(modified_logits) * params.noise_scale
-    return modified_logits + noise
+
+    return modified_logits
 
 def select_weights(wh : TensorDict, indices : list) -> TensorDict:
     return TensorDict(
@@ -140,7 +140,8 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
     batch_ld_std = []
     batch_dones = []
 
-    indices = np.random.choice(env.n_agents, size = params.sampled_agents, replace = False)
+    sampled_agents = int(params.sampled_agents_proportion * env.n_agents)
+    indices = np.random.choice(env.n_agents, size = sampled_agents, replace = False)
     for i in range(params.experience_sampling_steps):
         
         obs_array = np.stack([obs[agent] for agent in env.get_agents()])
@@ -281,13 +282,17 @@ def compute_core_ppo_losses(new_logits: torch.Tensor,
     return policy_loss, value_loss, entropy_loss
 
 def train_model(model: Model, env: BaseEnv, params: TrainingParameters):
-    writer = SummaryWriter()
+    if params.verbose:
+        writer = SummaryWriter()
+    else:
+        writer = None 
+
     optim = torch.optim.Adam([
-        {'params': model.actor_encoder.parameters(), 'lr': params.actor_learning_rate},
-        {'params': model.actor_encoder_critic.parameters(), 'lr': params.critic_learning_rate},
-        {'params': model.hypernet.parameters(), 'lr': params.hypernet_learning_rate},
-        {'params': model.filter.parameters(), 'lr': params.filter_learning_rate}, 
-        {'params': model.decoder_update.parameters(), 'lr': params.decoder_learning_rate}
+        {'params': model.actor_encoder.parameters(), 'lr': params.actor_learning_rate, 'eps' : 1e-5},
+        {'params': model.actor_encoder_critic.parameters(), 'lr': params.critic_learning_rate, 'eps' : 1e-5},
+        {'params': model.hypernet.parameters(), 'lr': params.hypernet_learning_rate, 'eps' : 1e-5},
+        {'params': model.filter.parameters(), 'lr': params.filter_learning_rate, 'eps' : 1e-5}, 
+        {'params': model.decoder_update.parameters(), 'lr': params.decoder_learning_rate, 'eps' : 1e-5}
     ])  
 
     params.global_steps = 0
@@ -379,20 +384,29 @@ def train_actor(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingPar
         exp["returns"], old_log_probs, params
     )
 
-    actor_loss = (params.actor_performance_weight * policy_loss - params.entropy_coeff * entropy).mean()
-    critic_loss = params.value_loss_coeff * value_loss.mean()
+    policy_loss =  params.actor_performance_weight * policy_loss.mean()
+    value_loss = params.value_loss_coeff * value_loss.mean()
+    
+    entropy = entropy.mean()
+    entropy_regularization = params.entropy_coeff * entropy
+
+    actor_loss = policy_loss - entropy_regularization
+    critic_loss = value_loss
     total_loss = actor_loss + critic_loss
 
     if writer is not None:
-        writer.add_scalar('Actor/Policy Loss', policy_loss.mean().item(), global_step = params.global_steps)
-        writer.add_scalar('Actor/Value Loss', value_loss.mean().item(), global_step = params.global_steps)
-        writer.add_scalar('Actor/Entropy', entropy.mean().item(), global_step= params.global_steps)
-        writer.add_scalar("Actor/Total Loss", total_loss.item(), global_step= params.global_steps)
+        writer.add_scalars('Actor/Metrics', {
+            'Policy Loss' : policy_loss.item(), 
+            'Actor Loss': actor_loss.item(),
+            'Critic Loss': critic_loss.item(),
+            'Entropy': entropy_regularization.item(),
+            'Total Loss': total_loss.item()
+        }, global_step=params.global_steps)
 
     return total_loss
 
 def train_hypernet(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingParameters, writer : SummaryWriter =None):
-    num_agents = params.sampled_agents
+    num_agents = int(env.n_agents * params.sampled_agents_proportion)
     entropy_loss_val = entropy_loss(exp["means"], exp["std"], params.entropy_target)
 
     old_logits = exp["logits"]

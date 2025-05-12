@@ -12,10 +12,24 @@ Instead, precompute everything homogeneous before applying heterogeneous weights
 
 
 # TO Test
+* Try modifying the exploration noise to instead be temperature based ( Boltzmann exploration )
+
+* Try modifying the policy objective to instead be based on the unperturbed logits. 
+
+* Figure out a way to make it so agents' rewards don't get cancelled out. 
+* Try augmenting the reward to be square (since agents are not cooperative)
+
 * Modify SND to be grouped based on observations (via clustering)
 
 * Use LayerNorm for the hypernet 
 * Use GAE. 
 
-* Use a scheduler for the exploration noise.
 * Change activation from LeakyRELU to RELU
+
+
+# Run Logs
+
+1. No hypernet. No epsilon greedy
+2. No hypernet. Epsilon greedy = 300 
+3. Enable Hypernet. No Epsilon greedy
+4. Enable Hypernet. Epsilon greedy

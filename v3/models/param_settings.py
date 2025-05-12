@@ -18,3 +18,5 @@ class ParameterSettings :
     d_action : int = 8
 
     device : str = "cpu"
+
+    hypernet_scale_factor : float = 10

@@ -110,10 +110,10 @@ def evaluate_policy(model: Model, env, num_episodes=10, k = 10, writer : Summary
                     cluster_rewards[label] = []
                 cluster_rewards[label].append(reward)
             for cluster in sorted(cluster_rewards.keys()):
-                avg_return = np.mean(cluster_rewards[cluster])
+                avg_return = np.median(cluster_rewards[cluster])
                 header = f"Eval/cluster_{cluster}"
                 if writer is not None:
-                    writer.add_scalar(f'{header}/mean_avg', avg_return, global_step)
+                    writer.add_scalar(f'{header}/median_return', avg_return, global_step)
 
                 
         else:
@@ -122,12 +122,15 @@ def evaluate_policy(model: Model, env, num_episodes=10, k = 10, writer : Summary
         print("\nNo agent traits collected.")
 
     # Original outputs
-    mean_returns = np.mean(total_returns)
+    median_returns = np.median(total_returns)
     actions_flat = np.concatenate(actions_array) if actions_array else np.array([])
     
+    rewards_dist = np.array(all_rewards)
+
      # Log overall metrics
     if writer is not None:
-        writer.add_scalar(f'Eval/total_rewards', mean_returns, global_step)
+        writer.add_scalar(f'Eval/median_rewards', median_returns, global_step)
         writer.add_histogram(f'Eval/action_distribution', torch.tensor(actions_flat), global_step)
 
-    return mean_returns
+        writer.add_histogram('Eval/agent_total_rewards', torch.tensor(rewards_dist), global_step)
+    return median_returns

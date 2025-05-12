@@ -11,9 +11,9 @@ class ActorEncoder(nn.Module):
         super().__init__()
         self.config = config
         input_dim = config.d_obs + config.d_beliefs + config.d_comm_state
-        self.policy_network = make_net([input_dim, 128, 128, 64, config.d_het_weights])
-        self.belief_update = make_net([input_dim, 128, 128, 64, config.d_het_weights])
-        self.encoder_network = make_net([input_dim, 128, 128, 64, config.d_het_weights])
+        self.policy_network = make_net([input_dim, 128, config.d_het_weights])
+        self.belief_update = make_net([input_dim, 128, config.d_het_weights])
+        self.encoder_network = make_net([input_dim, 128, config.d_het_weights])
 
     def forward(self, o, h, z, p_weights, b_weights, e_weights): 
         """
@@ -40,7 +40,7 @@ class CriticEncoder(nn.Module):
         input_dim = config.d_obs + config.d_beliefs + config.d_comm_state
         
         # Value estimation core
-        self.value_network = make_net([input_dim,  128, 128, config.d_het_weights])
+        self.value_network = make_net([input_dim, 128, config.d_het_weights])
 
     def forward(self, o, h, z, crit_weights):
         """Returns (value_estimate)"""
@@ -73,10 +73,10 @@ class DecoderUpdate(nn.Module):
     def __init__(self, config : ParameterSettings):
         super().__init__()
         input_dims = config.d_relation + config.d_message
-        self.dec_net = make_net([input_dims, 128, 128, 128, config.d_het_weights])
+        self.dec_net = make_net([input_dims, 128, config.d_het_weights])
 
-        self.update_mean_net = make_net([input_dims, 128, 128, 128, config.d_het_weights])
-        self.update_cov_net = make_net([input_dims, 128, 128, 128, config.d_het_weights])
+        self.update_mean_net = make_net([input_dims, 128, config.d_het_weights])
+        self.update_cov_net = make_net([input_dims, 128, config.d_het_weights])
 
     def forward(self, message, Mij, d_weights, u_weights):
         input = torch.cat([message, Mij], dim = 1)
