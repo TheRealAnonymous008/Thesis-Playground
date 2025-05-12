@@ -42,7 +42,7 @@ def kmeans(data, k=3, max_iters=100):
         centroids = new_centroids
     return labels, centroids
 
-def evaluate_policy(model: Model, env, num_episodes=10, k = 2, writer : SummaryWriter =None, global_step=None, temperature = 1.2):
+def evaluate_policy(model: Model, env, num_episodes=10, k = 2, writer : SummaryWriter =None, global_step=None, temperature = 2):
     """Evaluate current policy and return average episode return with trait cluster breakdown"""
     total_returns = []
     actions_array = []

@@ -324,11 +324,11 @@ def train_model(model: Model, env: BaseEnv, params: TrainingParameters):
         
         total_loss = torch.tensor(0.0, requires_grad = True)
 
+        if params.should_train_actor:
+            total_loss = total_loss + train_actor(model, env, experiences, params, writer=writer)
+        
         if params.should_train_hypernet:
             total_loss = total_loss + train_hypernet(model, env, experiences, params, writer=writer)
-        if params.should_train_actor:
-            total_loss = total_loss +  train_actor(model, env, experiences, params, writer=writer)
-        
         
         if writer is not None:
             writer.add_scalar('State/Epsilon', params.epsilon, global_step = params.global_steps)

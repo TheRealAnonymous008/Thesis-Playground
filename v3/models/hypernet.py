@@ -78,6 +78,8 @@ class LatentDecoder(nn.Module):
         }, device = self.config.device)
     
     def get_weights(self, lv, weight_net, bias_net, dims):
+        lv.detach()
+
         w = weight_net(lv)
         w = w.reshape((-1, dims, self.config.d_het_weights))
         b = bias_net(lv)

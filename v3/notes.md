@@ -24,4 +24,4 @@ Instead, precompute everything homogeneous before applying heterogeneous weights
 
 
 # Run Logs
-* Need to increase the entropy -- regularize usign variance instead. 
+* Try Maximum Entropy RL 
