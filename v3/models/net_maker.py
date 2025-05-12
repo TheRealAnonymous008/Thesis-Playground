@@ -20,7 +20,6 @@ def make_net(params: list[int],
         # Add spectral norm to deeper layers
         if enable_spectral_norm and i > 0:
             linear_layer = nn.utils.spectral_norm(linear_layer)
-            nn.init.orthogonal_(linear_layer.weight)
 
         layers.append(linear_layer)
 
@@ -29,7 +28,7 @@ def make_net(params: list[int],
                 layers.append(nn.LeakyReLU())
             else: 
                 pass 
-            
+
         elif i < len(params) - 1: 
             layers.append(nn.LeakyReLU())
 
@@ -51,7 +50,6 @@ def apply_heterogeneous_weights(x, weights, sigmoid = True):
     y = torch.squeeze(y, 2) + b
     if sigmoid:
         y = torch.sigmoid(y)
-
     return y
 
 def expand_weights(batches, idx, weights):

@@ -40,8 +40,8 @@ class TrainingParameters:
     # PPO-specific parameters
     clip_epsilon: float = 0.2
     ppo_epochs: int = 15
-    value_loss_coeff: float = 0.5
-    entropy_coeff: float = 0.4
+    value_loss_coeff: float = 1.0
+    entropy_coeff: float = 0.2
 
     # Hypernet specific parameters
     hypernet_learning_rate : float = 1e-3
@@ -379,6 +379,7 @@ def train_actor(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingPar
         new_values.append(V_i)
 
     new_logits, new_values = torch.stack(new_logits), torch.stack(new_values)
+    new_values = normalize_tensor(new_values)
 
     # Calculate losses
     policy_loss, value_loss, entropy = compute_core_ppo_losses(
