@@ -29,7 +29,7 @@ class TrainingParameters:
     grad_clip_norm = 10.0
 
     # Exploration specific
-    entropy_target: float = 0.5  # Target entropy for exploration. Used in the hypernet.
+    entropy_target: float = 0.1  # Target entropy for exploration. Used in the hypernet.
     noise_scale: float = 0.1     # Scale for parameter noise
     epsilon_start: float = 0.8   # Starting probability for epsilon-greedy
     epsilon_end: float = 0    # Ending probability for epsilon-greedy
@@ -64,6 +64,12 @@ class TrainingParameters:
     # Do not change this
     global_steps : int = 0
     epsilon : float = 0 
+
+def normalize_rewards(rewards : torch.Tensor):
+    reward_mean = rewards.mean(dim=1, keepdim=True)
+    reward_std = rewards.std(dim=1, keepdim=True) + 1e-8
+    rewards = (rewards - reward_mean) / reward_std
+    return rewards
 
 def compute_returns(rewards: np.ndarray, dones : torch.Tensor, gamma: float) -> torch.Tensor:
     """Compute discounted returns for each agent and timestep."""
@@ -165,6 +171,7 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
         Q = add_exploration_noise(Q, params, epoch)
 
         dists = Categorical(logits=Q)
+
         actions = dists.sample().cpu().numpy()
         actions_dict = {agent: int(actions[i]) for i, agent in enumerate(env.get_agents())}
 
@@ -222,6 +229,7 @@ def collect_experiences(model : Model, env : BaseEnv, params : TrainingParameter
     batch_dones = torch.stack(batch_dones)
 
     # Compute returns
+    batch_rewards = normalize_rewards(batch_rewards)
     returns = compute_returns(batch_rewards.cpu().numpy(), batch_dones.cpu().numpy(), params.gamma).to(device)
 
     return {

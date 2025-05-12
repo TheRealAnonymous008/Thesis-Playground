@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from models.model import Model
 from torch.utils.tensorboard import SummaryWriter
+from torch.distributions import Categorical
 
 def find_pure_equilibria(p1_payoff, p2_payoff):
     """Find pure strategy Nash equilibria"""
@@ -41,7 +42,7 @@ def kmeans(data, k=3, max_iters=100):
         centroids = new_centroids
     return labels, centroids
 
-def evaluate_policy(model: Model, env, num_episodes=10, k = 10, writer : SummaryWriter =None, global_step=None):
+def evaluate_policy(model: Model, env, num_episodes=10, k = 10, writer : SummaryWriter =None, global_step=None, temperature = 0.4):
     """Evaluate current policy and return average episode return with trait cluster breakdown"""
     total_returns = []
     actions_array = []
@@ -76,7 +77,12 @@ def evaluate_policy(model: Model, env, num_episodes=10, k = 10, writer : Summary
                     wh["belief"], 
                     wh["encoder"]
                 )
-                actions = Q.argmax(dim=-1).cpu().numpy()
+                if temperature > 0:
+                    actions = Q.argmax(dim=-1).cpu().numpy()
+                else : 
+                    dist = Categorical(logits = Q / temperature)
+                    actions = dist.sample().cpu().numpy()
+                
                 actions_array.append(actions)
 
                 # Step environment
@@ -123,7 +129,7 @@ def evaluate_policy(model: Model, env, num_episodes=10, k = 10, writer : Summary
 
     # Original outputs
     median_returns = np.median(total_returns)
-    actions_flat = np.concatenate(actions_array) if actions_array else np.array([])
+    actions_flat = np.concatenate(actions_array, dtype = np.int16) if actions_array else np.array([])
     
     rewards_dist = np.array(all_rewards)
 
