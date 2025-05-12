@@ -20,8 +20,8 @@ def make_net(params: list[int],
         # Add spectral norm to deeper layers
         if enable_spectral_norm and i > 0:
             linear_layer = nn.utils.spectral_norm(linear_layer)
-        else:
             nn.init.orthogonal_(linear_layer.weight)
+
         layers.append(linear_layer)
 
         if i == len(params) - 1: 

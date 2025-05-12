@@ -25,9 +25,8 @@ class ActorEncoder(nn.Module):
         """
         input = torch.cat([o, h, z], dim = 1)
 
-        Q = self.policy_network(input)
         # Get the logits for the actions
-        Q = apply_heterogeneous_weights(Q, p_weights, sigmoid = False )
+        Q = apply_heterogeneous_weights(self.policy_network(input), p_weights, sigmoid = False )
         h = apply_heterogeneous_weights(self.belief_update(input), b_weights, sigmoid = False )
         ze = apply_heterogeneous_weights(self.encoder_network(input), e_weights, sigmoid = False )
 

@@ -47,8 +47,8 @@ class TrainingParameters:
     hypernet_learning_rate : float = 1e-3
     hypernet_entropy_weight : float = 0.1
     hypernet_jsd_threshold: float = 0.5  
-    hypernet_jsd_weight : float = 0.2
-    hypernet_num_pair_samples : int = 5000
+    hypernet_jsd_weight : float = 1.0
+    hypernet_samples_per_batch : float = 1.0         # A constant determining how many to sample
     hypernet_steps : int = 15
 
     sampled_agents_proportion : float = 1.0
@@ -100,18 +100,17 @@ def add_exploration_noise(logits: torch.Tensor, params: TrainingParameters, epoc
     
     # Create uniform logits for entire batch [buffer, agents, actions]
     uniform_logits = torch.log(torch.ones_like(logits) / n_actions)
-    
+    noise = torch.randn_like(logits) * params.noise_scale
     # Apply epsilon-greedy mask
     modified_logits = torch.where(
         exploration_mask.unsqueeze(-1),  # Expand to [buffer, agents, 1]
-        uniform_logits,
+        uniform_logits + noise,
         logits
     )
     
     # Add independent Gaussian noise per agent-timestep pair
-    noise = torch.randn_like(modified_logits) * params.noise_scale
 
-    return modified_logits + noise
+    return modified_logits
 
 def select_weights(wh : TensorDict, indices : list) -> TensorDict:
     return TensorDict(
@@ -251,13 +250,16 @@ def compute_core_ppo_losses(new_logits: torch.Tensor,
                             actions: torch.Tensor, 
                             advantages: torch.Tensor,
                             returns: torch.Tensor, 
-                            old_log_probs: torch.Tensor,
+                            old_logits: torch.Tensor,
                             params: TrainingParameters
                             ) -> tuple:
     """Compute PPO policy loss, value loss, and entropy with per-agent calculations."""
+
+    old_dists = Categorical(logits=old_logits)
+    old_log_probs = old_dists.log_prob(actions)
+
     new_dists = Categorical(logits=new_logits)
     new_log_probs = new_dists.log_prob(actions)
-    
     
     # Independent policy optimization per agent
     ratios = torch.exp(new_log_probs - old_log_probs)
@@ -340,9 +342,6 @@ def train_model(model: Model, env: BaseEnv, params: TrainingParameters):
 
 def train_actor(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingParameters, writer : SummaryWriter =None):
     old_logits = exp["logits"]
-    old_dists = Categorical(logits=old_logits)
-    old_log_probs = old_dists.log_prob(exp['actions'])
-
     rewards = normalize_tensor(exp["rewards"])
     returns = compute_returns(rewards.detach().cpu().numpy(), exp["done"], params.gamma).to(exp["rewards"].device)
     values = normalize_tensor(exp["values"])
@@ -387,7 +386,7 @@ def train_actor(model: Model, env: BaseEnv, exp: TensorDict, params: TrainingPar
     new_values = V_all.view(buffer_size, agent_no)
     # Calculate losses
     policy_loss, value_loss, entropy = compute_core_ppo_losses(
-        new_logits, new_values, exp['actions'], advantages, returns, old_log_probs, params
+        new_logits, new_values, exp['actions'], advantages, returns, old_logits, params
     )
 
     policy_loss =  params.actor_performance_weight * policy_loss.mean()
@@ -419,8 +418,8 @@ def train_hypernet(model: Model, env: BaseEnv, exp: TensorDict, params: Training
 
     # JSD loss computation with sampled agent pairs within the same timestep
     buffer_length = len(exp)
-    num_pairs = min(params.hypernet_num_pair_samples, buffer_length * (num_agents * (num_agents - 1)))
-
+    num_pairs = int(params.hypernet_samples_per_batch  *  num_agents * (num_agents - 1)  * buffer_length)
+    
     # Generate timestep indices and agent pairs ensuring i != j
     timesteps = torch.randint(0, buffer_length, (num_pairs,), device=model.device)
     agent_i = torch.randint(0, num_agents, (num_pairs,), device=model.device)
@@ -439,7 +438,7 @@ def train_hypernet(model: Model, env: BaseEnv, exp: TensorDict, params: Training
     # Compute JSD loss
     jsd_loss = threshed_jsd_loss(logits_p, logits_q, similarities, params.hypernet_jsd_threshold)
     
-    total_loss =params.hypernet_entropy_weight * entropy_loss_val  - params.hypernet_jsd_weight * jsd_loss
+    total_loss = params.hypernet_entropy_weight * entropy_loss_val  - params.hypernet_jsd_weight * jsd_loss
 
     if writer is not None:
         writer.add_scalar('Hypernet/Entropy Loss', entropy_loss_val.item(), global_step = params.global_steps)

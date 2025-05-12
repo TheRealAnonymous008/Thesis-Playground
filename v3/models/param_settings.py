@@ -19,4 +19,4 @@ class ParameterSettings :
 
     device : str = "cpu"
 
-    hypernet_scale_factor : float = 10
+    hypernet_scale_factor : float = 50
