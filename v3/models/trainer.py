@@ -16,7 +16,7 @@ import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 
-def collect_experiences(model : SACModel, env : BaseEnv, params : TrainingParameters, epoch = 1):
+def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParameters, epoch = 1):
     device = model.config.device
     obs = env.reset()
     batch_obs = []
@@ -68,7 +68,7 @@ def collect_experiences(model : SACModel, env : BaseEnv, params : TrainingParame
         actions_dict = {agent: int(actions[i]) for i, agent in enumerate(env.get_agents())}
 
         # Critic forward
-        V = model.q1.forward(
+        V = model.actor_encoder_critic.forward(
             obs_tensor, 
             belief_vector, 
             com_vector,
@@ -143,7 +143,7 @@ def collect_experiences(model : SACModel, env : BaseEnv, params : TrainingParame
 
     }
 
-def train_model(model: SACModel, env: BaseEnv, params: TrainingParameters):
+def train_sac_model(model: SACModel, env: BaseEnv, params: TrainingParameters):
     if params.verbose:
         writer = SummaryWriter()
     else:
@@ -220,6 +220,83 @@ def train_model(model: SACModel, env: BaseEnv, params: TrainingParameters):
         params.global_steps += 1
 
     writer.close()
+
+def train_ppo_model(model: PPOModel, env: BaseEnv, params: TrainingParameters):
+    if params.verbose:
+        writer = SummaryWriter()
+    else:
+        writer = None 
+
+    optim = torch.optim.Adam([
+        {'params': model.actor_encoder.parameters(), 'lr': params.actor_learning_rate, 'eps' : 1e-5},
+        {'params': model.actor_encoder_critic.parameters(), 'lr': params.critic_learning_rate, 'eps' : 1e-5},
+        {'params': model.hypernet.parameters(), 'lr': params.hypernet_learning_rate, 'eps' : 1e-5},
+        {'params': model.filter.parameters(), 'lr': params.filter_learning_rate, 'eps' : 1e-5}, 
+        {'params': model.decoder_update.parameters(), 'lr': params.decoder_learning_rate, 'eps' : 1e-5},
+    ])  
+
+    params.global_steps = 0
+    experiences = TensorDict({})  # Initialize empty experience buffer
+
+    # Initialize the model
+    model.to(params.device)
+
+    for i in tqdm(range(params.outer_loops)):
+        model.requires_grad_(True)
+        
+        # Collect new experiences and explicitly detach+clone
+        new_exp = collect_experiences(model, env, params, i)
+        
+        # Create detached clone of all tensors in the experience
+        detached_exp = TensorDict({
+            k: v.detach().clone() for k, v in new_exp.items()
+        }, batch_size=[params.experience_sampling_steps])
+        
+        # Append to buffer
+        if len(experiences) == 0:
+            experiences = detached_exp
+        else:
+            experiences = torch.cat([experiences, detached_exp], dim=0)
+        
+        # Trim buffer while maintaining computational graph isolation
+        if len(experiences) > params.experience_buffer_size:
+            keep_from = len(experiences) - params.experience_buffer_size
+            experiences = TensorDict(
+                {k: v[keep_from:] for k, v in experiences.items()},
+                batch_size=[params.experience_buffer_size]
+            )
+        
+        total_loss = torch.tensor(0.0, requires_grad = True)
+
+        if params.should_train_actor:
+            total_loss = total_loss + train_ppo_actor(model, env, experiences, params, writer=writer)
+        
+        if params.should_train_hypernet:
+            total_loss = total_loss + train_hypernet(model, env, experiences, params, writer=writer)
+        
+        if writer is not None:
+            writer.add_scalar('State/Epsilon', params.epsilon, global_step = params.global_steps)
+
+        optim.zero_grad()
+        total_loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), params.grad_clip_norm)
+        optim.step()
+
+
+        model.requires_grad_(False)
+        evaluate_policy(model, env, writer=writer, global_step=params.global_steps, temperature=params.eval_temp)
+        params.global_steps += 1
+
+    writer.close()
+
+
+def train_model(model: SACModel | PPOModel, env: BaseEnv, params: TrainingParameters):
+    if type(model) is SACModel:
+        train_sac_model(model, env, params)
+    else: 
+        train_ppo_model(model, env, params)
+
+
 
 def train_hypernet(model: SACModel, env: BaseEnv, exp: TensorDict, params: TrainingParameters, writer : SummaryWriter =None):
     num_agents = int(env.n_agents * params.sampled_agents_proportion)

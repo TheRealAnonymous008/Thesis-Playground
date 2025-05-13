@@ -18,6 +18,7 @@ class ParameterSettings :
     d_action : int = 8
 
     device : str = "cpu"
+    type : str = "ppo"
 
     hypernet_scale_factor : float = 50
 

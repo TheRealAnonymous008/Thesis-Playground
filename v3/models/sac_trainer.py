@@ -58,13 +58,13 @@ def train_sac_actor(model: SACModel, env: BaseEnv, exp: TensorDict, params: Trai
 
         # Compute target Q values
         # TODO: This is placeholder. It really should be the next belief and com state.
-        target_q1 = model.target_q1(next_obs_all,  belief_actor, com_all, wh_all["critic"])
+        target_q1 = model.target_q1(next_obs_all,  belief_actor, com_all, wh_all["q1"])
         target_q2 = model.target_q2(next_obs_all,  belief_actor, com_all, wh_all["q2"])
         target_q = torch.min(target_q1, target_q2) - model.alpha * Q
         target_q = rewards + params.gamma * (1 - dones) * target_q
     
     # Compute current Q estimates
-    current_q1 = model.q1(obs_all,  belief_actor, com_all, wh_all["critic"])
+    current_q1 = model.q1(obs_all,  belief_actor, com_all, wh_all["q1"])
     current_q2 = model.q2(obs_all, belief_actor, com_all , wh_all["q2"])
     
     # Freeze Q parameters for policy update
@@ -80,7 +80,7 @@ def train_sac_actor(model: SACModel, env: BaseEnv, exp: TensorDict, params: Trai
     )
     
     # Compute Q values for new actions
-    q1_new = model.q1(obs_all, belief_actor, com_all, wh_all["critic"])
+    q1_new = model.q1(obs_all, belief_actor, com_all, wh_all["q1"])
     q2_new = model.q2(obs_all, belief_actor, com_all, wh_all["q2"])
     q_new = torch.min(q1_new, q2_new)
     
