@@ -31,6 +31,14 @@ class ActorEncoder(nn.Module):
         ze = apply_heterogeneous_weights(self.encoder_network(input), e_weights, sigmoid = False )
 
         return Q, h, ze
+    
+    def homogeneous_forward(self, o, h, z):
+        input = torch.cat([o, h, z], dim = 1)
+        Q = self.policy_network(input)
+        h = self.belief_update(input)
+        ze = self.encoder_network(input)
+
+        return Q, h, ze 
 
 class CriticEncoder(nn.Module):
     def __init__(self, config: ParameterSettings):

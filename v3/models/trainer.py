@@ -10,6 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 from .param_settings import TrainingParameters
 from .ppo_trainer import *
 from .sac_trainer import *
+from .hypernet_trainer import * 
 
 # Temporary fix to avoid OMP duplicates. Not ideal though.
 import os
@@ -295,53 +296,4 @@ def train_model(model: SACModel | PPOModel, env: BaseEnv, params: TrainingParame
         train_sac_model(model, env, params)
     else: 
         train_ppo_model(model, env, params)
-
-
-
-def train_hypernet(model: SACModel, env: BaseEnv, exp: TensorDict, params: TrainingParameters, writer : SummaryWriter =None):
-    num_agents = int(env.n_agents * params.sampled_agents_proportion)
-    entropy_loss_val = entropy_loss(exp["means"], exp["std"], params.entropy_target)
-
-    old_logits = exp["logits"]
-
-    # JSD loss computation with sampled agent pairs within the same timestep
-    buffer_length = len(exp)
-    num_pairs = int(params.hypernet_samples_per_batch  *  num_agents * (num_agents - 1)  * buffer_length)
-    
-    # Generate timestep indices and agent pairs ensuring i != j
-    timesteps = torch.randint(0, buffer_length, (num_pairs,), device=model.device)
-    agent_i = torch.randint(0, num_agents, (num_pairs,), device=model.device)
-    agent_j = torch.randint(0, num_agents - 1, (num_pairs,), device=model.device)
-    agent_j[agent_j >= agent_i] += 1  # Ensure j != i
-
-    # Get trait vectors for each agent pair
-    traits_p = exp["traits"][timesteps, agent_i]
-    traits_q = exp["traits"][timesteps, agent_j]
-
-    # Compute cosine similarity between trait vectors normalized to be between 0 and 1
-    similarities = 0.5 * (1 + torch.nn.functional.cosine_similarity(traits_p, traits_q, dim=1))
-    # Get logits for each agent in the pairs
-    logits_p = old_logits[timesteps, agent_i]
-    logits_q = old_logits[timesteps, agent_j]
-    # Compute JSD loss
-    jsd_loss = threshed_jsd_loss(logits_p, logits_q, similarities, params.hypernet_jsd_threshold)
-    
-    lv_i = exp["lv"][timesteps, agent_i]
-    lv_j = exp["lv"][timesteps, agent_j]
-    # Compute the diversity of latent variables generated
-    div_sim = 1.0 - 0.5 * (1 + torch.nn.functional.cosine_similarity(lv_i, lv_j))
-    div_sim = div_sim.mean()
-
-    e_loss =  params.hypernet_entropy_weight * entropy_loss_val
-    j_loss = params.hypernet_jsd_weight * jsd_loss
-    d_loss = params.hypernet_diversity_weight * div_sim
-    total_loss = e_loss - d_loss + j_loss
-
-    if writer is not None:
-        writer.add_scalar('Hypernet/Entropy Loss', e_loss.item(), global_step = params.global_steps)
-        writer.add_scalar('Hypernet/JSD Loss', j_loss.item(), global_step = params.global_steps)
-        writer.add_scalar('Hypernet/Diversity', d_loss.item(), global_step = params.global_steps)
-        writer.add_scalar('Hypernet/Total Loss', total_loss.item(), global_step = params.global_steps)
-
-    return total_loss
 

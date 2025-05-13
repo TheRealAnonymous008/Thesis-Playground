@@ -56,7 +56,7 @@ class TrainingParameters:
     hypernet_jsd_threshold: float = 0.5  
     hypernet_jsd_weight : float = 1.0
     hypernet_diversity_weight : float = 0.5
-    hypernet_samples_per_batch : float = 1.0         # A constant determining how many to sample
+    hypernet_samples : int = 1000
 
     sampled_agents_proportion : float = 1.0
 
