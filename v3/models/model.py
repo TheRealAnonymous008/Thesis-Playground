@@ -15,7 +15,7 @@ class SACModel:
         self.target_q1 = CriticEncoder(config)
         self.target_q2 = CriticEncoder(config)
 
-        self.log_alpha = nn.Parameter(torch.tensor(0.2, dtype = torch.float16), requires_grad=True)
+        self.log_alpha = nn.Parameter(torch.tensor(0.2, dtype = torch.float16, requires_grad=True), requires_grad=True)
         self.to(config.device)
 
         self._parameters = list(self.hypernet.parameters()) + \
@@ -31,7 +31,7 @@ class SACModel:
         return self.log_alpha.exp()
     
     def set_alpha(self, x ):
-        self.log_alpha = torch.tensor(x, dtype = torch.float16, device = self.device, requires_grad=True)
+        self.log_alpha = torch.tensor(np.log(x), dtype = torch.float16, device = self.device, requires_grad=True)
 
     def to(self, device):
         self.device = device

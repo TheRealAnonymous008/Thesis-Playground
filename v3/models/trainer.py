@@ -155,8 +155,8 @@ def train_model(model: SACModel, env: BaseEnv, params: TrainingParameters):
         {'params': model.hypernet.parameters(), 'lr': params.hypernet_learning_rate, 'eps' : 1e-5},
         {'params': model.filter.parameters(), 'lr': params.filter_learning_rate, 'eps' : 1e-5}, 
         {'params': model.decoder_update.parameters(), 'lr': params.decoder_learning_rate, 'eps' : 1e-5},
+        {'params': model.q2.parameters(), 'lr': params.critic_learning_rate, 'eps' : 1e-5},
         {'params': [model.log_alpha], 'lr': params.actor_learning_rate, 'eps' : 1e-5},
-        {'params': model.q2.parameters(), 'lr': params.critic_learning_rate, 'eps' : 1e-5}
     ])  
 
     params.global_steps = 0
@@ -207,6 +207,14 @@ def train_model(model: SACModel, env: BaseEnv, params: TrainingParameters):
         torch.nn.utils.clip_grad_norm_(model.parameters(), params.grad_clip_norm)
         optim.step()
         
+        # Update target networks
+        with torch.no_grad():
+            for t_param, param in zip(model.target_q1.parameters(), model.q1.parameters()):
+                t_param.data.mul_(1 - params.tau).add_(params.tau * param.data)
+            for t_param, param in zip(model.target_q2.parameters(), model.q2.parameters()):
+                t_param.data.mul_(1 - params.tau).add_(params.tau * param.data)
+
+
         model.requires_grad_(False)
         evaluate_policy(model, env, writer=writer, global_step=params.global_steps, temperature=params.eval_temp)
         params.global_steps += 1

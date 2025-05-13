@@ -18,6 +18,7 @@ def compute_core_sac_losses(current_q1: torch.Tensor,
     """Compute SAC Q losses, policy loss, and alpha loss if applicable."""
     q1_loss = torch.nn.functional.mse_loss(current_q1, target_q)
     q2_loss = torch.nn.functional.mse_loss(current_q2, target_q)
+
     
     if automatic_entropy_tuning:
         alpha_loss = -(log_probs + target_entropy).detach() * alpha
@@ -40,8 +41,7 @@ def train_sac_actor(model: SACModel, env: BaseEnv, exp: TensorDict, params: Trai
     next_obs_all = exp["next_observations"].view(-1, exp["next_observations"].shape[-1])
     belief_actor = exp["belief"].view(-1, exp["belief"].shape[-1])
     com_all = exp["com"].view(-1, exp["com"].shape[-1])
-    actions = exp["actions"].view(-1, exp["actions"].shape[-1])
-    rewards = exp["rewards"].view(-1, 1)
+    rewards = normalize_tensor(exp["rewards"]).view(-1, 1)
     dones = exp["done"].view(-1, 1)
     
     # Compute next actions and log probabilities (target policy)
@@ -51,15 +51,16 @@ def train_sac_actor(model: SACModel, env: BaseEnv, exp: TensorDict, params: Trai
             wh_all["policy"], wh_all["belief"], wh_all["encoder"]
         )
 
-        dists = Categorical(logits = next_actions)
-        a =  dists.sample().view(-1, 1)
         dones = dones.float().repeat_interleave(env.n_agents, dim=0).to(model.device)  # Reshape here
-        
+
+        dists = Categorical(logits = next_actions)
+        Q =  dists.sample().view(-1, 1)
+
         # Compute target Q values
         # TODO: This is placeholder. It really should be the next belief and com state.
         target_q1 = model.target_q1(next_obs_all,  belief_actor, com_all, wh_all["critic"])
         target_q2 = model.target_q2(next_obs_all,  belief_actor, com_all, wh_all["q2"])
-        target_q = torch.min(target_q1, target_q2) - model.alpha * a
+        target_q = torch.min(target_q1, target_q2) - model.alpha * Q
         target_q = rewards + params.gamma * (1 - dones) * target_q
     
     # Compute current Q estimates
@@ -95,25 +96,17 @@ def train_sac_actor(model: SACModel, env: BaseEnv, exp: TensorDict, params: Trai
     # Compute losses
     q1_loss, q2_loss, policy_loss, alpha_loss = compute_core_sac_losses(
         current_q1, current_q2, target_q.detach(), policy_loss,
-        model.alpha if params.automatic_entropy_tuning else params.alpha,
+        model.alpha,
         Q, params.target_entropy, params.automatic_entropy_tuning
     )
     
-    # Update target networks
-    with torch.no_grad():
-        for t_param, param in zip(model.target_q1.parameters(), model.q1.parameters()):
-            t_param.data.mul_(1 - params.tau).add_(params.tau * param.data)
-        for t_param, param in zip(model.target_q2.parameters(), model.q2.parameters()):
-            t_param.data.mul_(1 - params.tau).add_(params.tau * param.data)
-    
     # Logging
     if writer is not None:
-        writer.add_scalar('Loss/Q1', q1_loss.item(), params.global_steps)
-        writer.add_scalar('Loss/Q2', q2_loss.item(), params.global_steps)
-        writer.add_scalar('Loss/Policy', policy_loss.item(), params.global_steps)
-        writer.add_scalar('Entropy/Alpha', model.alpha, params.global_steps)
-        if params.automatic_entropy_tuning:
-            writer.add_scalar('Loss/Alpha', alpha_loss.item(), params.global_steps)
+        writer.add_scalar('Actor/Q1', q1_loss.item(), params.global_steps)
+        writer.add_scalar('Actor/Q2', q2_loss.item(), params.global_steps)
+        writer.add_scalar('Actor/Policy', policy_loss.item(), params.global_steps)
+        writer.add_scalar('Actor/Alpha', model.alpha, params.global_steps)
+        writer.add_scalar('Actor/Alpha_Loss', alpha_loss.item(), params.global_steps)
     
     total_loss = q1_loss + q2_loss + policy_loss + alpha_loss
     return total_loss
