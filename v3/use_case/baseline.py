@@ -69,13 +69,13 @@ class BaselineEnvironment(BaseEnv):
             obs_a = np.concatenate([
                 self.payoff_i.flatten(),
                 self.payoff_j.flatten(), 
-                [-1]
+                [self.traits[a][0]]
             ]).astype(np.float32)
             
             obs_b = np.concatenate([
                 self.payoff_j.flatten(),
                 self.payoff_i.flatten(),
-                [1]
+                [self.traits[b][0]]
             ]).astype(np.float32)
             
             observations[a] = obs_a
@@ -83,6 +83,7 @@ class BaselineEnvironment(BaseEnv):
 
         self.total_steps += 1
         done = self.total_steps >= self.total_games
+
         
         return observations, rewards, {agent: done for agent in self.agents}, {agent: {} for agent in self.agents}
     

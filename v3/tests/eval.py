@@ -1,3 +1,4 @@
+from collections import defaultdict
 import numpy as np 
 import torch
 from models.model import SACModel
@@ -41,11 +42,11 @@ def kmeans(data, k=3, max_iters=100):
             break
         centroids = new_centroids
     return labels, centroids
-
-def evaluate_policy(model: SACModel, env, num_episodes=10, k = 2, writer : SummaryWriter =None, global_step=None, temperature = -1):
-    """Evaluate current policy and return average episode return with trait cluster breakdown"""
+def evaluate_policy(model: SACModel, env, num_episodes=10, k=2, writer: SummaryWriter = None, global_step=None, temperature=-1):
+    """Evaluate current policy and return average episode return with trait cluster breakdown, including action distributions per cluster."""
     total_returns = []
-    actions_array = []
+    episode_actions = []  # List to store actions per episode
+    agents_per_episode = []  # Track number of agents per episode
     all_traits = []
     all_rewards = []
     device = model.config.device
@@ -58,13 +59,16 @@ def evaluate_policy(model: SACModel, env, num_episodes=10, k = 2, writer : Summa
             agent_returns = {agent: 0.0 for agent in env.agents}
             trait_vector = torch.tensor(env.get_traits(), device=device)
             traits_np = trait_vector.cpu().numpy()
+            agents_in_episode = len(env.agents)
+            agents_per_episode.append(agents_in_episode)
+            current_episode_actions = []
 
             while not done:
                 obs_array = np.stack([obs[agent] for agent in env.agents])
                 obs_tensor = torch.FloatTensor(obs_array).to(device)
 
                 # Generate hypernet weights
-                belief_vector = torch.tensor(env.get_beliefs(), device = device)
+                belief_vector = torch.tensor(env.get_beliefs(), device=device)
                 com_vector = torch.zeros((model.config.n_agents, model.config.d_comm_state), device=device)
                 lv, wh, _, _ = model.hypernet(trait_vector, belief_vector)
 
@@ -79,11 +83,11 @@ def evaluate_policy(model: SACModel, env, num_episodes=10, k = 2, writer : Summa
                 )
                 if temperature < 0:
                     actions = Q.argmax(dim=-1).cpu().numpy()
-                else : 
-                    dist = Categorical(logits = Q / temperature)
+                else:
+                    dist = Categorical(logits=Q / temperature)
                     actions = dist.sample().cpu().numpy()
                 
-                actions_array.append(actions)
+                current_episode_actions.append(actions)
 
                 # Step environment
                 next_obs, rewards, dones, _ = env.step(
@@ -97,7 +101,8 @@ def evaluate_policy(model: SACModel, env, num_episodes=10, k = 2, writer : Summa
                 for agent in env.agents:
                     agent_returns[agent] += rewards[agent]
 
-            # Store traits and rewards for this episode's agents
+            # Store episode actions and agent data
+            episode_actions.append(current_episode_actions)
             for i, agent in enumerate(env.agents):
                 all_traits.append(traits_np[i])
                 all_rewards.append(agent_returns[agent])
@@ -105,38 +110,64 @@ def evaluate_policy(model: SACModel, env, num_episodes=10, k = 2, writer : Summa
             total_returns.append(episode_return)
 
     # Process clustering and print breakdown
+    median_returns = np.median(total_returns)
+    actions_flat = np.concatenate([np.concatenate(ep_acts) for ep_acts in episode_actions], dtype=np.int16) if episode_actions else np.array([])
+    rewards_dist = np.array(all_rewards)
+
     if len(all_traits) > 0:
         data = np.array(all_traits)
         rewards = np.array(all_rewards)
         labels, _ = kmeans(data, k)
         if len(labels) > 0:
             cluster_rewards = {}
-            for label, reward in zip(labels, rewards):
+            cluster_actions = defaultdict(list)
+            # Compute episode indices for agent mapping
+            current = 0
+            episode_indices = []
+            for count in agents_per_episode:
+                episode_indices.append((current, current + count))
+                current += count
+
+            # Map each agent to cluster and collect actions
+            for i, (label, reward) in enumerate(zip(labels, rewards)):
+                # Update cluster rewards
                 if label not in cluster_rewards:
                     cluster_rewards[label] = []
                 cluster_rewards[label].append(reward)
+
+                # Find episode and position for current agent
+                for e, (start, end) in enumerate(episode_indices):
+                    if start <= i < end:
+                        break
+                else:
+                    continue  # Skip if not found (shouldn't happen)
+                j = i - start  # Agent's index in the episode
+
+                # Collect actions for the agent
+                if e < len(episode_actions):
+                    for t in range(len(episode_actions[e])):
+                        action = episode_actions[e][t][j]
+                        cluster_actions[label].append(action)
+
+            # Log metrics per cluster
             for cluster in sorted(cluster_rewards.keys()):
                 avg_return = np.median(cluster_rewards[cluster])
                 header = f"Eval/cluster_{cluster}"
                 if writer is not None:
                     writer.add_scalar(f'{header}/median_return', avg_return, global_step)
-
-                
+                    # Log action distribution if available
+                    if cluster in cluster_actions and len(cluster_actions[cluster]) > 0:
+                        actions_tensor = torch.tensor(cluster_actions[cluster], dtype=torch.int32)
+                        writer.add_histogram(f'{header}/action_distribution', actions_tensor, global_step)
         else:
             print("\nNo clusters formed due to insufficient data.")
     else:
         print("\nNo agent traits collected.")
 
-    # Original outputs
-    median_returns = np.median(total_returns)
-    actions_flat = np.concatenate(actions_array, dtype = np.int16) if actions_array else np.array([])
-    
-    rewards_dist = np.array(all_rewards)
-
-     # Log overall metrics
+    # Log overall metrics
     if writer is not None:
         writer.add_scalar(f'Eval/median_rewards', median_returns, global_step)
-        writer.add_histogram(f'Eval/action_distribution', torch.tensor(actions_flat), global_step)
-
+        if actions_flat.size > 0:
+            writer.add_histogram(f'Eval/action_distribution', torch.tensor(actions_flat), global_step)
         writer.add_histogram('Eval/agent_total_rewards', torch.tensor(rewards_dist), global_step)
     return median_returns

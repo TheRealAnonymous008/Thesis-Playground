@@ -42,13 +42,11 @@ def add_exploration_noise(logits: torch.Tensor, params: TrainingParameters, epoc
     # Apply epsilon-greedy mask
     modified_logits = torch.where(
         exploration_mask.unsqueeze(-1),  # Expand to [buffer, agents, 1]
-        uniform_logits + noise,
+        uniform_logits,
         logits
     )
-    
-    # Add independent Gaussian noise per agent-timestep pair
 
-    return modified_logits
+    return modified_logits + noise
 
 def select_weights(wh : TensorDict, indices : list) -> TensorDict:
     return TensorDict(

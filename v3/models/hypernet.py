@@ -23,6 +23,7 @@ class LatentEncoder(nn.Module):
 
         # Ensure sigma is positive
         sigma = torch.abs(sigma)
+
         return mu, sigma
 
 class SACLatentDecoder(nn.Module): 
@@ -79,7 +80,7 @@ class SACLatentDecoder(nn.Module):
         }, device = self.config.device)
     
     def get_weights(self, lv, weight_net, bias_net, dims):
-        lv.detach()
+        # lv.detach()
 
         w = weight_net(lv)
         w = w.reshape((-1, dims, self.config.d_het_weights))

@@ -4,23 +4,23 @@ from dataclasses import dataclass
 class ParameterSettings :
     n_agents : int = 100
 
-    d_traits : int =  32
-    d_beliefs : int = 32 
-    d_het_latent : int = 32
+    d_traits : int =  1
+    d_beliefs : int = 1
+    d_het_latent : int = 1
+    d_het_weights : int = 128
 
-    d_het_weights : int = 64
-    d_relation : int = 16
-    d_message : int = 8
+    d_relation : int = 1
+    d_message : int = 1
     
     
     d_obs : int = 8
-    d_comm_state : int = 32
+    d_comm_state : int = 1
     d_action : int = 8
 
     device : str = "cpu"
     type : str = "ppo"
 
-    hypernet_scale_factor : float = 50
+    hypernet_scale_factor : float = 1
 
 
 @dataclass
@@ -67,9 +67,6 @@ class TrainingParameters:
     should_train_hypernet : bool = True,
     should_train_actor : bool = True 
     verbose : bool = True
-
-    ppo_epochs: int = 15
-    hypernet_steps : int = 15
 
 
     # SAC Specific 
