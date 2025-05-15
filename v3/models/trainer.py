@@ -168,6 +168,7 @@ def train_sac_model(model: SACModel, env: BaseEnv, params: TrainingParameters):
     model.to(params.device)
 
     for i in tqdm(range(params.outer_loops)):
+        model.train()
         model.requires_grad_(True)
         
         # Collect new experiences and explicitly detach+clone
@@ -217,6 +218,7 @@ def train_sac_model(model: SACModel, env: BaseEnv, params: TrainingParameters):
 
 
         model.requires_grad_(False)
+        model.train(False)
         evaluate_policy(model, env, writer=writer, global_step=params.global_steps, temperature=params.eval_temp)
         params.global_steps += 1
 
@@ -243,6 +245,7 @@ def train_ppo_model(model: PPOModel, env: BaseEnv, params: TrainingParameters):
     model.to(params.device)
 
     for i in tqdm(range(params.outer_loops)):
+        model.train()
         model.requires_grad_(True)
         
         # Collect new experiences and explicitly detach+clone
@@ -283,7 +286,7 @@ def train_ppo_model(model: PPOModel, env: BaseEnv, params: TrainingParameters):
         torch.nn.utils.clip_grad_norm_(model.parameters(), params.grad_clip_norm)
         optim.step()
 
-
+        model.train(False)
         model.requires_grad_(False)
         evaluate_policy(model, env, writer=writer, global_step=params.global_steps, temperature=params.eval_temp)
         params.global_steps += 1

@@ -78,7 +78,6 @@ def train_hypernet(model: SACModel, env: BaseEnv, exp: TensorDict, params: Train
     stds = torch.cat([sigma_i, sigma_j])
     entropy_loss_val = entropy_loss(means, stds, params.entropy_target)
 
-
     e_loss = params.hypernet_entropy_weight * entropy_loss_val
     j_loss = params.hypernet_jsd_weight * jsd_loss
     d_loss = params.hypernet_diversity_weight * div_sim

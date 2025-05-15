@@ -59,6 +59,14 @@ class PPOModel:
     def parameters(self):
         return self._parameters
 
+    def train(self, val : bool = True):
+        
+        self.hypernet.train(val)
+        self.actor_encoder.train(val)
+        self.actor_encoder_critic.train(val)
+        self.filter.train(val)
+        self.decoder_update.train(val)
+
 class SACModel: 
     def __init__(self, config : ParameterSettings):
         self.config = config
@@ -136,3 +144,15 @@ class SACModel:
 
     def parameters(self):
         return self._parameters
+    
+    def train(self, val : bool = True):
+        
+        self.hypernet.train(val)
+        self.actor_encoder.train(val)
+        self.q1.train(val)
+        self.q2.train(val)
+        self.filter.train(val)
+        self.decoder_update.train(val)
+
+        self.target_q1.train(val)
+        self.target_q2.train(val)
