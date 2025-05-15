@@ -70,7 +70,7 @@ def evaluate_policy(model: SACModel, env, num_episodes=10, k=2, writer: SummaryW
                 # Generate hypernet weights
                 belief_vector = torch.tensor(env.get_beliefs(), device=device)
                 com_vector = torch.zeros((model.config.n_agents, model.config.d_comm_state), device=device)
-                lv, wh, _, _ = model.hypernet(trait_vector, belief_vector)
+                lv, wh, _, _ = model.hypernet(trait_vector, obs_tensor, belief_vector, com_vector)
 
                 # Get action distribution
                 Q, _, _ = model.actor_encoder.forward(

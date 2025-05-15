@@ -38,7 +38,7 @@ def make_net(params: list[int],
             layers.append(nn.BatchNorm1d(params[i + 1]))
 
 
-        if dropout_rate > 0: 
+        if dropout_rate > 0 and i < len(params) - 1: 
             layers.append(nn.Dropout(dropout_rate))
     
     return nn.Sequential(*layers)

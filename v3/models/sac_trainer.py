@@ -31,23 +31,22 @@ def compute_core_sac_losses(current_q1: torch.Tensor,
 def train_sac_actor(model: SACModel, env: BaseEnv, exp: TensorDict, params: TrainingParameters, writer: SummaryWriter = None):
     # Reshape inputs for hypernetwork
     traits_all = exp["traits"].view(-1, exp["traits"].shape[-1])
-    belief_hyper = exp["belief"].view(-1, exp["belief"].shape[-1])
     
     # Compute hypernet outputs for all agents and buffer entries
-    _, wh_all, _, _ = model.hypernet.forward(traits_all, belief_hyper)
-    
     # Reshape inputs for networks
     obs_all = exp["observations"].view(-1, exp["observations"].shape[-1])
     next_obs_all = exp["next_observations"].view(-1, exp["next_observations"].shape[-1])
-    belief_actor = exp["belief"].view(-1, exp["belief"].shape[-1])
+    belief_all = exp["belief"].view(-1, exp["belief"].shape[-1])
     com_all = exp["com"].view(-1, exp["com"].shape[-1])
     rewards = normalize_tensor(exp["rewards"]).view(-1, 1)
     dones = exp["done"].view(-1, 1)
     
+    _, wh_all, _, _ = model.hypernet.forward(traits_all, obs_all, belief_all, com_all)
+    
     # Compute next actions and log probabilities (target policy)
     with torch.no_grad():
         next_actions, _, _ = model.actor_encoder(
-            next_obs_all, belief_actor, com_all,
+            next_obs_all, belief_all, com_all,
             wh_all["policy"], wh_all["belief"], wh_all["encoder"]
         )
 
@@ -58,14 +57,14 @@ def train_sac_actor(model: SACModel, env: BaseEnv, exp: TensorDict, params: Trai
 
         # Compute target Q values
         # TODO: This is placeholder. It really should be the next belief and com state.
-        target_q1 = model.target_q1(next_obs_all,  belief_actor, com_all, wh_all["q1"])
-        target_q2 = model.target_q2(next_obs_all,  belief_actor, com_all, wh_all["q2"])
+        target_q1 = model.target_q1(next_obs_all,  belief_all, com_all, wh_all["q1"])
+        target_q2 = model.target_q2(next_obs_all,  belief_all, com_all, wh_all["q2"])
         target_q = torch.min(target_q1, target_q2) - model.alpha * Q
         target_q = rewards + params.gamma * (1 - dones) * target_q
     
     # Compute current Q estimates
-    current_q1 = model.q1(obs_all,  belief_actor, com_all, wh_all["q1"])
-    current_q2 = model.q2(obs_all, belief_actor, com_all , wh_all["q2"])
+    current_q1 = model.q1(obs_all,  belief_all, com_all, wh_all["q1"])
+    current_q2 = model.q2(obs_all, belief_all, com_all , wh_all["q2"])
     
     # Freeze Q parameters for policy update
     for param in model.q1.parameters():
@@ -75,13 +74,13 @@ def train_sac_actor(model: SACModel, env: BaseEnv, exp: TensorDict, params: Trai
     
     # Sample new actions for policy update
     Q, _, _  = model.actor_encoder(
-        obs_all, belief_actor, com_all,
+        obs_all, belief_all, com_all,
         wh_all["policy"], wh_all["belief"], wh_all["encoder"]
     )
     
     # Compute Q values for new actions
-    q1_new = model.q1(obs_all, belief_actor, com_all, wh_all["q1"])
-    q2_new = model.q2(obs_all, belief_actor, com_all, wh_all["q2"])
+    q1_new = model.q1(obs_all, belief_all, com_all, wh_all["q1"])
+    q2_new = model.q2(obs_all, belief_all, com_all, wh_all["q2"])
     q_new = torch.min(q1_new, q2_new)
     
     # Policy loss

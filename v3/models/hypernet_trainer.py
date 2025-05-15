@@ -21,15 +21,22 @@ def train_hypernet(model: SACModel, env: BaseEnv, exp: TensorDict, params: Train
     agent_j = torch.randint(0, num_agents - 1, (num_pairs,), device=model.device)
     agent_j[agent_j >= agent_i] += 1  # Ensure j != i
 
-    belief_i = exp["belief"][timesteps, agent_i]
     traits_i = exp["traits"][timesteps, agent_i]
-
-    belief_j = exp["belief"][timesteps, agent_j]
     traits_j = exp["traits"][timesteps, agent_j]
 
     # Get the weights to be used
-    lv_i, weights_i, mu_i, sigma_i = model.hypernet.forward(traits_i, belief_i)
-    lv_j, weights_j, mu_j, sigma_j = model.hypernet.forward(traits_j, belief_j)
+    lv_i, weights_i, mu_i, sigma_i = model.hypernet.forward(
+        traits_i,  
+        exp["observations"][timesteps, agent_i], 
+        exp["belief"][timesteps, agent_i], 
+        exp["com"][timesteps, agent_i]
+    )
+    lv_j, weights_j, mu_j, sigma_j = model.hypernet.forward(
+        traits_j, 
+        exp["observations"][timesteps, agent_j], 
+        exp["belief"][timesteps, agent_j], 
+        exp["com"][timesteps, agent_j]
+    )
 
     # Compute the JSD loss
     with torch.no_grad():
@@ -71,10 +78,11 @@ def train_hypernet(model: SACModel, env: BaseEnv, exp: TensorDict, params: Train
     stds = torch.cat([sigma_i, sigma_j])
     entropy_loss_val = entropy_loss(means, stds, params.entropy_target)
 
+
     e_loss = params.hypernet_entropy_weight * entropy_loss_val
     j_loss = params.hypernet_jsd_weight * jsd_loss
     d_loss = params.hypernet_diversity_weight * div_sim
-    total_loss = - d_loss - j_loss
+    total_loss = e_loss - d_loss - j_loss
 
     if writer is not None:
         writer.add_scalar('Hypernet/Entropy Loss', e_loss.item(), global_step=params.global_steps)

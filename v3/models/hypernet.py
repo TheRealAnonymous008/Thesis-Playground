@@ -10,7 +10,7 @@ from tensordict import TensorDict
 class LatentEncoder(nn.Module): 
     def __init__(self, config: ParameterSettings):
         super().__init__()
-        input_dim = config.d_traits + config.d_beliefs
+        input_dim = config.d_traits + config.d_beliefs + config.d_obs + config.d_comm_state
         self.net = make_net([input_dim, 256, 2 * config.d_het_latent], last_activation=False)
 
     def forward(self, inputs):
@@ -172,19 +172,21 @@ class HyperNetwork (nn.Module):
         elif config.type == "ppo":
             self.latent_decoder = PPOLatentDecoder(config)
 
-    def forward(self, c, h):
+    def forward(self, c, o, h, z):
         """
         Inputs: 
         
         c - the context vector representing the agents. Dimensions (n_agents, d_traits)
+        o - the current observation of the agent. DImensions (n_agents, d_obs)
         h - the current belief state of the agent. Dimensions (n_agents, d_belief)
+        z - the current comm state of the agent. Dimension (n_agent , d_comm_state)
 
         Outputs: 
         lv - latent variable. Dimensions (n_agents, d_het_latents)
         wh - heterogeneous weights Dimensions (n_agents, d_het_weights)
         mu, sigma - the parameters of the latent distribution (n_agents, 2 * d_het_latents)
         """
-        inputs = torch.cat([c, h], dim=1)  # Concatenate along feature dimension
+        inputs = torch.cat([c, o, h, z], dim=1)  # Concatenate along feature dimension
         mu, sigma = self.latent_encoder(inputs)
 
         cov_matrix = torch.diag_embed(torch.sqrt(sigma))  # Create diagonal covariance matrix from variances

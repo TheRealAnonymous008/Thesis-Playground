@@ -12,7 +12,6 @@ Instead, precompute everything homogeneous before applying heterogeneous weights
 
 
 # TO Test
-* The hypernet should take in agent inputs as well as input (on top of trait vector)
 
 * Use LayerNorm for the hypernet 
 * Use GAE. 

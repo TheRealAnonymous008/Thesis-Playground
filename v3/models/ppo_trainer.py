@@ -52,20 +52,19 @@ def train_ppo_actor(model: PPOModel, env: BaseEnv, exp: TensorDict, params: Trai
     # Reshape all inputs to combine buffer_size and agent_no into a single batch dimension
     buffer_size, agent_no, *_ = exp["traits"].shape  # Get dimensions
     traits_all = exp["traits"].view(-1, exp["traits"].shape[-1])
-    belief_hyper = exp["belief"].view(-1, exp["belief"].shape[-1])
+    belief_all = exp["belief"].view(-1, exp["belief"].shape[-1])
+    obs_all = exp["observations"].view(-1, exp["observations"].shape[-1])
+    com_all = exp["com"].view(-1, exp["com"].shape[-1])
 
     # Compute hypernet outputs for all agents and buffer entries in one batch
-    _, wh_all, _, _ = model.hypernet.forward(traits_all, belief_hyper)
+    _, wh_all, _, _ = model.hypernet.forward(traits_all, obs_all, belief_all, com_all)
 
     # Reshape other inputs for actor and critic
-    obs_all = exp["observations"].view(-1, exp["observations"].shape[-1])
-    belief_actor = exp["belief"].view(-1, exp["belief"].shape[-1])
-    com_all = exp["com"].view(-1, exp["com"].shape[-1])
 
     # Actor forward pass for all entries
     Q_all, _, _ = model.actor_encoder(
         obs_all,
-        belief_actor,
+        belief_all,
         com_all,
         wh_all["policy"],
         wh_all["belief"],
@@ -78,7 +77,7 @@ def train_ppo_actor(model: PPOModel, env: BaseEnv, exp: TensorDict, params: Trai
     # Critic forward pass
     V_all = model.actor_encoder_critic(
         obs_all,
-        belief_actor,
+        belief_all,
         com_all,
         wh_all["critic"]
     ).squeeze(-1)
