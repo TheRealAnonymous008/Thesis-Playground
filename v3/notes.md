@@ -12,10 +12,7 @@ Instead, precompute everything homogeneous before applying heterogeneous weights
 
 
 # TO Test
-* Try modifying the policy objective to instead be based on the unperturbed logits. 
-
-
-* Modify SND to be grouped based on observations (via clustering)
+* The hypernet should take in agent inputs as well as input (on top of trait vector)
 
 * Use LayerNorm for the hypernet 
 * Use GAE. 
