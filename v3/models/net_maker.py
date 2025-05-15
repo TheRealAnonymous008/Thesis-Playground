@@ -5,7 +5,7 @@ import numpy as np
 
 def make_net(params: list[int], 
              last_activation : str = "leaky", 
-             dropout_rate = 0.1, 
+             dropout_rate = -1, 
              enable_batch_norm = False, 
              enable_spectral_norm = False,
     ) -> nn.Sequential:
