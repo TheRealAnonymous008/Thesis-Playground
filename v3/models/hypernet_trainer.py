@@ -13,7 +13,7 @@ def train_hypernet(model: SACModel, env: BaseEnv, exp: TensorDict, params: Train
     num_agents = int(env.n_agents * params.sampled_agents_proportion)
     # JSD loss computation with sampled agent pairs within the same timestep
     buffer_length = len(exp)
-    num_pairs = params.hypernet_samples
+    num_pairs = min(params.hypernet_samples, num_agents * exp["traits"].shape[0])
     
     # Generate timestep indices and agent pairs ensuring i != j
     timesteps = torch.randint(0, buffer_length, (num_pairs,), device=model.device)
@@ -66,6 +66,7 @@ def train_hypernet(model: SACModel, env: BaseEnv, exp: TensorDict, params: Train
     Q_ij = apply_heterogeneous_weights(temp_Q_i, wh_policy_j, sigmoid=False)
     Q_ji = apply_heterogeneous_weights(temp_Q_j, wh_policy_i, sigmoid=False)
     Q_jj = apply_heterogeneous_weights(temp_Q_j, wh_policy_j, sigmoid=False)
+
     jsd_loss = (threshed_jsd_loss(Q_ii, Q_ij, similarities, params.hypernet_jsd_threshold) + \
         threshed_jsd_loss(Q_ji, Q_jj, similarities, params.hypernet_jsd_threshold)) / 2.0
     

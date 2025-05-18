@@ -29,7 +29,7 @@ class SACLatentDecoder(nn.Module):
         super().__init__()
         self.config = config
         self.enable_spectral_norm = True
-        self.dropout_rate = 0.2
+        self.dropout_rate = -1
 
         # Policy
         self.p_net_weights = make_net([config.d_het_latent, 256, 256, 256, config.d_het_weights * config.d_action], enable_spectral_norm= self.enable_spectral_norm, last_activation = False, dropout_rate= self.dropout_rate)
