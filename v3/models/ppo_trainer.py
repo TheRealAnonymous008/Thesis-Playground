@@ -62,7 +62,7 @@ def train_ppo_actor(model: PPOModel, env: BaseEnv, exp: TensorDict, params: Trai
     # Reshape other inputs for actor and critic
 
     # Actor forward pass for all entries
-    Q_all, _, _ = model.actor_encoder(
+    Q_all, h_all, z_all = model.actor_encoder.forward(
         obs_all,
         belief_all,
         com_all,

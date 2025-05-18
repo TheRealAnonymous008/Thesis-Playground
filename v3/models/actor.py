@@ -27,7 +27,7 @@ class ActorEncoder(nn.Module):
 
         # Get the logits for the actions
         Q = apply_heterogeneous_weights(self.policy_network(input), p_weights, sigmoid = False )
-        h = apply_heterogeneous_weights(self.belief_update(input), b_weights, sigmoid = False )
+        h = apply_heterogeneous_weights(self.belief_update(input), b_weights, sigmoid = True )
         ze = apply_heterogeneous_weights(self.encoder_network(input), e_weights, sigmoid = False )
 
         return Q, h, ze

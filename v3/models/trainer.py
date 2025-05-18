@@ -11,6 +11,7 @@ from .param_settings import TrainingParameters
 from .ppo_trainer import *
 from .sac_trainer import *
 from .hypernet_trainer import * 
+from .gnn_trainer import *
 
 # Temporary fix to avoid OMP duplicates. Not ideal though.
 import os
@@ -47,13 +48,13 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         obs_tensor = torch.FloatTensor(obs_array).to(device)
         
         # Hypernet forward
-        belief_vector = torch.tensor(env.get_beliefs(), device = device)
-        trait_vector = torch.tensor(env.get_traits(), device = device)
+        belief_vector = torch.tensor(env.beliefs, device = device)
+        trait_vector = torch.tensor(env.traits, device = device)
         com_vector = torch.zeros((model.config.n_agents, model.config.d_comm_state), device=device)
         lv, wh, mean, std = model.hypernet.forward(trait_vector, obs_tensor, belief_vector, com_vector)
         
         # Actor encoder forward
-        Q, _, _ = model.actor_encoder.forward(
+        Q, h, z = model.actor_encoder.forward(
             obs_tensor, 
             belief_vector, 
             com_vector, 
@@ -88,6 +89,10 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
 
         next_obs_tensor = torch.FloatTensor(np.stack([obs[agent] for agent in env.get_agents()])).to(device)
 
+        # Update the beliefs via the decoder
+        env.set_beliefs(h)
+
+
         # Store experience
         batch_obs.append(obs_tensor[indices])
         batch_next_obs.append(next_obs_tensor[indices])
@@ -97,6 +102,8 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         batch_lv.append(lv[indices])
         batch_wh.append(select_weights(wh, indices))
         batch_values.append(values[indices])
+        batch_next_belief.append(h[indices])
+        batch_next_com.append(z[indices])
 
         batch_belief.append(belief_vector[indices])
         batch_trait.append(trait_vector[indices])
@@ -125,6 +132,8 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
     batch_dones = torch.stack(batch_dones)
 
     batch_next_obs = torch.stack(batch_next_obs)
+    batch_next_belief = torch.stack(batch_next_belief)
+    batch_next_com = torch.stack(batch_next_com)
 
     return {
         'observations': batch_obs,
@@ -141,7 +150,8 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         "std": batch_std,
         "done": batch_dones,
         "next_observations": batch_next_obs,
-
+        "next_com" : batch_next_com,
+        "next_belief" : batch_next_belief
     }
 
 def train_sac_model(model: SACModel, env: BaseEnv, params: TrainingParameters):
@@ -200,6 +210,9 @@ def train_sac_model(model: SACModel, env: BaseEnv, params: TrainingParameters):
         
         if params.should_train_hypernet:
             total_loss = total_loss + train_hypernet(model, env, experiences, params, writer=writer)
+
+        if params.should_train_gnn:
+            total_loss = total_loss + train_gnn(model, env, experiences, params, writer= writer)
         
         if writer is not None:
             writer.add_scalar('State/Epsilon', params.epsilon, global_step = params.global_steps)
@@ -291,7 +304,8 @@ def train_ppo_model(model: PPOModel, env: BaseEnv, params: TrainingParameters):
         evaluate_policy(model, env, writer=writer, global_step=params.global_steps, temperature=params.eval_temp, k = params.eval_k)
         params.global_steps += 1
 
-    writer.close()
+    if writer != None: 
+        writer.close()
 
 
 def train_model(model: SACModel | PPOModel, env: BaseEnv, params: TrainingParameters):

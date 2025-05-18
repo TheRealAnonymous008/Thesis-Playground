@@ -14,6 +14,8 @@ Instead, precompute everything homogeneous before applying heterogeneous weights
 # TO Test
 
 * Use GAE. 
+* GNN Training
+
 
 * Change activation from LeakyRELU to RELU
 

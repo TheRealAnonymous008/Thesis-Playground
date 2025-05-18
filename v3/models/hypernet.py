@@ -190,6 +190,7 @@ class HyperNetwork (nn.Module):
         inputs = torch.cat([c, o, h, z], dim=1)  # Concatenate along feature dimension
         mu, sigma = self.latent_encoder(inputs)
 
+
         cov_matrix = torch.diag_embed(torch.sqrt(sigma))  # Create diagonal covariance matrix from variances
         dist = torch.distributions.MultivariateNormal(mu, covariance_matrix=cov_matrix)
         lv = dist.rsample() 

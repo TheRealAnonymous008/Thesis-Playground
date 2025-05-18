@@ -2,6 +2,7 @@ from collections import defaultdict
 import numpy as np 
 import torch
 from models.model import SACModel
+from models.base_env import BaseEnv
 from torch.utils.tensorboard import SummaryWriter
 from torch.distributions import Categorical
 
@@ -42,7 +43,8 @@ def kmeans(data, k=3, max_iters=100):
             break
         centroids = new_centroids
     return labels, centroids
-def evaluate_policy(model: SACModel, env, num_episodes=10, k=2, writer: SummaryWriter = None, global_step=None, temperature=-1):
+
+def evaluate_policy(model: SACModel, env : BaseEnv, num_episodes=10, k=2, writer: SummaryWriter = None, global_step=None, temperature=-1):
     """Evaluate current policy and return average episode return with trait cluster breakdown, including action distributions per cluster."""
     total_returns = []
     episode_actions = []  # List to store actions per episode
@@ -68,12 +70,12 @@ def evaluate_policy(model: SACModel, env, num_episodes=10, k=2, writer: SummaryW
                 obs_tensor = torch.FloatTensor(obs_array).to(device)
 
                 # Generate hypernet weights
-                belief_vector = torch.tensor(env.get_beliefs(), device=device)
-                com_vector = torch.zeros((model.config.n_agents, model.config.d_comm_state), device=device)
+                belief_vector = torch.tensor(env.beliefs, device=device)
+                com_vector = torch.tensor(env.comm_state, device=device)
                 lv, wh, _, _ = model.hypernet(trait_vector, obs_tensor, belief_vector, com_vector)
 
                 # Get action distribution
-                Q, _, _ = model.actor_encoder.forward(
+                Q, h, z = model.actor_encoder.forward(
                     obs_tensor, 
                     belief_vector, 
                     com_vector, 
@@ -96,6 +98,9 @@ def evaluate_policy(model: SACModel, env, num_episodes=10, k=2, writer: SummaryW
                 episode_return += sum(rewards.values()) / len(env.agents)
                 done = any(dones.values())
                 obs = next_obs
+
+                # Update beliefs
+                env.set_beliefs(h)
 
                 # Accumulate individual agent rewards
                 for agent in env.agents:

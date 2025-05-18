@@ -4,7 +4,7 @@ from models.base_env import BaseEnv
 
 class BaselineEnvironment(BaseEnv):
     def __init__(self, n_agents, payoff_i, payoff_j, total_games = 1):
-        super().__init__(n_agents)
+        super().__init__(n_agents, 1, 1, 1)
 
         # Validate payoff matrices
         assert len(payoff_i.shape) == 2 and len(payoff_j.shape) == 2, "Payoff matrices must be 2D"
@@ -32,6 +32,7 @@ class BaselineEnvironment(BaseEnv):
 
     def reset(self):
         """Resets environment with zero-initialized payoff observations"""
+        super().reset()
         self.total_steps = 0
         self.traits = np.array([[-1] if i % 2 ==0 else [1] for i in range(self.n_agents)], dtype = np.float16)
         return {agent: np.zeros(self.obs_size, dtype=np.float32) for agent in self.agents}
@@ -99,7 +100,7 @@ class BaselineHeterogeneous(BaseEnv):
         The type payoffs should have shape
         (n_types, n_types, 2, n_actions, n_actions)
         """
-        super().__init__(n_agents)
+        super().__init__(n_agents, 1, 1, 1 )
 
         # Validate type_payoffs structure
         assert len(type_payoffs.shape) == 5
@@ -129,6 +130,7 @@ class BaselineHeterogeneous(BaseEnv):
 
     def reset(self):
         """Resets environment with zero-initialized payoff observations and one-hot trait vectors"""
+        super().reset()
         self.total_steps = 0
         # Generate one-hot encoded traits based on agent_types
         self.traits = np.eye(self.n_types, dtype=np.float16)[self.agent_types]
@@ -181,8 +183,6 @@ class BaselineHeterogeneous(BaseEnv):
     def get_agents(self):
         return self.agents
     
-    def get_traits(self):
-        return self.traits
     
 class BaselineSimpleCommunication(BaseEnv):
     def __init__(self, n_agents, payoff_i, payoff_j, belief_dims = 8, total_games = 1):
@@ -272,12 +272,6 @@ class BaselineSimpleCommunication(BaseEnv):
     
     def get_agents(self):
         return self.agents
-    
-    def get_traits(self):
-        return self.traits
-    
-    def get_beliefs(self):
-        return self.beliefs
     
     def set_beliefs(self, i : int, belief : np.ndarray):
         self.beliefs[i] = belief

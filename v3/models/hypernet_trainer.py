@@ -9,7 +9,7 @@ from .param_settings import TrainingParameters
 from .ppo_trainer import *
 from .sac_trainer import *
 
-def train_hypernet(model: SACModel, env: BaseEnv, exp: TensorDict, params: TrainingParameters, writer: SummaryWriter = None):
+def train_hypernet(model: SACModel | PPOModel, env: BaseEnv, exp: TensorDict, params: TrainingParameters, writer: SummaryWriter = None):
     num_agents = int(env.n_agents * params.sampled_agents_proportion)
     # JSD loss computation with sampled agent pairs within the same timestep
     buffer_length = len(exp)

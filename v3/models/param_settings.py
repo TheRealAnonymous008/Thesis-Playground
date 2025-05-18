@@ -66,6 +66,8 @@ class TrainingParameters:
     # Control training flow here
     should_train_hypernet : bool = True,
     should_train_actor : bool = True 
+    should_train_gnn : bool = True,
+    
     verbose : bool = True
 
 
