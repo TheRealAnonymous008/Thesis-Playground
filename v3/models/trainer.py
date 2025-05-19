@@ -291,6 +291,9 @@ def train_ppo_model(model: PPOModel, env: BaseEnv, params: TrainingParameters):
         if params.should_train_hypernet:
             total_loss = total_loss + train_hypernet(model, env, experiences, params, writer=writer)
         
+        if params.should_train_gnn:
+            total_loss = total_loss + train_gnn(model, env, experiences, params, writer= writer)
+            
         if writer is not None:
             writer.add_scalar('State/Epsilon', params.epsilon, global_step = params.global_steps)
 

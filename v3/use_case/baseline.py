@@ -4,7 +4,7 @@ from models.base_env import BaseEnv
 
 class BaselineEnvironment(BaseEnv):
     def __init__(self, n_agents, payoff_i, payoff_j, total_games = 1):
-        super().__init__(n_agents, 1, 1, 1)
+        super().__init__(n_agents, 1, 8, 1)
 
         # Validate payoff matrices
         assert len(payoff_i.shape) == 2 and len(payoff_j.shape) == 2, "Payoff matrices must be 2D"

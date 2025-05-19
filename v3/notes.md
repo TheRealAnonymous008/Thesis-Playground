@@ -10,6 +10,8 @@ Instead, precompute everything homogeneous before applying heterogeneous weights
 * The hypernet might actually be able to generate diversity.
 
 * Do not use dropout as it lowers performance.
+* Set d_belief to be > 1 (8 seems to work fine)
+* Target entropy for the hypernet is important since we don't want it to be too low that agents become homogeneous.
 
 # TO Test
 
@@ -21,7 +23,3 @@ Instead, precompute everything homogeneous before applying heterogeneous weights
 
 
 # Run Logs
-1. Standard Control test
-2. Set     hypernet_jsd_threshold = 0.5,
-3. Set      sampling steps = 1, and experience buffer size = 25
-

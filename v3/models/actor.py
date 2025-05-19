@@ -10,10 +10,9 @@ class ActorEncoder(nn.Module):
     def __init__(self, config : ParameterSettings):
         super().__init__()
         self.config = config
-        input_dim = config.d_obs + config.d_beliefs + config.d_comm_state
-        self.policy_network : RNNWrapper = make_rnn_net([input_dim, 128, config.d_het_weights], num_rnn_layers=1)
-        self.belief_update : DenseWrapper= make_net([input_dim, 128, config.d_het_weights])
-        self.encoder_network : DenseWrapper= make_net([input_dim, 128, config.d_het_weights])
+        self.policy_network : RNNWrapper = make_net([config.d_obs + config.d_beliefs, 128, 128, config.d_het_weights])
+        self.belief_update : DenseWrapper= make_net([config.d_beliefs + config.d_comm_state, 128, 128, config.d_het_weights])
+        self.encoder_network : DenseWrapper= make_net([config.d_obs + config.d_beliefs, 128, config.d_het_weights])
 
     def forward(self, o, h, z, p_weights, b_weights, e_weights): 
         """
@@ -23,15 +22,20 @@ class ActorEncoder(nn.Module):
         z - communication state from previous time step. Dimensions (num_agents, d_comm_state)
         whp, whb, whe - the heterogeneous layers. Dimensions (num_agents, *)
         """
-        Q, h, ze = self.homogeneous_forward(o, h, z)
+        Q, h, ze = self.homogeneous_forward(o, h, z, b_weights)
         Q = self.policy_network.apply_heterogeneous_weights(Q, p_weights) 
-        ze = self.encoder_network.apply_heterogeneous_weights(Q, e_weights)
+        ze = self.encoder_network.apply_heterogeneous_weights(ze, e_weights)
 
         return Q, h, ze
     
-    def homogeneous_forward(self, o, h, z):
-        input = torch.cat([o, h, z], dim = 1)
-        Q, h= self.policy_network(input)
+    def homogeneous_forward(self, o, h, z, b_weights):
+        input = torch.cat([h, z], dim = 1)
+        h = self.belief_update(input)
+        h = self.belief_update.apply_heterogeneous_weights(h, b_weights, tanh=True)
+
+        input = torch.cat([o, h], dim = 1)
+        Q= self.policy_network(input)
+        
         ze = self.encoder_network(input)
 
         return Q, h, ze 

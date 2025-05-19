@@ -54,13 +54,17 @@ def train_hypernet(model: SACModel | PPOModel, env: BaseEnv, exp: TensorDict, pa
         temp_Q_i, _, _ = model.actor_encoder.homogeneous_forward(
             exp["observations"][timesteps, agent_i], 
             exp["belief"][timesteps, agent_i], 
-            exp["com"][timesteps, agent_i])
+            exp["com"][timesteps, agent_i],
+            weights_i["belief"]
+        )
         
         
         temp_Q_j, _, _ = model.actor_encoder.homogeneous_forward(
             exp["observations"][timesteps, agent_j], 
             exp["belief"][timesteps, agent_j], 
-            exp["com"][timesteps, agent_j])
+            exp["com"][timesteps, agent_j],
+            weights_j["belief"]
+        )
         
     Q_ii = model.actor_encoder.policy_network.apply_heterogeneous_weights(temp_Q_i, wh_policy_i, sigmoid=False)
     Q_ij = model.actor_encoder.policy_network.apply_heterogeneous_weights(temp_Q_i, wh_policy_j, sigmoid=False)

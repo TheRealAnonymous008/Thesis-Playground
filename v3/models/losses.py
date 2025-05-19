@@ -26,6 +26,7 @@ def threshed_jsd_loss(p, q, s, thresh):
     kl_q = F.kl_div(m, q, reduction='none', log_target = True).sum(-1)
     jsd = 0.5 * (kl_p + kl_q)
 
+
     mask = (s < thresh).float()
     loss =  (jsd * mask).sum() / (mask.sum() + 1) 
 
