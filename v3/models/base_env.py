@@ -67,17 +67,14 @@ class BaseEnv:
         self.beliefs = belief.detach().cpu().numpy()
 
     def set_comm_state(self, indices, states : torch.Tensor):
-        unique_indices, inverse_indices = torch.unique(indices, 
-                                                    return_inverse=True,
-                                                    return_counts=False)
+        unique_indices, inverse_indices = torch.unique(indices, return_inverse=True, return_counts=False)
 
         # Create mask for scatter operation
         mask = torch.zeros((len(indices), len(unique_indices)), 
                         device=states.device)
         mask[torch.arange(len(indices)), inverse_indices] = 1
 
-
-        aggregated_zdj = torch.mm(mask.T, states)
+        aggregated_zdj = torch.mm(mask.T, states) 
 
         # Update the z tensor
         modified_z = states.clone()

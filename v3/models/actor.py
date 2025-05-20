@@ -34,8 +34,8 @@ class ActorEncoder(nn.Module):
         h = self.belief_update.apply_heterogeneous_weights(h, b_weights, tanh=True)
 
         input = torch.cat([o, h], dim = 1)
-        Q= self.policy_network(input)
-        ze = self.encoder_network(input)
+        Q= self.policy_network.forward(input)
+        ze = self.encoder_network.forward(input)
 
         return Q, h, ze 
 
@@ -71,7 +71,6 @@ class Filter(nn.Module):
         zei = torch.Tensor.expand(zei, (Mij.shape[0], -1))
         input = torch.cat([zei, Mij], dim = 1)
         message = self.net.apply_heterogeneous_weights(self.net(input), f_weights, sigmoid = False )
-
         return message 
     
 class DecoderUpdate(nn.Module):
@@ -86,13 +85,16 @@ class DecoderUpdate(nn.Module):
     def forward(self, message, Mij, d_weights, um_weights, us_weights):
         input = torch.cat([message, Mij], dim = 1)
 
+
         zdj = self.dec_net.apply_heterogeneous_weights(self.dec_net(input), d_weights)
         mu = self.update_mean_net.apply_heterogeneous_weights(self.update_mean_net(input), um_weights)
         sigma = self.update_cov_net.apply_heterogeneous_weights(self.update_cov_net(input), us_weights)
 
-        std = torch.sqrt(sigma)
-        eps = torch.randn_like(std)
-        newMij = mu + eps * std
+        eps = torch.randn_like(sigma)
+        newMij = mu + eps * sigma
+
+        # Apply tanh to normalize
+        newMij = torch.tanh(newMij)
 
         return zdj, newMij
     

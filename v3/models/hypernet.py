@@ -12,15 +12,15 @@ class LatentEncoder(nn.Module):
         super().__init__()
         self.het_latent = config.d_het_latent
         input_dim = config.d_traits + config.d_beliefs + config.d_obs + config.d_comm_state
-        self.net = make_net([input_dim, 256, 2 * config.d_het_latent], last_activation=False)
+        self.mean_net = make_net([input_dim, 64, config.d_het_latent], last_activation=False)
+        self.std_net = make_net([input_dim, 64,config.d_het_latent ], last_activation = "softplus")
 
     def forward(self, inputs):
         """
         Outputs the MVN parameters for the latent distribution for sampling.
         """
-        out = self.net(inputs)
-        mu, log_var = out[:, :self.het_latent], out[:, self.het_latent:]
-        sigma = torch.exp(log_var)  + 1e-8  # Convert log variance to variance
+        mu= self.mean_net(inputs)
+        sigma = self.std_net(inputs) + 1e-8
 
         return mu, sigma
 
@@ -187,11 +187,12 @@ class HyperNetwork (nn.Module):
         wh - heterogeneous weights Dimensions (n_agents, d_het_weights)
         mu, sigma - the parameters of the latent distribution (n_agents, 2 * d_het_latents)
         """
+            
         inputs = torch.cat([c, o, h, z], dim=1)  # Concatenate along feature dimension
         mu, sigma = self.latent_encoder(inputs)
 
+        cov_matrix = torch.diag_embed(torch.abs(sigma) + 1e-8)  # Create diagonal covariance matrix from variances
 
-        cov_matrix = torch.diag_embed(torch.sqrt(sigma))  # Create diagonal covariance matrix from variances
         dist = torch.distributions.MultivariateNormal(mu, covariance_matrix=cov_matrix)
         lv = dist.rsample() 
 

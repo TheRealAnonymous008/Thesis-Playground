@@ -40,17 +40,23 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
     batch_next_belief = []
     batch_next_com = []
 
+    # Additional data for GNN loss
+    batch_all_Mji = []
+    batch_all_reverses = []
+    batch_all_neighbor_indices = []
+    batch_all_next_com = []
+
     sampled_agents = int(params.sampled_agents_proportion * env.n_agents)
     indices = np.random.choice(env.n_agents, size = sampled_agents, replace = False)
+    
     for i in range(params.experience_sampling_steps):
-        
         obs_array = np.stack([obs[agent] for agent in env.get_agents()])
         obs_tensor = torch.FloatTensor(obs_array).to(device)
         
         # Hypernet forward
         belief_vector = torch.tensor(env.beliefs, device = device)
         trait_vector = torch.tensor(env.traits, device = device)
-        com_vector = torch.zeros((model.config.n_agents, model.config.d_comm_state), device=device)
+        com_vector = torch.tensor(env.comm_state , device=device)
         lv, wh, mean, std = model.hypernet.forward(trait_vector, obs_tensor, belief_vector, com_vector)
         
         # Actor encoder forward
@@ -76,7 +82,8 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
             com_vector,
             wh["critic"]
         )
-        values = V.squeeze(-1)  # Remove singleton dimension if needed
+        values = V.squeeze(-1)
+        
         # Environment step
         next_obs, rewards, dones, _ = env.step(actions_dict)
         rewards = np.array([rewards[agent] for agent in env.get_agents()])
@@ -89,23 +96,29 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
 
         next_obs_tensor = torch.FloatTensor(np.stack([obs[agent] for agent in env.get_agents()])).to(device)
 
-        # Send
+        # Communication processing
         source_indices = torch.arange(0, env.n_agents, dtype=torch.long)
         neighbor_indices, relations, reverses = env.sample_neighbors()
         relations = relations.to(model.device)
         reverses = reverses.to(model.device)
         messages = model.filter.forward(z, relations, wh["filter"])
-        # Receive 
-
+        
+        # Decoder update
         zdj, Mji = model.decoder_update.forward(messages, reverses,  wh["decoder"], wh["update_mean"], wh["update_std"])
-
-        # Update the beliefs via the decoder
+        
+        # Update environment states
         env.set_beliefs(h)
         env.set_comm_state(neighbor_indices, zdj)
         env.update_edges(source_indices, neighbor_indices, Mji)
 
 
-        # Store experience
+        # Store additional GNN data (all agents)
+        batch_all_Mji.append(Mji[indices])
+        batch_all_reverses.append(reverses[indices])
+        batch_all_neighbor_indices.append(neighbor_indices[indices])
+        batch_all_next_com.append(z.detach().clone())
+
+        # Store experience for sampled agents
         batch_obs.append(obs_tensor[indices])
         batch_next_obs.append(next_obs_tensor[indices])
         batch_actions.append(actions[indices])
@@ -124,47 +137,34 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         batch_ld_means.append(mean[indices])
         batch_ld_std.append(std[indices])
         batch_dones.append(torch.tensor(done, dtype = torch.bool))
-        
     
-    # Convert lists to tensors
-    batch_obs = torch.stack(batch_obs)
-    batch_actions = torch.tensor(np.array(batch_actions), device=device)
-    batch_rewards = torch.tensor(np.array(batch_rewards), dtype=torch.float32, device=device)
-    batch_logits = torch.stack(batch_logits)
-    batch_lv = torch.stack(batch_lv)
-    batch_values = torch.stack(batch_values)
-    batch_wh = torch.stack(batch_wh)
-
-    batch_belief = torch.stack(batch_belief)
-    batch_trait = torch.stack(batch_trait)
-    batch_com = torch.stack(batch_com)
-
-    batch_means = torch.stack(batch_ld_means)
-    batch_std = torch.stack(batch_ld_std)
-    batch_dones = torch.stack(batch_dones)
-
-    batch_next_obs = torch.stack(batch_next_obs)
-    batch_next_belief = torch.stack(batch_next_belief)
-    batch_next_com = torch.stack(batch_next_com)
-
-    return {
-        'observations': batch_obs,
-        'actions': batch_actions,
-        'rewards': batch_rewards,
-        'logits': batch_logits,
-        'lv': batch_lv,
-        'wh': batch_wh,
-        "values" : batch_values,
-        'belief': batch_belief,
-        'traits': batch_trait, 
-        'com': batch_com,
-        "means": batch_means,
-        "std": batch_std,
-        "done": batch_dones,
-        "next_observations": batch_next_obs,
-        "next_com" : batch_next_com,
-        "next_belief" : batch_next_belief
+    # Convert to tensors
+    experiences = {
+        'observations': torch.stack(batch_obs),
+        'actions': torch.tensor(np.array(batch_actions), device=device),
+        'rewards': torch.tensor(np.array(batch_rewards), dtype=torch.float32, device=device),
+        'logits': torch.stack(batch_logits),
+        'lv': torch.stack(batch_lv),
+        'wh': torch.stack(batch_wh),
+        "values" : torch.stack(batch_values),
+        'belief': torch.stack(batch_belief),
+        'traits': torch.stack(batch_trait), 
+        'com': torch.stack(batch_com),
+        "means": torch.stack(batch_ld_means),
+        "std": torch.stack(batch_ld_std),
+        "done": torch.stack(batch_dones),
+        "next_observations": torch.stack(batch_next_obs),
+        "next_com" : torch.stack(batch_next_com),
+        "next_belief" : torch.stack(batch_next_belief),
+        
+        # GNN data
+        'all_Mji': torch.stack(batch_all_Mji),
+        'all_reverses': torch.stack(batch_all_reverses),
+        'all_neighbor_indices': torch.stack(batch_all_neighbor_indices),
+        'all_next_com': torch.stack(batch_all_next_com),
     }
+    
+    return TensorDict(experiences, batch_size=params.experience_sampling_steps)
 
 def train_sac_model(model: SACModel, env: BaseEnv, params: TrainingParameters):
     if params.verbose:

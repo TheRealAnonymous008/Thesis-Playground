@@ -45,6 +45,8 @@ class DenseWrapper(nn.Module):
                     self.layers.append(nn.Sigmoid())
                 elif last_activation == "tanh":
                     self.layers.append(nn.Tanh())
+                elif last_activation == "softplus":
+                    self.layers.append(nn.Softplus())
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         for layer in self.layers:
