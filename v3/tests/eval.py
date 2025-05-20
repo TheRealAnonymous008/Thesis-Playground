@@ -99,8 +99,21 @@ def evaluate_policy(model: SACModel, env : BaseEnv, num_episodes=10, k=2, writer
                 done = any(dones.values())
                 obs = next_obs
 
-                # Update beliefs
+                # Send
+                source_indices = torch.arange(0, env.n_agents, dtype=torch.long)
+                neighbor_indices, relations, reverses = env.sample_neighbors()
+                relations = relations.to(model.device)
+                reverses = reverses.to(model.device)
+                messages = model.filter.forward(z, relations, wh["filter"])
+
+                # Receive 
+                zdj, Mji = model.decoder_update.forward(messages, reverses,  wh["decoder"], wh["update_mean"], wh["update_std"])
+
+                # Update the beliefs via the decoder
                 env.set_beliefs(h)
+                env.set_comm_state(neighbor_indices, zdj)
+                env.update_edges(source_indices, neighbor_indices, Mji)
+
 
                 # Accumulate individual agent rewards
                 for agent in env.agents:
