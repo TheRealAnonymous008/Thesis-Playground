@@ -35,7 +35,6 @@ class ActorEncoder(nn.Module):
 
         input = torch.cat([o, h], dim = 1)
         Q= self.policy_network(input)
-        
         ze = self.encoder_network(input)
 
         return Q, h, ze 
@@ -84,16 +83,12 @@ class DecoderUpdate(nn.Module):
         self.update_mean_net : DenseWrapper= make_net([input_dims, 128, config.d_het_weights])
         self.update_cov_net : DenseWrapper= make_net([input_dims, 128, config.d_het_weights])
 
-    def forward(self, message, Mij, d_weights, u_weights):
+    def forward(self, message, Mij, d_weights, um_weights, us_weights):
         input = torch.cat([message, Mij], dim = 1)
 
-        whum, bum, whus, bus = u_weights 
-        um_weights = (whum, bum)
-        us_weights = (whus, bus)
-
-        zdj = self.dec_net.apply_heterogeneous_weights(self.dec_net(input), d_weights, sigmoid = False )
-        mu = self.update_mean_net.apply_heterogeneous_weights(self.update_mean_net(input), um_weights, sigma = False)
-        sigma = self.update_cov_net.apply_heterogeneous_weights(self.update_cov_net(input), us_weights, sigma = False)
+        zdj = self.dec_net.apply_heterogeneous_weights(self.dec_net(input), d_weights)
+        mu = self.update_mean_net.apply_heterogeneous_weights(self.update_mean_net(input), um_weights)
+        sigma = self.update_cov_net.apply_heterogeneous_weights(self.update_cov_net(input), us_weights)
 
         std = torch.sqrt(sigma)
         eps = torch.randn_like(std)

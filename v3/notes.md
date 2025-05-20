@@ -23,3 +23,37 @@ Instead, precompute everything homogeneous before applying heterogeneous weights
 
 
 # Run Logs
+
+
+
+Good Params
+training_parameters = TrainingParameters(
+    outer_loops = 1_000,
+    
+    actor_learning_rate= 1e-4,
+    critic_learning_rate = 1e-3,
+    hypernet_learning_rate = 5e-4,
+
+    hypernet_jsd_threshold = 2.0,
+    hypernet_samples = 3000,
+    hypernet_jsd_weight = 1.0,
+    hypernet_entropy_weight = 1.0, 
+    hypernet_diversity_weight= 1.0,
+
+    sampled_agents_proportion = 0.1,
+    experience_sampling_steps = 10,
+    experience_buffer_size = 100,
+
+    entropy_coeff = 0.2,
+
+    epsilon_period = 1000,
+    epsilon_end = 0.01,
+
+    entropy_target = 0.5,
+
+    eval_temp = -1.0,
+    
+    # verbose = False,
+
+    should_train_gnn= False
+)

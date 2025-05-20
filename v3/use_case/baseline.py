@@ -1,6 +1,7 @@
 import numpy as np
 from gymnasium import spaces
 from models.base_env import BaseEnv
+import torch
 
 class BaselineEnvironment(BaseEnv):
     def __init__(self, n_agents, payoff_i, payoff_j, total_games = 1):
@@ -35,6 +36,12 @@ class BaselineEnvironment(BaseEnv):
         super().reset()
         self.total_steps = 0
         self.traits = np.array([[-1] if i % 2 ==0 else [1] for i in range(self.n_agents)], dtype = np.float16)
+
+        for i in range(0, self.n_agents - 1, 2):
+            self.graph.add_edge(i, i + 1, np.zeros((self.d_relation, ))) 
+        for i in range(1, self.n_agents, 2):
+            self.graph.add_edge(i, i - 1, np.zeros((self.d_relation, ))) 
+
         return {agent: np.zeros(self.obs_size, dtype=np.float32) for agent in self.agents}
 
     def step(self, actions):

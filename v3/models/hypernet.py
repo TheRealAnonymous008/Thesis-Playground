@@ -20,7 +20,7 @@ class LatentEncoder(nn.Module):
         """
         out = self.net(inputs)
         mu, log_var = out[:, :self.het_latent], out[:, self.het_latent:]
-        sigma = torch.exp(log_var)  # Convert log variance to variance
+        sigma = torch.exp(log_var)  + 1e-8  # Convert log variance to variance
 
         return mu, sigma
 

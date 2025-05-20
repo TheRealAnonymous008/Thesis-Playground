@@ -10,7 +10,7 @@ def entropy_loss(means: torch.Tensor, stds: torch.Tensor, entropy_target):
     sum_log_std = torch.log(stds).sum(dim=-1)
     entropy = sum_log_std               # Technically prop to a constant but we don't need said constant
     
-    return torch.clamp(entropy.mean(), min = entropy_target)
+    return torch.clamp(entropy.mean() - entropy_target, min = 0) 
 
 def threshed_jsd_loss(p, q, s, thresh):
     """
