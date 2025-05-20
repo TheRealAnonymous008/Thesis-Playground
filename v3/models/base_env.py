@@ -67,7 +67,26 @@ class BaseEnv:
         self.beliefs = belief.detach().cpu().numpy()
 
     def set_comm_state(self, indices, states : torch.Tensor):
-        self.comm_state[indices] = states.detach().cpu().numpy()
+        unique_indices, inverse_indices = torch.unique(indices, 
+                                                    return_inverse=True,
+                                                    return_counts=False)
+
+        # Create mask for scatter operation
+        mask = torch.zeros((len(indices), len(unique_indices)), 
+                        device=states.device)
+        mask[torch.arange(len(indices)), inverse_indices] = 1
+
+
+        aggregated_zdj = torch.mm(mask.T, states)
+
+        # Update the z tensor
+        modified_z = states.clone()
+        modified_z[unique_indices] = aggregated_zdj
+
+        # Create final results
+        modified_indices = unique_indices
+
+        self.comm_state[modified_indices] = modified_z.detach().cpu().numpy()
 
     def update_edges(self, sources: torch.Tensor, destinations: torch.Tensor, new_edges: torch.Tensor) -> None:
         sources_np = sources.detach().cpu().numpy()
