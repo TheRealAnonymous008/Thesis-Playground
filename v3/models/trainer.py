@@ -22,19 +22,25 @@ os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParameters, epoch = 1):
     device = model.config.device
     obs = env.reset()
+
+    # Basic Stuff
     batch_obs = []
     batch_actions = []
     batch_rewards = []
+
+    # Actpr
     batch_logits = []
-    batch_lv = []
-    batch_values = []
-    batch_wh = []
     batch_belief = []
+    batch_values = []
     batch_trait = []
     batch_com = []
+    batch_dones = []
+
+    # Heterogeneous Weights
+    batch_lv = []
+    batch_wh = []
     batch_ld_means = []
     batch_ld_std = []
-    batch_dones = []
 
     # Nexts
     batch_next_obs = []
@@ -46,6 +52,9 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
     batch_Mji = []
     batch_ze = []
     batch_zd = []
+
+    # Additional Data for Filter
+    batch_messages = []
 
     sampled_agents = int(params.sampled_agents_proportion * env.n_agents)
     indices = np.random.choice(env.n_agents, size = sampled_agents, replace = False)
@@ -118,6 +127,7 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         batch_actions.append(actions[indices])
         batch_rewards.append(rewards[indices])
         batch_logits.append(Q[indices])
+
         batch_lv.append(lv[indices])
         batch_wh.append(select_weights(wh, indices))
         batch_values.append(values[indices])
@@ -137,6 +147,8 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
 
         batch_ze.append(z[indices])
         batch_zd.append(zdj[indices])
+
+        batch_messages.append(messages[indices])
     
     # Convert to tensors
     experiences = {
@@ -162,6 +174,7 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
 
         'z_e' : torch.stack(batch_ze),
         'z_d' : torch.stack(batch_zd),
+        'messages' : torch.stack(batch_messages)
     }
     
     return TensorDict(experiences, batch_size=params.experience_sampling_steps)
