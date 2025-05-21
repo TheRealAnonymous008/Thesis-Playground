@@ -55,6 +55,7 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
 
     # Additional Data for Filter
     batch_messages = []
+    batch_targets = []
 
     sampled_agents = int(params.sampled_agents_proportion * env.n_agents)
     indices = np.random.choice(env.n_agents, size = sampled_agents, replace = False)
@@ -149,6 +150,7 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         batch_zd.append(zdj[indices])
 
         batch_messages.append(messages[indices])
+        batch_targets.append(neighbor_indices[indices])
     
     # Convert to tensors
     experiences = {
@@ -174,7 +176,8 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
 
         'z_e' : torch.stack(batch_ze),
         'z_d' : torch.stack(batch_zd),
-        'messages' : torch.stack(batch_messages)
+        'messages' : torch.stack(batch_messages),
+        'targets': torch.stack(batch_targets)
     }
     
     return TensorDict(experiences, batch_size=params.experience_sampling_steps)
@@ -321,7 +324,9 @@ def train_ppo_model(model: PPOModel, env: BaseEnv, params: TrainingParameters):
         
         if params.should_train_gnn:
             total_loss = total_loss + train_gnn(model, env, experiences, params, writer= writer)
-            
+        
+        if params.should_train_filter:
+            total_loss = total_loss + train_filter(model, env, experiences, params, writer = writer)
         if writer is not None:
             writer.add_scalar('State/Epsilon', params.epsilon, global_step = params.global_steps)
 

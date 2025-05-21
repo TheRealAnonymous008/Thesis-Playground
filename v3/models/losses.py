@@ -31,11 +31,10 @@ def threshed_jsd_loss(p, q, s, thresh):
     loss =  (jsd * mask).sum() / (mask.sum() + 1) 
 
     return loss 
-def mi_loss(p, q):
+def mi_loss(p, q, k = 3):
     """
     Returns the Mutual Information MI(p || q) using Kraskov's second approximation.
     """
-    k = 3  # Default neighbor count for Kraskov's method
     device = p.device
     N = p.size(0)
     
