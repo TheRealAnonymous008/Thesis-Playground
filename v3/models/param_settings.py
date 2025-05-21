@@ -67,6 +67,7 @@ class TrainingParameters:
     should_train_hypernet : bool = True,
     should_train_actor : bool = True 
     should_train_gnn : bool = True,
+    should_train_filter : bool = True, 
     
     verbose : bool = True
 

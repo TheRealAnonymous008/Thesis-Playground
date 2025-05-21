@@ -12,6 +12,7 @@ from .ppo_trainer import *
 from .sac_trainer import *
 from .hypernet_trainer import * 
 from .gnn_trainer import *
+from .filter_trainer import *
 
 # Temporary fix to avoid OMP duplicates. Not ideal though.
 import os
@@ -41,10 +42,10 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
     batch_next_com = []
 
     # Additional data for GNN loss
-    batch_all_Mji = []
-    batch_all_reverses = []
-    batch_all_neighbor_indices = []
-    batch_all_next_com = []
+    batch_Mij = []
+    batch_Mji = []
+    batch_ze = []
+    batch_zd = []
 
     sampled_agents = int(params.sampled_agents_proportion * env.n_agents)
     indices = np.random.choice(env.n_agents, size = sampled_agents, replace = False)
@@ -98,10 +99,10 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
 
         # Communication processing
         source_indices = torch.arange(0, env.n_agents, dtype=torch.long)
-        neighbor_indices, relations, reverses = env.sample_neighbors()
-        relations = relations.to(model.device)
+        neighbor_indices, Mij, reverses = env.sample_neighbors()
+        Mij = Mij.to(model.device)
         reverses = reverses.to(model.device)
-        messages = model.filter.forward(z, relations, wh["filter"])
+        messages = model.filter.forward(z, Mij, wh["filter"])
         
         # Decoder update
         zdj, Mji = model.decoder_update.forward(messages, reverses,  wh["decoder"], wh["update_mean"], wh["update_std"])
@@ -110,13 +111,6 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         env.set_beliefs(h)
         env.set_comm_state(neighbor_indices, zdj)
         env.update_edges(source_indices, neighbor_indices, Mji)
-
-
-        # Store additional GNN data (all agents)
-        batch_all_Mji.append(Mji[indices])
-        batch_all_reverses.append(reverses[indices])
-        batch_all_neighbor_indices.append(neighbor_indices[indices])
-        batch_all_next_com.append(z.detach().clone())
 
         # Store experience for sampled agents
         batch_obs.append(obs_tensor[indices])
@@ -137,6 +131,12 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         batch_ld_means.append(mean[indices])
         batch_ld_std.append(std[indices])
         batch_dones.append(torch.tensor(done, dtype = torch.bool))
+
+        batch_Mij.append(Mij[indices])
+        batch_Mji.append(Mji[indices])
+
+        batch_ze.append(z[indices])
+        batch_zd.append(zdj[indices])
     
     # Convert to tensors
     experiences = {
@@ -156,12 +156,12 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         "next_observations": torch.stack(batch_next_obs),
         "next_com" : torch.stack(batch_next_com),
         "next_belief" : torch.stack(batch_next_belief),
-        
-        # GNN data
-        'all_Mji': torch.stack(batch_all_Mji),
-        'all_reverses': torch.stack(batch_all_reverses),
-        'all_neighbor_indices': torch.stack(batch_all_neighbor_indices),
-        'all_next_com': torch.stack(batch_all_next_com),
+
+        "M_ij" : torch.stack(batch_Mij),
+        "M_ji" : torch.stack(batch_Mji),
+
+        'z_e' : torch.stack(batch_ze),
+        'z_d' : torch.stack(batch_zd),
     }
     
     return TensorDict(experiences, batch_size=params.experience_sampling_steps)
@@ -226,6 +226,9 @@ def train_sac_model(model: SACModel, env: BaseEnv, params: TrainingParameters):
         if params.should_train_gnn:
             total_loss = total_loss + train_gnn(model, env, experiences, params, writer= writer)
         
+        if params.should_train_filter:
+            total_loss = total_loss + train_filter(model, env, experiences, params, writer = writer)
+            
         if writer is not None:
             writer.add_scalar('State/Epsilon', params.epsilon, global_step = params.global_steps)
 

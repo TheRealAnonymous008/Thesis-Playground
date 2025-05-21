@@ -6,12 +6,18 @@ from tests.eval import *
 import torch 
 from torch.utils.tensorboard import SummaryWriter
 from .param_settings import TrainingParameters
-from .ppo_trainer import *
-from .sac_trainer import *
 
 def train_gnn(model: SACModel | PPOModel, env: BaseEnv, exp: TensorDict, params: TrainingParameters, writer: SummaryWriter = None):
     total_loss = torch.tensor(0.0, device=params.device)
+    Mij = exp["M_ij"]
+    Mji = exp["M_ji"]
+
+    # First, the MSE between Mij and Mji
+
+
+    # Then the MSE between ze and zd
+    z_e = exp["z_e"]
+    z_d = exp["z_d"]
     
-    # Compute the JSD loss between each agent pair. 
 
     return total_loss
