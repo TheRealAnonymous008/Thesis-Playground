@@ -8,6 +8,7 @@ class DenseWrapper(nn.Module):
     def __init__(self, 
                  params: list[int], 
                  last_activation: str = "leaky", 
+                 heterogeneous_activation : str = None, 
                  dropout_rate: float = -1,
                  enable_batch_norm: bool = False,
                  enable_spectral_norm: bool = False):
@@ -16,6 +17,15 @@ class DenseWrapper(nn.Module):
         self.params = params
         self.num_layers = len(params) - 1
 
+        if heterogeneous_activation == "sigmoid":
+            self.het_act = torch.sigmoid 
+        elif heterogeneous_activation == "tanh":
+            self.het_act = torch.tanh 
+        elif heterogeneous_activation == "softplus":
+            self.het_act = nn.Softplus()
+        else: 
+            self.het_act = None 
+            
         for i in range(self.num_layers):
             # Create linear layer
             layer = nn.Linear(params[i], params[i+1])
@@ -48,27 +58,30 @@ class DenseWrapper(nn.Module):
                 elif last_activation == "softplus":
                     self.layers.append(nn.Softplus())
 
+    def to(self, device):
+        self.layers.to(device)
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         for layer in self.layers:
             x = layer(x)
         return x
         
-    def apply_heterogeneous_weights(self, x, weights, sigmoid = False, tanh = False ):
+    def apply_heterogeneous_weights(self, x, weights):
         w = weights["weight"]
         b = weights["bias"]
 
         y = torch.bmm(w, torch.unsqueeze(x, 2))
         y = torch.squeeze(y, 2) + b
-        if sigmoid:
-            y = torch.sigmoid(y)
-        if tanh:
-            y = torch.tanh(y)
+
+        if self.het_act != None: 
+            y = self.het_act(y)
         return y
 
 
 
 def make_net(params: list[int], 
             last_activation: str = "leaky", 
+            heterogeneous_activation : str = None, 
             dropout_rate: float = -1,
             enable_batch_norm: bool = False,
             enable_spectral_norm: bool = False) -> nn.Module:
@@ -77,7 +90,8 @@ def make_net(params: list[int],
         last_activation=last_activation,
         dropout_rate=dropout_rate,
         enable_batch_norm=enable_batch_norm,
-        enable_spectral_norm=enable_spectral_norm
+        enable_spectral_norm=enable_spectral_norm,
+        heterogeneous_activation = heterogeneous_activation
     )
 
 

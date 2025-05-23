@@ -15,6 +15,10 @@ class LatentEncoder(nn.Module):
         self.mean_net = make_net([input_dim, 64, config.d_het_latent], last_activation=False)
         self.std_net = make_net([input_dim, 64,config.d_het_latent ], last_activation = "softplus")
 
+    def to(self, device):
+        self.mean_net.to(device)
+        self.std_net.to(device)
+
     def forward(self, inputs):
         """
         Outputs the MVN parameters for the latent distribution for sampling.
@@ -61,6 +65,38 @@ class SACLatentDecoder(nn.Module):
         
         self.u_bias_net_weights = make_net([config.d_het_latent, 256, 256, 256, config.d_het_weights * config.d_relation] , enable_spectral_norm= self.enable_spectral_norm, last_activation = False, dropout_rate= self.dropout_rate)
         self.u_bias_net_biases = make_net([config.d_het_latent, 256, 256, 256, config.d_relation] , enable_spectral_norm= self.enable_spectral_norm, last_activation = False, dropout_rate= self.dropout_rate)
+
+    def to(self, device):
+        # Policy networks
+        self.p_net_weights.to(device)
+        self.p_net_biases.to(device)
+
+        # Critic networks
+        self.crit_weights.to(device)
+        self.crit_biases.to(device)
+
+        # Belief networks
+        self.b_net_weights.to(device)
+        self.b_net_biases.to(device)
+
+        # Encoder networks
+        self.e_net_weights.to(device)
+        self.e_net_biases.to(device)
+
+        # Filter networks
+        self.f_net_weights.to(device)
+        self.f_net_biases.to(device)
+
+        # Decoder networks
+        self.d_net_weights.to(device)
+        self.d_net_biases.to(device)
+
+        # Update networks (mean and bias)
+        self.u_mean_net_weights.to(device)
+        self.u_mean_net_biases.to(device)
+        self.u_bias_net_weights.to(device)
+        self.u_bias_net_biases.to(device)
+        
 
     def forward(self, lv):
         """
@@ -147,14 +183,44 @@ class PPOLatentDecoder(nn.Module):
             'update_std': self.get_weights(lv, self.u_bias_net_weights, self.u_bias_net_biases, self.config.d_relation),
         }, device = self.config.device)
     
+
+    def to(self, device):
+        # Policy networks
+        self.p_net_weights.to(device)
+        self.p_net_biases.to(device)
+
+        # Critic networks
+        self.crit_weights.to(device)
+        self.crit_biases.to(device)
+
+        # Belief networks
+        self.b_net_weights.to(device)
+        self.b_net_biases.to(device)
+
+        # Encoder networks
+        self.e_net_weights.to(device)
+        self.e_net_biases.to(device)
+
+        # Filter networks
+        self.f_net_weights.to(device)
+        self.f_net_biases.to(device)
+
+        # Decoder networks
+        self.d_net_weights.to(device)
+        self.d_net_biases.to(device)
+
+        # Update networks (mean and bias)
+        self.u_mean_net_weights.to(device)
+        self.u_mean_net_biases.to(device)
+        self.u_bias_net_weights.to(device)
+        self.u_bias_net_biases.to(device)
+
     def get_weights(self, lv, weight_net, bias_net, dims):
 
         w = weight_net(lv)
         w = w.reshape((-1, dims, self.config.d_het_weights))
         b = bias_net(lv)
 
-        # w = torch.nn.functional.layer_norm(w, [self.config.d_het_weights])
-        # b = torch.nn.functional.layer_norm(b, [dims])
         w = w.cpu() * self.config.hypernet_scale_factor
         b = b.cpu() * self.config.hypernet_scale_factor
 
@@ -173,6 +239,10 @@ class HyperNetwork (nn.Module):
         elif config.type == "ppo":
             self.latent_decoder = PPOLatentDecoder(config)
 
+    def to(self, device):
+        self.latent_encoder.to(device)
+        self.latent_decoder.to(device)
+
     def forward(self, c, o, h, z):
         """
         Inputs: 
@@ -187,7 +257,8 @@ class HyperNetwork (nn.Module):
         wh - heterogeneous weights Dimensions (n_agents, d_het_weights)
         mu, sigma - the parameters of the latent distribution (n_agents, 2 * d_het_latents)
         """
-            
+
+        
         inputs = torch.cat([c, o, h, z], dim=1)  # Concatenate along feature dimension
         mu, sigma = self.latent_encoder(inputs)
 

@@ -107,7 +107,7 @@ class BaselineHeterogeneous(BaseEnv):
         The type payoffs should have shape
         (n_types, n_types, 2, n_actions, n_actions)
         """
-        super().__init__(n_agents, 1, 1, 1 )
+        super().__init__(n_agents, d_traits = n_types, d_beliefs = 8, d_comm_state = 8, d_relation = 1)
 
         # Validate type_payoffs structure
         assert len(type_payoffs.shape) == 5

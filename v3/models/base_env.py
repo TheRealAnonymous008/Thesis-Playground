@@ -58,7 +58,7 @@ class BaseEnv:
         pass 
 
     def get_traits(self) -> np.ndarray:
-        pass 
+        return self.traits
 
     def get_agents(self) -> list:
         pass 

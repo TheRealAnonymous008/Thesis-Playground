@@ -25,7 +25,7 @@ def train_gnn(model: SACModel | PPOModel, env: BaseEnv, exp: TensorDict, params:
 
     # Log losses to TensorBoard
     if writer is not None:
-        writer.add_scalar('Decoder/Relations', mse_m.item(), params.global_step)
-        writer.add_scalar('Decoder/Beliefs', mse_z.item(), params.global_step)
+        writer.add_scalar('Decoder/Relations', mse_m.item(), params.global_steps)
+        writer.add_scalar('Decoder/Beliefs', mse_z.item(), params.global_steps)
 
     return total_loss

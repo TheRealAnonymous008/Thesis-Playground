@@ -80,7 +80,6 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
             wh["encoder"]
         )
         Q = add_exploration_noise(Q, params, epoch)
-
         dists = Categorical(logits=Q)
         actions = dists.sample().cpu().numpy()
 
@@ -345,6 +344,8 @@ def train_ppo_model(model: PPOModel, env: BaseEnv, params: TrainingParameters):
 
 
 def train_model(model: SACModel | PPOModel, env: BaseEnv, params: TrainingParameters):
+    model.to(params.device)
+
     if type(model) is SACModel:
         train_sac_model(model, env, params)
     else: 

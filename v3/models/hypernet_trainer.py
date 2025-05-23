@@ -66,10 +66,10 @@ def train_hypernet(model: SACModel | PPOModel, env: BaseEnv, exp: TensorDict, pa
             weights_j["belief"]
         )
         
-    Q_ii = model.actor_encoder.policy_network.apply_heterogeneous_weights(temp_Q_i, wh_policy_i, sigmoid=False)
-    Q_ij = model.actor_encoder.policy_network.apply_heterogeneous_weights(temp_Q_i, wh_policy_j, sigmoid=False)
-    Q_ji = model.actor_encoder.policy_network.apply_heterogeneous_weights(temp_Q_j, wh_policy_i, sigmoid=False)
-    Q_jj = model.actor_encoder.policy_network.apply_heterogeneous_weights(temp_Q_j, wh_policy_j, sigmoid=False)
+    Q_ii = model.actor_encoder.policy_network.apply_heterogeneous_weights(temp_Q_i, wh_policy_i)
+    Q_ij = model.actor_encoder.policy_network.apply_heterogeneous_weights(temp_Q_i, wh_policy_j)
+    Q_ji = model.actor_encoder.policy_network.apply_heterogeneous_weights(temp_Q_j, wh_policy_i)
+    Q_jj = model.actor_encoder.policy_network.apply_heterogeneous_weights(temp_Q_j, wh_policy_j)
 
     jsd_loss = (threshed_jsd_loss(Q_ii, Q_ij, similarities, params.hypernet_jsd_threshold) + \
         threshed_jsd_loss(Q_ji, Q_jj, similarities, params.hypernet_jsd_threshold)) / 2.0

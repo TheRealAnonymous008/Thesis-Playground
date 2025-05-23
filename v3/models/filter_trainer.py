@@ -57,6 +57,6 @@ def train_filter(model: SACModel | PPOModel, env: BaseEnv, exp: TensorDict, para
     
     # Log to tensorboard if writer is provided
     if writer is not None:
-        writer.add_scalar('Loss/mi_loss', mi.item(), params.global_step)
+        writer.add_scalar('Filter/mi_loss', mi.item(), params.global_steps)
     
     return total_loss
