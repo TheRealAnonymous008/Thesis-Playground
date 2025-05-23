@@ -100,14 +100,14 @@ class BaselineEnvironment(BaseEnv):
     
     def get_traits(self):
         return self.traits
-
+    
 class BaselineHeterogeneous(BaseEnv):
     def __init__(self, n_agents, n_types, type_payoffs, total_games=1):
         """
         The type payoffs should have shape
         (n_types, n_types, 2, n_actions, n_actions)
         """
-        super().__init__(n_agents, d_traits = n_types, d_beliefs = 8, d_comm_state = 8, d_relation = 1)
+        super().__init__(n_agents, d_traits=n_types, d_beliefs=8, d_comm_state=8, d_relation=1)
 
         # Validate type_payoffs structure
         assert len(type_payoffs.shape) == 5
@@ -120,7 +120,7 @@ class BaselineHeterogeneous(BaseEnv):
         self.type_payoffs = type_payoffs
         self.total_games = total_games
         
-        self.obs_size = 2  
+        self.obs_size = 2  # Observation contains own type and opponent's type
         self.action_space = spaces.Discrete(self.num_actions)
         self.observation_space = spaces.Box(
             low=-np.inf,
@@ -136,51 +136,63 @@ class BaselineHeterogeneous(BaseEnv):
         self.total_steps = 0
 
     def reset(self):
-        """Resets environment with zero-initialized payoff observations and one-hot trait vectors"""
+        """Resets environment with zero-initialized payoff observations and random graph pairing"""
         super().reset()
         self.total_steps = 0
         # Generate one-hot encoded traits based on agent_types
         self.traits = np.eye(self.n_types, dtype=np.float16)[self.agent_types]
+
+        # Create random pairs and add edges to the graph
+        shuffled = np.random.permutation(self.n_agents)
+        for i in range(0, len(shuffled), 2):
+            if i + 1 >= len(shuffled):
+                break
+            a = shuffled[i]
+            b = shuffled[i + 1]
+            # Add edges in both directions
+            self.graph.add_edge(a, b, np.zeros((self.d_relation,)))
+            self.graph.add_edge(b, a, np.zeros((self.d_relation,)))
+
         return {agent: np.zeros(self.obs_size, dtype=np.float32) for agent in self.agents}
 
     def step(self, actions):
         """
-        Executes one timestep with pairwise interactions and indexer-based observations
+        Executes one timestep with pairwise interactions based on the graph structure
         """
         # Validate actions
         for agent, action in actions.items():
             assert 0 <= action < self.num_actions, f"Invalid action {action} for {agent}"
         
-        # Generate random pairs and initialize observations
+        # Generate pairs from the graph (u < v to avoid duplicates)
         pairs = []
+        for u in self.agents:
+            neighbors = self.graph.get_neighbors(u)
+            for v in neighbors:
+                if u < v:
+                    pairs.append((u, v))
+        
         observations = {agent: np.zeros(self.obs_size, dtype=np.float32) for agent in self.agents}
         rewards = {agent: 0.0 for agent in self.agents}
 
-        # Create pairwise interactions
-        for i in range(0, self.n_agents, 2):
-            if i+1 >= self.n_agents:
-                break
-                
-            a, b = i, i+1
-            pairs.append((a, b))
-            
-            # Get actions and update counts
+        # Process each pair based on the graph
+        for a, b in pairs:
+            # Retrieve actions
             action_a = actions[a]
             action_b = actions[b]
 
-            # Retrieve agent types and corresponding payoffs
+            # Get agent types and corresponding payoffs
             t1 = self.agent_types[a]
             t2 = self.agent_types[b]
             payoff_i = self.type_payoffs[t1, t2, 0]
             payoff_j = self.type_payoffs[t1, t2, 1]
             
-            # Calculate rewards
+            # Assign rewards
             rewards[a] = payoff_i[action_a, action_b]
             rewards[b] = payoff_j[action_a, action_b]
             
-            # Generate observations with indexer (agent's own type)
-            observations[a] = np.array([self.agent_types[a], self.agent_types[b]], dtype=np.float32)
-            observations[b] = np.array([self.agent_types[b], self.agent_types[a]], dtype=np.float32)
+            # Set observations with own type and opponent's type
+            observations[a] = np.array([t1, t2], dtype=np.float32)
+            observations[b] = np.array([t2, t1], dtype=np.float32)
 
         self.total_steps += 1
         done = self.total_steps >= self.total_games
