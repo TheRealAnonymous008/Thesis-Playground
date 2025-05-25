@@ -11,8 +11,7 @@ def train_filter(model: SACModel | PPOModel, env: BaseEnv, exp: TensorDict, para
     total_loss = torch.tensor(0.0, device=params.device)
     
     messages = exp["messages"]
-    logits = exp["logits"]
-    targets = exp["targets"]
+    logits = exp["pair_logits"]
     dones = exp["done"]
     
     # Determine valid timesteps where the next step is within the same episode
@@ -31,7 +30,6 @@ def train_filter(model: SACModel | PPOModel, env: BaseEnv, exp: TensorDict, para
     
     # Extract valid data slices
     messages_valid = messages[valid_t_indices]  # [n_valid, n_agents, d_messages]
-    targets_valid = targets[valid_t_indices]    # [n_valid, n_agents]
     logits_next = logits[valid_t_indices + 1]   # [n_valid, n_agents, d_logits]
     
     # Collect all (message, next_logit) pairs across agents and timesteps
@@ -39,10 +37,8 @@ def train_filter(model: SACModel | PPOModel, env: BaseEnv, exp: TensorDict, para
     for agent_i in range(n_agents):
         # Messages from agent i at valid timesteps
         msg_i = messages_valid[:, agent_i, :]
-        # Targets for agent i (indices of receiving agents)
-        target_j = targets_valid[:, agent_i]
         # Logits of the target agents at the next timestep
-        logit_j = logits_next[torch.arange(n_valid, device=params.device), target_j, :]
+        logit_j = logits_next[torch.arange(n_valid, device=params.device), agent_i, :]
         
         p_list.append(msg_i)
         q_list.append(logit_j)

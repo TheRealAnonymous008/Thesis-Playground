@@ -74,6 +74,7 @@ def train_hypernet(model: SACModel | PPOModel, env: BaseEnv, exp: TensorDict, pa
     jsd_loss = (threshed_jsd_loss(Q_ii, Q_ij, similarities, params.hypernet_jsd_threshold) + \
         threshed_jsd_loss(Q_ji, Q_jj, similarities, params.hypernet_jsd_threshold)) / 2.0
     
+
     # Diversity loss computation using latent variables
     div_sim = 1 - 0.5 * (1 + torch.nn.functional.cosine_similarity(lv_i, lv_j, dim=1))
     div_sim = div_sim.mean()

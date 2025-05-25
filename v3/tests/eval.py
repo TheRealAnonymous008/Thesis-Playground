@@ -96,7 +96,7 @@ def evaluate_policy(model: SACModel, env : BaseEnv, num_episodes=10, k=2, writer
                     {agent: int(actions[i]) for i, agent in enumerate(env.agents)}
                 )
                 episode_return += sum(rewards.values()) / len(env.agents)
-                done = any(dones.values())
+                done = np.any(list(dones.values()))
                 obs = next_obs
 
                 # Send

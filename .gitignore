@@ -154,3 +154,4 @@ cython_debug/
 /v3/runs
 /v3/archives
 /archives
+/v3/checkpoints

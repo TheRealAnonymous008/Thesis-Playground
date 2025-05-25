@@ -85,4 +85,5 @@ class TrainingParameters:
 
     # Other stuff
     eval_temp : float = 1.0
-    eval_k : int = 2
+    eval_k : int = 2 
+    checkpoint_interval : int = 500

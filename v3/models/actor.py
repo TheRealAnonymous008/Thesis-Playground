@@ -35,7 +35,7 @@ class ActorEncoder(nn.Module):
     
     def homogeneous_forward(self, o, h, z, b_weights):
         input = torch.cat([h, z], dim = 1)
-        h = self.belief_update(input)
+        h = self.belief_update.forward(input)
         h = self.belief_update.apply_heterogeneous_weights(h, b_weights)
 
         input = torch.cat([o, h], dim = 1)

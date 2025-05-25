@@ -1,8 +1,9 @@
 from .actor import * 
 from .hypernet import * 
 
-class PPOModel: 
+class PPOModel(nn.Module): 
     def __init__(self, config : ParameterSettings):
+        super().__init__()
         self.config = config
         self.hypernet = HyperNetwork(config)
         self.actor_encoder = ActorEncoder(config)
@@ -13,12 +14,6 @@ class PPOModel:
 
         self.to(config.device)
 
-        self._parameters = list(self.hypernet.parameters()) + \
-            list(self.actor_encoder.parameters())  + \
-            list(self.actor_encoder_critic.parameters()) + \
-            list(self.filter.parameters()) + \
-            list(self.decoder_update.parameters()) 
-
     def to(self, device):
         self.device = device
 
@@ -27,8 +22,6 @@ class PPOModel:
         self.actor_encoder_critic.to(device)
         self.filter.to(device)
         self.decoder_update.to(device)
-
-
 
     def requires_grad_(self, val):
         self.hypernet.requires_grad_(val)
@@ -60,15 +53,15 @@ class PPOModel:
         return self._parameters
 
     def train(self, val : bool = True):
-        
         self.hypernet.train(val)
         self.actor_encoder.train(val)
         self.actor_encoder_critic.train(val)
         self.filter.train(val)
         self.decoder_update.train(val)
 
-class SACModel: 
+class SACModel(nn.Module): 
     def __init__(self, config : ParameterSettings):
+        super().__init__()
         self.config = config
         self.hypernet = HyperNetwork(config)
         self.actor_encoder = ActorEncoder(config)
@@ -84,13 +77,6 @@ class SACModel:
         self.log_alpha = nn.Parameter(torch.tensor(0.2, dtype = torch.float16, requires_grad=True), requires_grad=True)
         self.to(config.device)
 
-        self._parameters = list(self.hypernet.parameters()) + \
-            list(self.actor_encoder.parameters())  + \
-            list(self.q1.parameters()) + \
-            list(self.q2.parameters()) + \
-            list(self.filter.parameters()) + \
-            list(self.decoder_update.parameters()) + \
-            list([self.log_alpha])
     
     @property
     def alpha(self):

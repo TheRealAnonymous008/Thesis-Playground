@@ -56,6 +56,8 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
     # Additional Data for Filter
     batch_messages = []
     batch_targets = []
+    all_logits = []
+    pair_logits = []
 
     sampled_agents = int(params.sampled_agents_proportion * env.n_agents)
     indices = np.random.choice(env.n_agents, size = sampled_agents, replace = False)
@@ -82,7 +84,7 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         Q = add_exploration_noise(Q, params, epoch)
         dists = Categorical(logits=Q)
         actions = dists.sample().cpu().numpy()
-
+        logits =  dists.logits
         actions_dict = {agent: int(actions[i]) for i, agent in enumerate(env.get_agents())}
 
         # Critic forward
@@ -99,7 +101,7 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         rewards = np.array([rewards[agent] for agent in env.get_agents()])
 
         obs = next_obs
-        done = np.any(dones.values()) or i == params.experience_sampling_steps - 1
+        done = np.any(list(dones.values())) or i == params.experience_sampling_steps - 1
 
         if done:
             obs = env.reset()
@@ -126,7 +128,7 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         batch_next_obs.append(next_obs_tensor[indices])
         batch_actions.append(actions[indices])
         batch_rewards.append(rewards[indices])
-        batch_logits.append(Q[indices])
+        batch_logits.append(logits[indices])
 
         batch_lv.append(lv[indices])
         batch_wh.append(select_weights(wh, indices))
@@ -149,7 +151,12 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         batch_zd.append(zdj[indices])
 
         batch_messages.append(messages[indices])
-        batch_targets.append(neighbor_indices[indices])
+        batch_targets.append(neighbor_indices[indices].detach().cpu().numpy())
+        all_logits.append(logits)
+        if i > 0: 
+            pair_logits.append(all_logits[i - 1][batch_targets[i - 1]])
+        else: 
+            pair_logits.append(logits[indices])
     
     # Convert to tensors
     experiences = {
@@ -176,12 +183,12 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         'z_e' : torch.stack(batch_ze),
         'z_d' : torch.stack(batch_zd),
         'messages' : torch.stack(batch_messages),
-        'targets': torch.stack(batch_targets)
+        'pair_logits' : torch.stack(pair_logits),
     }
     
     return TensorDict(experiences, batch_size=params.experience_sampling_steps)
 
-def train_sac_model(model: SACModel, env: BaseEnv, params: TrainingParameters):
+def train_sac_model(model: SACModel, env: BaseEnv, params: TrainingParameters, optim_state_dict = None ):
     if params.verbose:
         writer = SummaryWriter()
     else:
@@ -196,6 +203,10 @@ def train_sac_model(model: SACModel, env: BaseEnv, params: TrainingParameters):
         {'params': model.q2.parameters(), 'lr': params.critic_learning_rate, 'eps' : 1e-5},
         {'params': [model.log_alpha], 'lr': params.actor_learning_rate, 'eps' : 1e-5},
     ])  
+
+    if optim_state_dict != None: 
+        optim.load_state_dict(optim_state_dict)
+
 
     params.global_steps = 0
     experiences = TensorDict({})  # Initialize empty experience buffer
@@ -265,9 +276,19 @@ def train_sac_model(model: SACModel, env: BaseEnv, params: TrainingParameters):
         evaluate_policy(model, env, writer=writer, global_step=params.global_steps, temperature=params.eval_temp, k = params.eval_k)
         params.global_steps += 1
 
+        if params.checkpoint_interval != -1 and params.global_steps % params.checkpoint_interval == 0:
+            checkpoint = {
+                'global_step': params.global_steps,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optim.state_dict(),
+                'params': params.__dict__
+            }
+            torch.save(checkpoint, f"checkpoint_sac_step_{params.global_steps}.pt")
+
+
     writer.close()
 
-def train_ppo_model(model: PPOModel, env: BaseEnv, params: TrainingParameters):
+def train_ppo_model(model: PPOModel, env: BaseEnv, params: TrainingParameters, optim_state_dict = None ):
     if params.verbose:
         writer = SummaryWriter()
     else:
@@ -280,6 +301,9 @@ def train_ppo_model(model: PPOModel, env: BaseEnv, params: TrainingParameters):
         {'params': model.filter.parameters(), 'lr': params.filter_learning_rate, 'eps' : 1e-5}, 
         {'params': model.decoder_update.parameters(), 'lr': params.decoder_learning_rate, 'eps' : 1e-5},
     ])  
+
+    if optim_state_dict != None: 
+        optim.load_state_dict(optim_state_dict)
 
     params.global_steps = 0
     experiences = TensorDict({})  # Initialize empty experience buffer
@@ -326,6 +350,7 @@ def train_ppo_model(model: PPOModel, env: BaseEnv, params: TrainingParameters):
         
         if params.should_train_filter:
             total_loss = total_loss + train_filter(model, env, experiences, params, writer = writer)
+
         if writer is not None:
             writer.add_scalar('State/Epsilon', params.epsilon, global_step = params.global_steps)
 
@@ -339,15 +364,61 @@ def train_ppo_model(model: PPOModel, env: BaseEnv, params: TrainingParameters):
         evaluate_policy(model, env, writer=writer, global_step=params.global_steps, temperature=params.eval_temp, k = params.eval_k)
         params.global_steps += 1
 
+        if params.checkpoint_interval != -1 and params.global_steps % params.checkpoint_interval == 0:
+            checkpoint = {
+                'global_step': params.global_steps,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optim.state_dict(),
+                'params': params.__dict__
+            }
+            torch.save(checkpoint, f"checkpoint_ppo_step_{params.global_steps}.pt")
+
     if writer != None: 
         writer.close()
 
 
-def train_model(model: SACModel | PPOModel, env: BaseEnv, params: TrainingParameters):
+def train_model(model: SACModel | PPOModel, env: BaseEnv, params: TrainingParameters, path : str = None ):
+    model_state_dict = None 
+    optim_state_dict = None 
+
+    if path != None: 
+        checkpoint =  load_checkpoint(path)
+        model_state_dict = checkpoint["model_state_dict"]
+        optim_state_dict = checkpoint["optimizer_state_dict"]
+        params = checkpoint['params']
+        
+    if model_state_dict: 
+        model.load_state_dict(model_state_dict)
+
     model.to(params.device)
 
     if type(model) is SACModel:
-        train_sac_model(model, env, params)
+        train_sac_model(model, env, params, optim_state_dict)
     else: 
-        train_ppo_model(model, env, params)
+        train_ppo_model(model, env, params, optim_state_dict)
 
+def load_checkpoint(filepath: str):
+    """Loads training state from checkpoint file.
+    
+    Args:
+        filepath: Path to checkpoint .pt file
+    
+    Returns:
+        Dictionary containing:
+        - model_state_dict: Model weights
+        - optimizer_state_dict: Optimizer states
+        - params: Reconstructed TrainingParameters object
+        - global_step: Training step counter
+    """
+    checkpoint = torch.load(filepath)
+    
+    # Reconstruct TrainingParameters object
+    params = TrainingParameters()
+    params.__dict__.update(checkpoint['params'])
+    
+    return {
+        'model_state_dict': checkpoint['model_state_dict'],
+        'optimizer_state_dict': checkpoint['optimizer_state_dict'],
+        'params': params,
+        'global_step': checkpoint['global_step']
+    }
