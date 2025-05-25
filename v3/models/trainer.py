@@ -55,8 +55,8 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
 
     # Additional Data for Filter
     batch_messages = []
-    batch_targets = []
-    all_logits = []
+    prev_logits = None 
+    prev_targets = None 
     pair_logits = []
 
     sampled_agents = int(params.sampled_agents_proportion * env.n_agents)
@@ -84,7 +84,6 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         Q = add_exploration_noise(Q, params, epoch)
         dists = Categorical(logits=Q)
         actions = dists.sample().cpu().numpy()
-        logits =  dists.logits
         actions_dict = {agent: int(actions[i]) for i, agent in enumerate(env.get_agents())}
 
         # Critic forward
@@ -128,7 +127,7 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         batch_next_obs.append(next_obs_tensor[indices])
         batch_actions.append(actions[indices])
         batch_rewards.append(rewards[indices])
-        batch_logits.append(logits[indices])
+        batch_logits.append(Q[indices])
 
         batch_lv.append(lv[indices])
         batch_wh.append(select_weights(wh, indices))
@@ -151,12 +150,12 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         batch_zd.append(zdj[indices])
 
         batch_messages.append(messages[indices])
-        batch_targets.append(neighbor_indices[indices].detach().cpu().numpy())
-        all_logits.append(logits)
         if i > 0: 
-            pair_logits.append(all_logits[i - 1][batch_targets[i - 1]])
+            pair_logits.append(prev_logits)
         else: 
-            pair_logits.append(logits[indices])
+            pair_logits.append(Q[indices])
+        
+        prev_logits = Q[neighbor_indices[indices]]
     
     # Convert to tensors
     experiences = {
