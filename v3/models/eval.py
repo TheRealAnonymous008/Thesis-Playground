@@ -74,6 +74,7 @@ def evaluate_policy(model: SACModel, env : BaseEnv, num_episodes=10, k=2, writer
                 com_vector = torch.tensor(env.comm_state, device=device)
                 lv, wh, _, _ = model.hypernet(trait_vector, obs_tensor, belief_vector, com_vector)
 
+
                 # Get action distribution
                 Q, h, z = model.actor_encoder.forward(
                     obs_tensor, 
@@ -91,6 +92,7 @@ def evaluate_policy(model: SACModel, env : BaseEnv, num_episodes=10, k=2, writer
                 
                 current_episode_actions.append(actions)
 
+                
                 # Step environment
                 next_obs, rewards, dones, _ = env.step(
                     {agent: int(actions[i]) for i, agent in enumerate(env.agents)}
@@ -113,7 +115,7 @@ def evaluate_policy(model: SACModel, env : BaseEnv, num_episodes=10, k=2, writer
                 # Update the beliefs via the decoder
                 env.set_beliefs(h)
                 env.set_comm_state(neighbor_indices, zdj)
-                env.update_edges(source_indices, neighbor_indices, Mji)
+                env.update_edges(neighbor_indices, source_indices, Mji)
 
                 # Accumulate individual agent rewards
                 for agent in env.agents:

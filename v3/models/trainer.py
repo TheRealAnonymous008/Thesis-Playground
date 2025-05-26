@@ -104,6 +104,8 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
 
         if done:
             obs = env.reset()
+            indices = np.random.choice(env.n_agents, size = sampled_agents, replace = False)
+
 
         next_obs_tensor = torch.FloatTensor(np.stack([obs[agent] for agent in env.get_agents()])).to(device)
 
@@ -120,7 +122,7 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         # Update environment states
         env.set_beliefs(h)
         env.set_comm_state(neighbor_indices, zdj)
-        env.update_edges(source_indices, neighbor_indices, Mji)
+        env.update_edges(neighbor_indices, source_indices, Mji)
 
         # Store experience for sampled agents
         batch_obs.append(obs_tensor[indices])
