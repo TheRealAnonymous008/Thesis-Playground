@@ -49,6 +49,7 @@ class TrainingParameters:
     clip_epsilon: float = 0.2
     value_loss_coeff: float = 1.0
     entropy_coeff: float = 0.2
+    gae_lambda : float = 0.95
 
     # Hypernet specific parameters
     hypernet_learning_rate : float = 1e-3
