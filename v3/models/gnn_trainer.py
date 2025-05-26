@@ -1,7 +1,7 @@
 from .losses import * 
 from .model import * 
 from .base_env import *
-from tests.eval import *
+from models.eval import *
 
 import torch 
 import torch.nn.functional as F
