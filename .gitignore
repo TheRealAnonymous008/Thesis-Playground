@@ -155,3 +155,4 @@ cython_debug/
 /v3/archives
 /archives
 /v3/checkpoints
+*.pt
