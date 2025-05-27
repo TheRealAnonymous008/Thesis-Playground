@@ -49,7 +49,7 @@ def train_filter(model: SACModel | PPOModel, env: BaseEnv, exp: TensorDict, para
     
     # Compute mutual information loss
     mi = mi_loss(p, q)
-    total_loss = mi
+    total_loss = -mi
     
     # Log to tensorboard if writer is provided
     if writer is not None:
