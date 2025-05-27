@@ -8,3 +8,5 @@ runs\May27_08-04-45_LAPTOP-JEP06EM9
     experience_buffer_size = 10, equivalent to just two games per epoch.  Otherwise equivalent to 27-06-16-42-L
 
 runs\May27_10-04-16_LAPTOP-JEP06EM9             Same as above but with both changed variables as 5 (so buffer only fits 1 game)
+
+runs\May27_11-51-08_LAPTOP-JEP06EM9             Same as 27-09-45-07-L but with JSD threshold  set to expected 
