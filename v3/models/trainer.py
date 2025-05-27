@@ -242,34 +242,35 @@ def train_sac_model(model: SACModel, env: BaseEnv, params: TrainingParameters, o
                 batch_size=[params.experience_buffer_size]
             )
         
-        total_loss = torch.tensor(0.0, requires_grad = True)
+        for _ in range(params.steps_per_epoch):
+            total_loss = torch.tensor(0.0, requires_grad = True)
 
-        if params.should_train_actor:
-            total_loss = total_loss + train_sac_actor(model, env, experiences, params, writer=writer)
-        
-        if params.should_train_hypernet:
-            total_loss = total_loss + train_hypernet(model, env, experiences, params, writer=writer)
-
-        if params.should_train_gnn:
-            total_loss = total_loss + train_gnn(model, env, experiences, params, writer= writer)
-        
-        if params.should_train_filter:
-            total_loss = total_loss + train_filter(model, env, experiences, params, writer = writer)
+            if params.should_train_actor:
+                total_loss = total_loss + train_sac_actor(model, env, experiences, params, writer=writer)
             
-        if writer is not None:
-            writer.add_scalar('State/Epsilon', params.epsilon, global_step = params.global_steps)
+            if params.should_train_hypernet:
+                total_loss = total_loss + train_hypernet(model, env, experiences, params, writer=writer)
 
-        optim.zero_grad()
-        total_loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), params.grad_clip_norm)
-        optim.step()
-        
-        # Update target networks
-        with torch.no_grad():
-            for t_param, param in zip(model.target_q1.parameters(), model.q1.parameters()):
-                t_param.data.mul_(1 - params.tau).add_(params.tau * param.data)
-            for t_param, param in zip(model.target_q2.parameters(), model.q2.parameters()):
-                t_param.data.mul_(1 - params.tau).add_(params.tau * param.data)
+            if params.should_train_gnn:
+                total_loss = total_loss + train_gnn(model, env, experiences, params, writer= writer)
+            
+            if params.should_train_filter:
+                total_loss = total_loss + train_filter(model, env, experiences, params, writer = writer)
+                
+            if writer is not None:
+                writer.add_scalar('State/Epsilon', params.epsilon, global_step = params.global_steps)
+
+            optim.zero_grad()
+            total_loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), params.grad_clip_norm)
+            optim.step()
+            
+            # Update target networks
+            with torch.no_grad():
+                for t_param, param in zip(model.target_q1.parameters(), model.q1.parameters()):
+                    t_param.data.mul_(1 - params.tau).add_(params.tau * param.data)
+                for t_param, param in zip(model.target_q2.parameters(), model.q2.parameters()):
+                    t_param.data.mul_(1 - params.tau).add_(params.tau * param.data)
 
 
         model.requires_grad_(False)
@@ -338,27 +339,28 @@ def train_ppo_model(model: PPOModel, env: BaseEnv, params: TrainingParameters, o
                 batch_size=[params.experience_buffer_size]
             )
         
-        total_loss = torch.tensor(0.0, requires_grad = True)
+        for _ in range(params.steps_per_epoch):
+            total_loss = torch.tensor(0.0, requires_grad = True)
 
-        if params.should_train_actor:
-            total_loss = total_loss + train_ppo_actor(model, env, experiences, params, writer=writer)
-        
-        if params.should_train_hypernet:
-            total_loss = total_loss + train_hypernet(model, env, experiences, params, writer=writer)
-        
-        if params.should_train_gnn:
-            total_loss = total_loss + train_gnn(model, env, experiences, params, writer= writer)
-        
-        if params.should_train_filter:
-            total_loss = total_loss + train_filter(model, env, experiences, params, writer = writer)
+            if params.should_train_actor:
+                total_loss = total_loss + train_ppo_actor(model, env, experiences, params, writer=writer)
+            
+            if params.should_train_hypernet:
+                total_loss = total_loss + train_hypernet(model, env, experiences, params, writer=writer)
+            
+            if params.should_train_gnn:
+                total_loss = total_loss + train_gnn(model, env, experiences, params, writer= writer)
+            
+            if params.should_train_filter:
+                total_loss = total_loss + train_filter(model, env, experiences, params, writer = writer)
 
-        if writer is not None:
-            writer.add_scalar('State/Epsilon', params.epsilon, global_step = params.global_steps)
+            if writer is not None:
+                writer.add_scalar('State/Epsilon', params.epsilon, global_step = params.global_steps)
 
-        optim.zero_grad()
-        total_loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), params.grad_clip_norm)
-        optim.step()
+            optim.zero_grad()
+            total_loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), params.grad_clip_norm)
+            optim.step()
 
         model.train(False)
         model.requires_grad_(False)
