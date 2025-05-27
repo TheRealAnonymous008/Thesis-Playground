@@ -8,3 +8,32 @@ runs\May26_21-45-08_LAPTOP-88AV9U3J - Use re-indexing per time step. Reduce entr
 runs\May27_09-45-07_LAPTOP-88AV9U3J - Train for more than one step  per experience sample.          - Effective. 
 runs\May27_13-32-05_LAPTOP-88AV9U3J - Fix: No initial obs. JSD Thresh to 0.5
 runs\May27_15-49-44_LAPTOP-88AV9U3J - JSD THresh back to 1.0. Increase steps per epoch to 16
+runs\May27_16-16-30_LAPTOP-88AV9U3J -                                                                   Successefully learnt Nash Eq. 
+    outer_loops = 2_000,
+    
+    actor_learning_rate= 1e-4,
+    critic_learning_rate = 1e-3,
+    hypernet_learning_rate = 5e-4,
+
+    hypernet_jsd_threshold = 1.0,
+    hypernet_samples = 3000,
+    hypernet_jsd_weight = 1.0,
+    hypernet_entropy_weight = 0.01, 
+    hypernet_diversity_weight= 1.0,
+
+    sampled_agents_proportion = 0.5,
+    experience_sampling_steps = 10,
+    experience_buffer_size = 10,
+
+    entropy_coeff = 0.2,
+
+    epsilon_period = 200,
+    epsilon_end = 0.05,
+
+    entropy_target = 0.5,
+
+    eval_temp = -1.0,
+    
+    # verbose = False,
+    device = parameters.device,
+    steps_per_epoch = 16
