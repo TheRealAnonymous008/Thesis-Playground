@@ -10,3 +10,5 @@ runs\May27_08-04-45_LAPTOP-JEP06EM9
 runs\May27_10-04-16_LAPTOP-JEP06EM9             Same as above but with both changed variables as 5 (so buffer only fits 1 game)
 
 runs\May27_11-51-08_LAPTOP-JEP06EM9             Same as 27-09-45-07-L but with JSD threshold  set to expected 
+runs\May27_20-21-39_LAPTOP-JEP06EM9             Sane as 27-16-16-30-L but with JSD threshold set to 0.5
+runs\May27_15-26-07_LAPTOP-JEP06EM9             Same as above but with steps set to 5000
