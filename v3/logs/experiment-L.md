@@ -40,4 +40,7 @@ runs\May27_16-16-30_LAPTOP-88AV9U3J -                                           
 
 
 runs\May27_22-01-38_LAPTOP-88AV9U3J - Run the tests on the hypernetwork environment - model successfully learnt different agent behaviors
-runs\May28_09-09-14_LAPTOP-88AV9U3J - same as above but with jsd set to 0.5    - Performs better than with jsd set to 1.0
+runs\May28_09-09-14_LAPTOP-88AV9U3J - same as above but with jsd set to 0.5    - Performs better than with jsd set to 1.0. 
+
+
+runs\May28_20-18-13_LAPTOP-88AV9U3J - Same as runs\May27_16-16-30_LAPTOP-88AV9U3J  but with jsd_threshold = 2.0 so that diversity is measured across both types. 
