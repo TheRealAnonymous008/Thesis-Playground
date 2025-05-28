@@ -177,7 +177,7 @@ class BaselineHeterogeneous(BaseEnv):
         self.total_steps = 0
 
     def reset(self):
-        """Resets environment with zero-initialized payoff observations and random graph pairing"""
+        """Resets environment with agent's type and partner's type as observations"""
         super().reset()
         self.total_steps = 0
         # Generate one-hot encoded traits based on agent_types
@@ -194,7 +194,13 @@ class BaselineHeterogeneous(BaseEnv):
             self.graph.add_edge(a, b, np.zeros((self.d_relation,)))
             self.graph.add_edge(b, a, np.zeros((self.d_relation,)))
 
-        return {agent: np.zeros(self.obs_size, dtype=np.float32) for agent in self.agents}
+        # Build observations with own type and partner's type
+        observations = {}
+        for agent in self.agents:
+            own_type = self.agent_types[agent]
+            observations[agent] = np.array([own_type, -1], dtype=np.float32)
+        
+        return observations
 
     def step(self, actions):
         """
