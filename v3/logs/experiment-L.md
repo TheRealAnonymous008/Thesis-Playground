@@ -8,7 +8,7 @@ runs\May26_21-45-08_LAPTOP-88AV9U3J - Use re-indexing per time step. Reduce entr
 runs\May27_09-45-07_LAPTOP-88AV9U3J - Train for more than one step  per experience sample.          - Effective. 
 runs\May27_13-32-05_LAPTOP-88AV9U3J - Fix: No initial obs. JSD Thresh to 0.5
 runs\May27_15-49-44_LAPTOP-88AV9U3J - JSD THresh back to 1.0. Increase steps per epoch to 16
-runs\May27_16-16-30_LAPTOP-88AV9U3J -                                                                   Successefully learnt Nash Eq. 
+runs\May27_16-16-30_LAPTOP-88AV9U3J -                                                                   Successefully learnt Nash Eq. Checck checkpoint 1500
     outer_loops = 2_000,
     
     actor_learning_rate= 1e-4,
@@ -37,3 +37,7 @@ runs\May27_16-16-30_LAPTOP-88AV9U3J -                                           
     # verbose = False,
     device = parameters.device,
     steps_per_epoch = 16
+
+
+runs\May27_22-01-38_LAPTOP-88AV9U3J - Run the tests on the hypernetwork environment - model successfully learnt different agent behaviors
+runs\May28_09-09-14_LAPTOP-88AV9U3J - same as above but with jsd set to 0.5    - Performs better than with jsd set to 1.0
