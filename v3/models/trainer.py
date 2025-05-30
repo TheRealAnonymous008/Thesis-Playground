@@ -72,6 +72,7 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         com_vector = torch.tensor(env.comm_state , device=device)
         lv, wh, mean, std = model.hypernet.forward(trait_vector, obs_tensor, belief_vector, com_vector)
         
+
         # Actor encoder forward
         Q, h, z = model.actor_encoder.forward(
             obs_tensor, 

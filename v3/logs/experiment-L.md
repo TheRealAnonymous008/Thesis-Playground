@@ -44,3 +44,35 @@ runs\May28_09-09-14_LAPTOP-88AV9U3J - same as above but with jsd set to 0.5    -
 
 
 runs\May28_20-18-13_LAPTOP-88AV9U3J - Same as runs\May27_16-16-30_LAPTOP-88AV9U3J  but with jsd_threshold = 2.0 so that diversity is measured across both types. 
+runs\May29_02-47-10_LAPTOP-88AV9U3J - Same as above but with no entropy.
+
+runs\May29_09-11-39_LAPTOP-88AV9U3J - Made exploration noise scaled to the logits' stddev. This way noise can be more impactful
+    outer_loops = 2_000,
+    
+    actor_learning_rate= 1e-4,
+    critic_learning_rate = 1e-3,
+    hypernet_learning_rate = 5e-4,
+
+    hypernet_jsd_threshold = 1.0,
+    hypernet_samples = 3000,
+    hypernet_jsd_weight = 1.0,
+    hypernet_entropy_weight = 0.01, 
+    hypernet_diversity_weight= 1.0,
+
+    sampled_agents_proportion = 0.5,
+    experience_sampling_steps = 10,
+    experience_buffer_size = 10,
+
+    entropy_coeff = 0.2,
+
+    epsilon_period = 200,
+    epsilon_end = 0.1,
+    noise_scale = 3.0,
+
+    entropy_target = 0.5,
+
+    eval_temp = -1.0,
+    
+    # verbose = False,
+    device = parameters.device,
+    steps_per_epoch = 16
