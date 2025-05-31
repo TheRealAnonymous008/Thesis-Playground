@@ -273,6 +273,9 @@ class HyperNetwork (nn.Module):
 
         dist = torch.distributions.MultivariateNormal(mu, covariance_matrix=cov_matrix)
         lv = dist.rsample() 
+        
+        lv_norm = torch.norm(lv, p=2, dim=1, keepdim=True)
+        lv = lv / (lv_norm + 1e-8)
 
         weights  = self.latent_decoder(lv)
         # Return the latent variable and the heterogeneous weights
