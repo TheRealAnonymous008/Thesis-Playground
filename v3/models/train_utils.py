@@ -48,7 +48,7 @@ def add_exploration_noise(logits: torch.Tensor, params: TrainingParameters, epoc
         logits
     )
 
-    return modified_logits + noise
+    return modified_logits + noise 
 
 def select_weights(wh : TensorDict, indices : list) -> TensorDict:
     return TensorDict(
