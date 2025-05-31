@@ -11,8 +11,8 @@ class ActorEncoder(nn.Module):
         super().__init__()
         self.config = config
         self.policy_network : RNNWrapper = make_net([config.d_obs + config.d_beliefs, 128, 128, config.d_het_weights])
-        self.belief_update : DenseWrapper= make_net([config.d_beliefs + config.d_comm_state, 128, 128, config.d_het_weights], heterogeneous_activation="tanh")
-        self.encoder_network : DenseWrapper= make_net([config.d_obs + config.d_beliefs, 128, config.d_het_weights], heterogeneous_activation="tanh")
+        self.belief_update : DenseWrapper= make_net([config.d_beliefs + config.d_comm_state, 128, 128, config.d_het_weights])
+        self.encoder_network : DenseWrapper= make_net([config.d_obs + config.d_beliefs, 128, config.d_het_weights])
 
     def to(self, device):
         self.policy_network.to(device)
@@ -31,12 +31,18 @@ class ActorEncoder(nn.Module):
         Q = self.policy_network.apply_heterogeneous_weights(Q, p_weights) 
         ze = self.encoder_network.apply_heterogeneous_weights(ze, e_weights)
 
+        ze_norm = torch.norm(ze, p=2, dim=1, keepdim=True)
+        ze = ze / (ze_norm + 1e-8)
+
         return Q, h, ze
     
     def homogeneous_forward(self, o, h, z, b_weights):
         input = torch.cat([h, z], dim = 1)
         h = self.belief_update.forward(input)
         h = self.belief_update.apply_heterogeneous_weights(h, b_weights)
+
+        h_norm = torch.norm(h, p=2, dim=1, keepdim=True)
+        h = h / (h_norm + 1e-8)
 
         input = torch.cat([o, h], dim = 1)
         Q= self.policy_network.forward(input)
@@ -82,6 +88,9 @@ class Filter(nn.Module):
         zei = torch.Tensor.expand(zei, (Mij.shape[0], -1))
         input = torch.cat([zei, Mij], dim = 1)
         message = self.net.apply_heterogeneous_weights(self.net(input), f_weights)
+
+        message_norm = torch.norm(message, p=2, dim=1, keepdim=True)
+        message = message / (message_norm + 1e-8)
         return message 
     
 class DecoderUpdate(nn.Module):
@@ -106,11 +115,14 @@ class DecoderUpdate(nn.Module):
         mu = self.update_mean_net.apply_heterogeneous_weights(self.update_mean_net(input), um_weights)
         sigma = self.update_cov_net.apply_heterogeneous_weights(self.update_cov_net(input), us_weights)
 
+        zdj_norm = torch.norm(zdj, p=2, dim=1, keepdim=True)
+        zdj = zdj / (zdj_norm + 1e-8)
+
         eps = torch.randn_like(sigma)
         newMij = mu + eps * sigma
 
-        # Apply tanh to normalize
-        newMij = torch.tanh(newMij)
+        newMij_norm = torch.norm(newMij, p = 2, dim=1, keepdim= True)
+        newMij = newMij / (newMij_norm + 1e-8)
 
         return zdj, newMij
     

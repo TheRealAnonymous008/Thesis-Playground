@@ -216,13 +216,20 @@ class PPOLatentDecoder(nn.Module):
         self.u_bias_net_biases.to(device)
 
     def get_weights(self, lv, weight_net, bias_net, dims):
-
         w = weight_net(lv)
         w = w.reshape((-1, dims, self.config.d_het_weights))
         b = bias_net(lv)
 
-        w = w.cpu() * self.config.hypernet_scale_factor
-        b = b.cpu() * self.config.hypernet_scale_factor
+        w *= self.config.hypernet_scale_factor
+        b *= self.config.hypernet_scale_factor
+
+        # Normalize weight matrices per agent (Frobenius norm)
+        w_norm = torch.norm(w, p=2, dim=(1,2), keepdim=True)
+        w = w / (w_norm + 1e-8)
+
+        # Normalize bias vectors per agent (L2 norm)
+        b_norm = torch.norm(b, p=2, dim=1, keepdim=True)
+        b = b / (b_norm + 1e-8)
 
         return TensorDict({
             "weight": w, 

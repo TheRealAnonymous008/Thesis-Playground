@@ -82,6 +82,7 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
             wh["belief"], 
             wh["encoder"]
         )
+
         Q = add_exploration_noise(Q, params, epoch)
         dists = Categorical(logits=Q)
         actions = dists.sample().cpu().numpy()

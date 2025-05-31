@@ -84,6 +84,7 @@ def evaluate_policy(model: SACModel, env : BaseEnv, num_episodes=10, k=2, writer
                     wh["belief"], 
                     wh["encoder"]
                 )
+                
                 if temperature < 0:
                     actions = Q.argmax(dim=-1).cpu().numpy()
                 else:

@@ -42,6 +42,7 @@ def add_exploration_noise(logits: torch.Tensor, params: TrainingParameters, epoc
         std = torch.std(logits)
         noise = torch.randn_like(logits) * params.noise_scale * std
 
+
     # Apply epsilon-greedy mask
     modified_logits = torch.where(
         exploration_mask.unsqueeze(-1),  # Expand to [buffer, agents, 1]
