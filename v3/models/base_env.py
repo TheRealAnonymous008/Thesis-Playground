@@ -51,8 +51,8 @@ class BaseEnv:
     def reset(self) -> dict[int, Any]:
         self.graph = Graph(self.n_agents, self.d_relation)
         self.traits = np.zeros((self.n_agents, self.d_traits), dtype=np.float32)
-        self.beliefs = np.random.standard_normal((self.n_agents, self.d_beliefs)).astype(np.float32)
-        self.comm_state = np.random.standard_normal((self.n_agents, self.d_comm_state)).astype(np.float32) 
+        self.beliefs = np.zeros((self.n_agents, self.d_beliefs)).astype(np.float32)
+        self.comm_state = np.zeros((self.n_agents, self.d_comm_state)).astype(np.float32) 
 
     def step(self, actions) -> tuple[Any, SupportsFloat, dict[int, Any], dict[int, Any]]:
         pass 
