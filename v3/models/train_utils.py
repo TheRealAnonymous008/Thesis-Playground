@@ -38,8 +38,9 @@ def add_exploration_noise(logits: torch.Tensor, params: TrainingParameters, epoc
     
     # Create uniform logits for entire batch [buffer, agents, actions]
     uniform_logits = torch.log(torch.ones_like(logits) / n_actions)
-    std = torch.std(logits)
-    noise = torch.randn_like(logits) * params.noise_scale * std
+    with torch.no_grad():
+        std = torch.std(logits)
+        noise = torch.randn_like(logits) * params.noise_scale * std
 
     # Apply epsilon-greedy mask
     modified_logits = torch.where(
