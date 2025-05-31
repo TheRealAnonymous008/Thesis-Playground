@@ -76,3 +76,35 @@ runs\May29_09-11-39_LAPTOP-88AV9U3J - Made exploration noise scaled to the logit
     # verbose = False,
     device = parameters.device,
     steps_per_epoch = 16
+
+
+    runs\May31_00-16-22_LAPTOP-88AV9U3J - changed how the noise parameter operates to be only on modified logits. 
+        outer_loops = 2_000,
+    
+    actor_learning_rate= 1e-4,
+    critic_learning_rate = 1e-3,
+    hypernet_learning_rate = 5e-4,
+
+    hypernet_jsd_threshold = 1.0,
+    hypernet_samples = 3000,
+    hypernet_jsd_weight = 1.0,
+    hypernet_entropy_weight = 0.01, 
+    hypernet_diversity_weight= 1.0,
+
+    sampled_agents_proportion = 0.5,
+    experience_sampling_steps = 10,
+    experience_buffer_size = 10,
+
+    entropy_coeff = 0.2,
+
+    epsilon_period = 200,
+    epsilon_end = 0.1,
+    noise_scale = 1.0,
+
+    entropy_target = 0.5,
+
+    eval_temp = -1.0,
+    
+    # verbose = False,
+    device = parameters.device,
+    steps_per_epoch = 16
