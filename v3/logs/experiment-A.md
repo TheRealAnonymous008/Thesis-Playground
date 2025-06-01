@@ -47,3 +47,5 @@ training_parameters = TrainingParameters(
 train_model(model, env, training_parameters)
 
 runs\May30_21-45-15_LAPTOP-JEP06EM9 - Same as 31_00-16-22-L but with using uniform loggits
+
+

@@ -10,9 +10,9 @@ class ActorEncoder(nn.Module):
     def __init__(self, config : ParameterSettings):
         super().__init__()
         self.config = config
-        self.policy_network : RNNWrapper = make_net([config.d_obs + config.d_beliefs, 128, 128, config.d_het_weights])
-        self.belief_update : DenseWrapper= make_net([config.d_beliefs + config.d_comm_state, 128, 128, config.d_het_weights])
-        self.encoder_network : DenseWrapper= make_net([config.d_obs + config.d_beliefs, 128, config.d_het_weights])
+        self.policy_network : DenseWrapper = make_net([config.d_obs + config.d_beliefs, 64, config.d_het_weights])
+        self.belief_update : DenseWrapper= make_net([config.d_beliefs + config.d_comm_state, 64, config.d_het_weights])
+        self.encoder_network : DenseWrapper= make_net([config.d_obs + config.d_beliefs, 64, config.d_het_weights])
 
     def to(self, device):
         self.policy_network.to(device)
@@ -31,8 +31,7 @@ class ActorEncoder(nn.Module):
         Q = self.policy_network.apply_heterogeneous_weights(Q, p_weights) 
         ze = self.encoder_network.apply_heterogeneous_weights(ze, e_weights)
 
-        ze_norm = torch.norm(ze, p=2, dim=1, keepdim=True)
-        ze = ze / (ze_norm + 1e-8)
+        ze = normalize_vector(ze)
 
         return Q, h, ze
     
@@ -40,12 +39,10 @@ class ActorEncoder(nn.Module):
         input = torch.cat([h, z], dim = 1)
         h = self.belief_update.forward(input)
         h = self.belief_update.apply_heterogeneous_weights(h, b_weights)
-
-        h_norm = torch.norm(h, p=2, dim=1, keepdim=True)
-        h = h / (h_norm + 1e-8)
+        h = normalize_vector(h)
 
         input = torch.cat([o, h], dim = 1)
-        Q= self.policy_network.forward(input)
+        Q =  self.policy_network.forward(input)
         ze = self.encoder_network.forward(input)
 
         return Q, h, ze 
@@ -57,7 +54,7 @@ class CriticEncoder(nn.Module):
         input_dim = config.d_obs + config.d_beliefs + config.d_comm_state
         
         # Value estimation core
-        self.value_network : DenseWrapper = make_net([input_dim, 128, config.d_het_weights])
+        self.value_network : DenseWrapper = make_net([input_dim, 64, config.d_het_weights])
 
     def to(self, device):
         self.value_network.to(device)
@@ -66,7 +63,6 @@ class CriticEncoder(nn.Module):
         """Returns (value_estimate)"""
         input = torch.cat([o, h, z], dim=1)
         V = self.value_network(input)
-        # Value estimation (primary output)
         V = self.value_network.apply_heterogeneous_weights(V, crit_weights)
         return V
 
@@ -74,7 +70,7 @@ class Filter(nn.Module):
     def __init__(self, config : ParameterSettings):
         super().__init__()
         input_dims = config.d_comm_state + config.d_relation
-        self.net : DenseWrapper = make_net([input_dims, 32, 32, config.d_het_weights])
+        self.net : DenseWrapper = make_net([input_dims, 64, config.d_het_weights])
 
     def to(self, device):
         self.net.to(device)
@@ -89,18 +85,17 @@ class Filter(nn.Module):
         input = torch.cat([zei, Mij], dim = 1)
         message = self.net.apply_heterogeneous_weights(self.net(input), f_weights)
 
-        message_norm = torch.norm(message, p=2, dim=1, keepdim=True)
-        message = message / (message_norm + 1e-8)
+        message = normalize_vector(message)
         return message 
     
 class DecoderUpdate(nn.Module):
     def __init__(self, config : ParameterSettings):
         super().__init__()
         input_dims = config.d_relation + config.d_message
-        self.dec_net : DenseWrapper= make_net([input_dims, 128, config.d_het_weights])
+        self.dec_net : DenseWrapper= make_net([input_dims, 64, config.d_het_weights])
 
-        self.update_mean_net : DenseWrapper= make_net([input_dims, 128, config.d_het_weights])
-        self.update_cov_net : DenseWrapper= make_net([input_dims, 128, config.d_het_weights])
+        self.update_mean_net : DenseWrapper= make_net([input_dims, 64, config.d_het_weights])
+        self.update_cov_net : DenseWrapper= make_net([input_dims, 64, config.d_het_weights])
 
     def to(self, device):
         self.dec_net.to(device)
@@ -115,14 +110,15 @@ class DecoderUpdate(nn.Module):
         mu = self.update_mean_net.apply_heterogeneous_weights(self.update_mean_net(input), um_weights)
         sigma = self.update_cov_net.apply_heterogeneous_weights(self.update_cov_net(input), us_weights)
 
-        zdj_norm = torch.norm(zdj, p=2, dim=1, keepdim=True)
-        zdj = zdj / (zdj_norm + 1e-8)
-
         eps = torch.randn_like(sigma)
         newMij = mu + eps * sigma
 
-        newMij_norm = torch.norm(newMij, p = 2, dim=1, keepdim= True)
-        newMij = newMij / (newMij_norm + 1e-8)
+        zdj = normalize_vector(zdj)
+        newMij = normalize_vector(newMij)
 
         return zdj, newMij
     
+def normalize_vector(v):
+    norm = torch.norm(v, p=2, dim=1, keepdim=True)
+    scale = torch.where(norm > 1.0, 1.0 / norm, torch.ones_like(norm))
+    return v * scale

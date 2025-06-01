@@ -5,7 +5,7 @@ import torch
 
 class BaselineEnvironment(BaseEnv):
     def __init__(self, n_agents, payoff_i, payoff_j, total_games=1):
-        super().__init__(n_agents, 1, 8, 1)
+        super().__init__(n_agents, 1)
 
         # Validate payoff matrices
         assert len(payoff_i.shape) == 2 and len(payoff_j.shape) == 2, "Payoff matrices must be 2D"
@@ -148,7 +148,7 @@ class BaselineHeterogeneous(BaseEnv):
         The type payoffs should have shape
         (n_types, n_types, 2, n_actions, n_actions)
         """
-        super().__init__(n_agents, d_traits=n_types, d_beliefs=8, d_comm_state=8, d_relation=1)
+        super().__init__(n_agents, d_traits=n_types)
 
         # Validate type_payoffs structure
         assert len(type_payoffs.shape) == 5

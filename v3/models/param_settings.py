@@ -64,6 +64,8 @@ class TrainingParameters:
     filter_learning_rate : float = 1e-3
     decoder_learning_rate : float = 1e-3
 
+    norm_regularization : float = 0.2
+
     # Control training flow here
     should_train_hypernet : bool = True,
     should_train_actor : bool = True 
