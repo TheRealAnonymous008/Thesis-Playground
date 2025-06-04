@@ -41,12 +41,13 @@ class Graph:
 eps = 1e-8
 
 class BaseEnv:
-    def __init__(self, n_agents, d_traits=1, d_beliefs=8, d_comm_state=8, d_relation=4):
+    def __init__(self, n_agents, d_actions, d_traits=1, d_beliefs=8, d_comm_state=8, d_relation=4):
         self.n_agents = n_agents 
         self.d_traits = d_traits
         self.d_beliefs = d_beliefs 
         self.d_comm_state = d_comm_state
         self.d_relation = d_relation
+        self.n_actions = d_actions
 
     def reset(self) -> dict[int, Any]:
         self.graph = Graph(self.n_agents, self.d_relation)
