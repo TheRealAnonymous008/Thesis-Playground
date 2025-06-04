@@ -56,7 +56,6 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
     # Additional Data for Filter
     batch_messages = []
     prev_logits = None 
-    prev_targets = None 
     pair_logits = []
 
     sampled_agents = int(params.sampled_agents_proportion * env.n_agents)
@@ -106,7 +105,6 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
 
         if done:
             obs = env.reset()
-            indices = np.random.choice(env.n_agents, size = sampled_agents, replace = False)
 
 
         next_obs_tensor = torch.FloatTensor(np.stack([obs[agent] for agent in env.get_agents()])).to(device)
@@ -189,7 +187,7 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         'pair_logits' : torch.stack(pair_logits),
     }
     
-    return TensorDict(experiences, batch_size=params.experience_sampling_steps)
+    return TensorDict(experiences, batch_size=params.experience_sampling_steps), indices
 
 def train_sac_model(model: SACModel, env: BaseEnv, params: TrainingParameters, optim_state_dict = None ):
     if params.verbose:
@@ -223,7 +221,7 @@ def train_sac_model(model: SACModel, env: BaseEnv, params: TrainingParameters, o
         model.requires_grad_(True)
         
         # Collect new experiences and explicitly detach+clone
-        new_exp = collect_experiences(model, env, params, i)
+        new_exp, indices = collect_experiences(model, env, params, i)
         
         # Create detached clone of all tensors in the experience
         detached_exp = TensorDict({
@@ -298,7 +296,7 @@ def train_ppo_model(model: PPOModel, env: BaseEnv, params: TrainingParameters, o
     else:
         writer = None 
 
-    optim = torch.optim.Adam([
+    optim = torch.optim.AdamW([
         {'params': model.actor_encoder.parameters(), 'lr': params.actor_learning_rate, 'eps' : 1e-5},
         {'params': model.actor_encoder_critic.parameters(), 'lr': params.critic_learning_rate, 'eps' : 1e-5},
         {'params': model.hypernet.parameters(), 'lr': params.hypernet_learning_rate, 'eps' : 1e-5},
@@ -320,7 +318,7 @@ def train_ppo_model(model: PPOModel, env: BaseEnv, params: TrainingParameters, o
         model.requires_grad_(True)
         
         # Collect new experiences and explicitly detach+clone
-        new_exp = collect_experiences(model, env, params, i)
+        new_exp, indices = collect_experiences(model, env, params, i)
         
         # Create detached clone of all tensors in the experience
         detached_exp = TensorDict({

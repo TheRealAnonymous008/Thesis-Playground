@@ -29,10 +29,10 @@ def compute_core_ppo_losses(new_logits: torch.Tensor,
     surr2 = torch.clamp(ratios, 1-params.clip_epsilon, 1+params.clip_epsilon) * advantages
 
     # Agent-wise policy loss (mean over time first)
-    policy_loss = -torch.min(surr1, surr2).mean(dim=0)  # [agents]
+    policy_loss = -torch.min(surr1, surr2).sum(dim=0)  # [agents]
 
     # Agent-wise value loss
-    value_loss = torch.nn.functional.huber_loss(new_values.mean(dim=0), returns.mean(dim=0), reduction='none', delta=10.0)  # [agents]
+    value_loss = torch.nn.functional.huber_loss(new_values.sum(dim=0), returns.sum(dim=0), reduction='none', delta=10.0)  # [agents]
 
     entropy = new_dists.entropy()
     entropy_loss = entropy.mean(dim=0)  # [agents]
@@ -72,8 +72,10 @@ def compute_gae(rewards: torch.Tensor,
         else:
             next_non_terminal = 1.0 - dones[t + 1]
             next_value = values[t + 1]
+        
+        reward = rewards[t]
 
-        delta = rewards[t] + gamma * next_value * next_non_terminal - values[t]
+        delta = reward + gamma * next_value * next_non_terminal - values[t]
         gae = delta + gamma * gae_lambda * next_non_terminal * gae
         advantages[t] = gae
 
