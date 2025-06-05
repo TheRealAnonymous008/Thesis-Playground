@@ -1,6 +1,4 @@
-import numpy as np
-from gymnasium import spaces
-from models.base_env import BaseEnv
+from models.base_env import *
 
 class BaselineHeterogeneous(BaseEnv):
     def __init__(self, n_agents, n_types, type_payoffs, total_games=1):

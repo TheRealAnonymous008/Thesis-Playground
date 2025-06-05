@@ -2,22 +2,32 @@ import numpy as np
 from gymnasium import spaces
 from models.base_env import BaseEnv
 
-class BaselineSimpleCommunication(BaseEnv):
-    def __init__(self, n_agents, payoff_i, payoff_j, belief_dims = 8, total_games = 1):
-        super().__init__(n_agents, payoff_i.shape[0])
-
-        # Validate payoff matrices
-        assert len(payoff_i.shape) == 2 and len(payoff_j.shape) == 2, "Payoff matrices must be 2D"
-        assert payoff_i.shape == payoff_j.shape, "Payoff matrices must have the same shape"
+class TypeInferenceEnvironment(BaseEnv):
+    def __init__(self, n_agents, n_types, total_games=1, type_distribution=None):
+        """
+        Environment for type inference with private types and belief matrices.
         
-        self.payoff_i = payoff_i
-        self.payoff_j = payoff_j
+        Args:
+            n_agents (int): Number of agents (must be even)
+            n_types (int): Size of type space |T|
+            total_games (int): Number of games per episode
+            type_distribution (np.ndarray): Probability distribution over types
+        """
+        super().__init__(n_agents, d_actions=n_types, d_traits=1, d_beliefs=n_types)
+        
+        assert n_agents % 2 == 0, "Number of agents must be even"
+        self.n_types = n_types
         self.total_games = total_games
-        self.belief_dims = belief_dims
         
-        # Define observation space with flattened payoff matrices and an indexer so agents know which player they are.
-        self.obs_size = 2 * (self.n_actions ** 2) + 1
-        self.action_space = spaces.Discrete(self.n_actions)
+        # Type distribution (uniform by default)
+        self.type_distribution = (
+            type_distribution if type_distribution is not None 
+            else np.ones(n_types) / n_types
+        )
+        
+        # Define spaces
+        self.obs_size = self.d_traits
+        self.action_space = spaces.Discrete(n_types)
         self.observation_space = spaces.Box(
             low=-np.inf,
             high=np.inf,
@@ -26,69 +36,83 @@ class BaselineSimpleCommunication(BaseEnv):
         )
         
         # Agent identifiers
-        self.agents = [i for i in range(n_agents)]
-        
-        self.total_steps = 0
+        self.agents = list(range(n_agents))
+        self.current_step = 0
+        self.types = np.zeros(n_agents, dtype=int)
+
+        self.reset()
 
     def reset(self):
-        """Resets environment with zero-initialized payoff observations"""
-        self.total_steps = 0
-        self.traits = np.array([[-1] if i % 2 ==0 else [1] for i in range(self.n_agents)], dtype = np.float16)
-        self.beliefs = np.zeros((self.n_agents, self.belief_dims))
-        return {agent: np.zeros(self.obs_size, dtype=np.float32) for agent in self.agents}
+        """Reset environment with new private types and cleared beliefs"""
+        super().reset()
+        self.current_step = 0
+        
+        # Sample private types for all agents
+        self.types = np.random.choice(
+            self.n_types, 
+            size=self.n_agents,
+            p=self.type_distribution
+        )
+        
+        # Set traits to agent types
+        self.traits[:, 0] = self.types / self.n_types
+        
+        # Initialize beliefs as uniform distributions
+        for i in range(self.n_agents):
+            self.beliefs[i] = np.ones(self.n_types) / self.n_types
+        
+        # Create fixed pairwise connections
+        for i in range(0, self.n_agents, 2):
+            j = i + 1
+            self.graph.add_edge(i, j, np.zeros((self.d_relation,)))
+            self.graph.add_edge(j, i, np.zeros((self.d_relation,)))
+        
+        return self._get_observations()
 
     def step(self, actions):
         """
-        Executes one timestep with pairwise interactions and payoff-based observations
+        Execute one timestep with type estimation and belief updates
+        
+        Args:
+            actions (dict): Agent actions (type estimates)
+            
+        Returns:
+            observations, rewards, dones, infos
         """
-        # Validate actions
-        for agent, action in actions.items():
-            assert 0 <= action < self.n_actions, f"Invalid action {action} for {agent}"
+        rewards = {}
+        dones = {}
+        infos = {"true_types": self.types.copy()}
         
-        # Generate random pairs and initialize observations
-        pairs = []
-        observations = {agent: np.zeros(self.obs_size, dtype=np.float32) for agent in self.agents}
-        rewards = {agent: 0.0 for agent in self.agents}
-
-        # Create pairwise interactions
+        # Calculate rewards based on estimation accuracy
         for i in range(0, self.n_agents, 2):
-            if i+1 >= self.n_agents:
-                break
-                
-            a, b = i, i+1
-            pairs.append((a, b))
+            j = i + 1
             
-            # Get actions and update counts
-            action_a = actions[a]
-            action_b = actions[b]
+            # Reward = 1 if correct estimation, 0 otherwise
+            a = 1.0 if actions[i] == self.types[j] else 0.0
+            b = 1.0 if actions[j] == self.types[i] else 0.0
 
-            # Calculate rewards
-            rewards[a] = self.payoff_i[action_a, action_b]
-            rewards[b] = self.payoff_j[action_a, action_b]
-            
-            # Generate observations with both payoff matrices
-            obs_a = np.concatenate([
-                self.payoff_i.flatten(),
-                self.payoff_j.flatten(), 
-                [-1]
-            ]).astype(np.float32)
-            
-            obs_b = np.concatenate([
-                self.payoff_j.flatten(),
-                self.payoff_i.flatten(),
-                [1]
-            ]).astype(np.float32)
-            
-            observations[a] = obs_a
-            observations[b] = obs_b
+            rewards[i] = a 
+            rewards[j] = b
 
-        self.total_steps += 1
-        done = self.total_steps >= self.total_games
+
+        # Update step counter
+        self.current_step += 1
+        done = self.current_step >= self.total_games
+        dones = {agent: done for agent in self.agents}
         
-        return observations, rewards, {agent: done for agent in self.agents}, {agent: {} for agent in self.agents}
-    
+        return self._get_observations(), rewards, dones, {agent: {} for agent in self.agents}
+
+    def _get_observations(self):
+        observations = {}
+        for agent in self.agents:
+            obs = np.concatenate([
+                [self.traits[agent, 0]],  # Own type
+            ]).astype(np.float32)
+            observations[agent] = obs
+        return observations
+
     def get_agents(self):
         return self.agents
-    
-    def set_beliefs(self, i : int, belief : np.ndarray):
-        self.beliefs[i] = belief
+
+    def get_traits(self):
+        return self.traits

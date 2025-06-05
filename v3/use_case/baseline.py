@@ -1,6 +1,4 @@
-import numpy as np
-from gymnasium import spaces
-from models.base_env import BaseEnv
+from models.base_env import *
 
 class BaselineEnvironment(BaseEnv):
     def __init__(self, n_agents, payoff_i, payoff_j, total_games=1):

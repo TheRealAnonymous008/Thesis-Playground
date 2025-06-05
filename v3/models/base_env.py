@@ -1,7 +1,8 @@
 from typing import *
-import numpy as np
 import torch
 import random
+import numpy as np
+from gymnasium import spaces
 
 class Graph:
     def __init__(self, n_agents: int, d_edge: int):
