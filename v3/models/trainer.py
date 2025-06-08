@@ -380,7 +380,7 @@ def train_ppo_model(model: PPOModel, env: BaseEnv, params: TrainingParameters, o
         writer.close()
 
 
-def train_model(model: SACModel | PPOModel, env: BaseEnv, params: TrainingParameters, path : str = None ):
+def train_model(model: SACModel | PPOModel, env: BaseEnv, params: TrainingParameters, path : str = None , override_params = False):
     model_state_dict = None 
     optim_state_dict = None 
 
@@ -388,7 +388,8 @@ def train_model(model: SACModel | PPOModel, env: BaseEnv, params: TrainingParame
         checkpoint =  load_checkpoint(path)
         model_state_dict = checkpoint["model_state_dict"]
         optim_state_dict = checkpoint["optimizer_state_dict"]
-        params = checkpoint['params']
+        if override_params:
+            params = checkpoint['params']
         
     if model_state_dict: 
         model.load_state_dict(model_state_dict)

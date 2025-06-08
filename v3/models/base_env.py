@@ -42,13 +42,14 @@ class Graph:
 eps = 1e-8
 
 class BaseEnv:
-    def __init__(self, n_agents, d_actions, d_traits=1, d_beliefs=8, d_comm_state=8, d_relation=4):
+    def __init__(self, n_agents, d_actions, d_traits=1, d_beliefs=8, d_comm_state=8, d_relation=4, obs_size = 1):
         self.n_agents = n_agents 
         self.d_traits = d_traits
         self.d_beliefs = d_beliefs 
         self.d_comm_state = d_comm_state
         self.d_relation = d_relation
         self.n_actions = d_actions
+        self.obs_size = obs_size
 
     def reset(self) -> dict[int, Any]:
         self.graph = Graph(self.n_agents, self.d_relation)
@@ -78,14 +79,10 @@ class BaseEnv:
 
         aggregated_zdj = torch.mm(mask.T, states) 
 
-        # Update the z tensor
-        modified_z = states.clone()
-        modified_z[unique_indices] = aggregated_zdj
-
         # Create final results
         modified_indices = unique_indices
 
-        self.comm_state[modified_indices] = modified_z.detach().cpu().numpy()
+        self.comm_state[modified_indices] = aggregated_zdj.detach().cpu().numpy()
 
     def update_edges(self, sources: torch.Tensor, destinations: torch.Tensor, new_edges: torch.Tensor) -> None:
         sources_np = sources.detach().cpu().numpy()
