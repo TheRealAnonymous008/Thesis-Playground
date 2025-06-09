@@ -21,13 +21,13 @@ class NetBasedEnvironment(BaseEnv):
         self.episode_length = episode_length
         
         # Observation: agent's own type (integer)
-        self.obs_size = 1
+        self.obs_size = 1 + self.d_relation 
         self.action_space = spaces.Discrete(2)  # 2 actions: A(0), B(1)
         self.observation_space = spaces.Box(
-            low=0,
-            high=num_types-1,
+            low=-np.inf,
+            high=np.inf,
             shape=(self.obs_size,),
-            dtype=np.int32
+            dtype=np.float32
         )
         
         self.agents = list(range(n_agents))
@@ -50,7 +50,7 @@ class NetBasedEnvironment(BaseEnv):
         self._sample_pairs()
         
         # Observations: each agent sees only its own type
-        return {agent: np.array([self.types[agent]], dtype=np.int32) for agent in self.agents}
+        return self._get_observations()
 
     def _build_small_world_graph(self):
         """Construct Watts-Strogatz small-world graph"""
@@ -122,25 +122,25 @@ class NetBasedEnvironment(BaseEnv):
         """
         rewards = {agent: 0.0 for agent in self.agents}
 
-
+        ctr = 0
         # Process current pairs (sampled in previous step)
         for i, j in self.current_pairs:
             a_i, a_j = actions[i], actions[j]
             t_i, t_j = self.types[i], self.types[j]
             
             if t_i == t_j:
+                ctr += 1
                 rewards[i] = self.n_types if a_i == 1 else -self.n_types
                 rewards[j] = self.n_types if a_j == 1 else -self.n_types
             else:
                 rewards[i] = 1.0 if a_i == 0 else -self.n_types
                 rewards[j] = 1.0 if a_j == 0 else -self.n_types
         
-
         # Sample new pairs for next step
         self._sample_pairs()
         
         # Prepare observations (unchanged)
-        observations = {agent: np.array([self.types[agent]], dtype=np.int32) for agent in self.agents}
+        observations = self._get_observations()
         
         # Update step counter
         self.total_steps += 1
@@ -159,3 +159,24 @@ class NetBasedEnvironment(BaseEnv):
     def get_traits(self):
         return self.traits
     
+    def _get_observations(self):
+        partner_of = {}
+        for i, j in self.current_pairs:
+            partner_of[i] = j
+            partner_of[j] = i
+        
+        observations = {}
+        for agent in self.agents:
+            # Start with own type
+            obs = np.zeros(self.obs_size, dtype=np.float32)
+            obs[0] = self.types[agent]
+            
+            # Add relation vector if agent is paired
+            if agent in partner_of:
+                partner = partner_of[agent]
+                neighbors = self.graph.get_neighbors(agent)
+                if partner in neighbors:
+                    obs[1:] = neighbors[partner]  # Use existing relation vector
+            
+            observations[agent] = obs
+        return observations
