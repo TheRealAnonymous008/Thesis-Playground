@@ -95,7 +95,7 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
             wh["critic"]
         )
         values = V.squeeze(-1)
-        
+
         # Environment step
         next_obs, rewards, dones, _ = env.step(actions_dict)
         rewards = np.array([rewards[agent] for agent in env.get_agents()])

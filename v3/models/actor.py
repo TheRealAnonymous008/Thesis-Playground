@@ -111,7 +111,7 @@ class DecoderUpdate(nn.Module):
         sigma = self.update_cov_net.apply_heterogeneous_weights(self.update_cov_net(input), us_weights)
 
         eps = torch.randn_like(sigma)
-        newMij = mu + eps * sigma
+        newMij = mu
 
         zdj = normalize_vector(zdj)
         newMij = normalize_vector(newMij)

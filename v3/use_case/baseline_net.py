@@ -130,11 +130,11 @@ class NetBasedEnvironment(BaseEnv):
             
             if t_i == t_j:
                 ctr += 1
-                rewards[i] = self.n_types if a_i == 1 else -self.n_types
-                rewards[j] = self.n_types if a_j == 1 else -self.n_types
+                rewards[i] = 2.0 if a_i == 1 else -2.0
+                rewards[j] = 2.0 if a_j == 1 else -2.0
             else:
-                rewards[i] = 1.0 if a_i == 0 else -self.n_types
-                rewards[j] = 1.0 if a_j == 0 else -self.n_types
+                rewards[i] = 1.0 if a_i == 0 else -2.0
+                rewards[j] = 1.0 if a_j == 0 else -2.0
         
         # Sample new pairs for next step
         self._sample_pairs()

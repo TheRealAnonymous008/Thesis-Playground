@@ -32,8 +32,8 @@ def compute_core_ppo_losses(new_logits: torch.Tensor,
     policy_loss = -torch.min(surr1, surr2).sum(dim=0)  # [agents]
 
     # Agent-wise value loss
-    value_loss = torch.nn.functional.huber_loss(new_values.sum(dim=0), returns.sum(dim=0), reduction='none', delta=10.0)  # [agents]
-
+    value_loss = torch.nn.functional.huber_loss(new_values.mean(dim=0), returns.mean(dim=0), reduction='none', delta=10.0)  # [agents]
+    
     entropy = new_dists.entropy()
     entropy_loss = entropy.mean(dim=0)  # [agents]
     
