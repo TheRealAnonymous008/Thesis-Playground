@@ -125,12 +125,13 @@ class DiseaseSpreadEnv(BaseEnv):
         
         # Step 2: Form mutual pairs
         pairs = []
-        unpaired = set(range(self.n_agents))
-        for i in range(self.n_agents):
+        shuffled_index = np.random.shuffle(range(self.n_agents))
+        unpaired = set(shuffled_index)
+        for i in range(shuffled_index):
             if i not in unpaired:
                 continue
             j = choices[i]
-            if j is not None and j in unpaired and choices.get(j) == i:
+            if j is not None and j in unpaired:
                 pairs.append((i, j))
                 unpaired.discard(i)
                 unpaired.discard(j)
