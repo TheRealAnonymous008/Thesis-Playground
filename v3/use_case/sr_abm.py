@@ -65,7 +65,7 @@ class DiseaseSpreadEnv(BaseEnv):
         self._build_scale_free_graph()
         # Store degrees for observations
         self.degrees = np.array([len(self.graph.adj[i]) for i in range(self.n_agents)], dtype=np.float32)
-        self.degrees /= np.max(self.degrees)
+        self.degrees /= self.n_agents
         # Generate initial symptoms
         self.symptoms = self._generate_symptoms()
         # Form initial pairs
@@ -204,5 +204,4 @@ class DiseaseSpreadEnv(BaseEnv):
     
     def postprocess_actions(self, actions):
         actions =  torch.clamp(actions.squeeze(), 1e-5, 10).cpu().detach().numpy().astype(np.float16)
-        print(self.degrees)
         return actions
