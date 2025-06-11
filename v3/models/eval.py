@@ -96,7 +96,7 @@ def evaluate_policy(model: PPOModel, env : BaseEnv, num_episodes=10, k=2, writer
                 
                 # Step environment
                 next_obs, rewards, dones, _ = env.step(
-                    {agent: int(actions[i]) for i, agent in enumerate(env.agents)}
+                    {agent: actions[i] for i, agent in enumerate(env.agents)}
                 )
                 episode_return += sum(rewards.values()) / len(env.agents)
                 done = np.any(list(dones.values()))
