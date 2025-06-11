@@ -3,7 +3,7 @@ import networkx as nx
 
 class DiseaseSpreadEnv(BaseEnv):
     def __init__(self, n_agents: int, d_relation: int = 4, 
-                 beta_range: Tuple[float, float] = (0.4, 0.6), 
+                 beta_range: Tuple[float, float] = (0.2, 0.8), 
                  m_range: Tuple[int, int] = (2, 5), 
                  episode_length: int = 50):
         """
@@ -57,7 +57,7 @@ class DiseaseSpreadEnv(BaseEnv):
         # Initialize agent traits: [alpha, rho, p_s]
         self.traits = np.random.uniform(
             low=[0.1, 0.5, self.p_min], 
-            high=[1.0, 2.0, self.p_max],
+            high=[5.0, 5.0, self.p_max],
             size=(self.n_agents, 3)
         ).astype(np.float32)
         
