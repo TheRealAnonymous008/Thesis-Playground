@@ -177,7 +177,7 @@ def evaluate_policy(model: PPOModel, env : BaseEnv, num_episodes=10, k=2, writer
                     writer.add_scalar(f'{header}/median_return', avg_return, global_step)
                     # Log action distribution if available
                     if cluster in cluster_actions and len(cluster_actions[cluster]) > 0:
-                        actions_tensor = torch.tensor(cluster_actions[cluster], dtype=torch.int32)
+                        actions_tensor = torch.tensor(cluster_actions[cluster])
                         writer.add_histogram(f'{header}/action_distribution', actions_tensor, global_step)
         else:
             print("\nNo clusters formed due to insufficient data.")
