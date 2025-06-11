@@ -25,6 +25,6 @@ def initialize_network_env(seed = 1337, n_agents = 1000, n_types = 2):
     np.random.seed(seed)
     return NetBasedEnvironment(n_agents, n_types, episode_length=10)
 
-def initialize_sar_env(seed = 1337, n_agents = 1000):
+def initialize_sir_env(seed = 1337, n_agents = 1000):
     np.random.seed(seed)
     return DiseaseSpreadEnv(n_agents)

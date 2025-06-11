@@ -31,14 +31,19 @@ class PPOModel(nn.Module):
         self.filter.requires_grad_(val)
         self.decoder_update.requires_grad_(val)
 
-    def get_action(self, Q, temperature = 1.0): 
-        dists = Categorical(logits= (Q / temperature))
-        actions = dists.sample().cpu().numpy()
+    def get_action(self, Q, temperature = 1.0, is_continuous = False):
+        if not is_continuous: 
+            dists = Categorical(logits= (Q / temperature))
+            actions = dists.sample().cpu().numpy()
+        else: 
+            actions = Q
         return actions 
 
-    def get_argmax_action(self, Q): 
-        actions = Q.argmax(dim=-1).cpu().numpy()
-        return actions            
+    def get_argmax_action(self, Q, is_continuous = False ):
+        if not is_continuous:
+            return Q.argmax(dim=-1).cpu().numpy()
+        
+        return Q             
 
     def param_count(self):
         hypernet_params = sum(p.numel() for p in self.hypernet.parameters() if p.requires_grad)

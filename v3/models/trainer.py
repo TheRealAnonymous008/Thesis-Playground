@@ -82,7 +82,9 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         )
 
         Q = add_exploration_noise(Q, params, epoch)
-        actions = model.get_action(Q)
+        actions = model.get_action(Q, is_continuous = env.is_continuous)
+        actions = env.postprocess_actions(actions)
+
         actions_dict = {agent: int(actions[i]) for i, agent in enumerate(env.get_agents())}
 
         # Critic forward

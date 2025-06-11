@@ -51,6 +51,8 @@ class BaseEnv:
         self.n_actions = d_actions
         self.obs_size = obs_size
 
+        self.is_continuous = False
+
     def reset(self) -> dict[int, Any]:
         self.graph = Graph(self.n_agents, self.d_relation)
         self.traits = np.zeros((self.n_agents, self.d_traits), dtype=np.float32)
@@ -112,3 +114,6 @@ class BaseEnv:
         edges_tensor = torch.tensor(np.stack(sampled_edges), dtype=torch.float32)
         reverse_tensor = torch.tensor(np.stack(sampled_reverse_edges), dtype=torch.float32)
         return indices_tensor, edges_tensor, reverse_tensor
+    
+    def postprocess_actions(self, actions): 
+        return actions 

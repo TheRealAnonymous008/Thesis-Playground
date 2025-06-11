@@ -85,10 +85,12 @@ def evaluate_policy(model: PPOModel, env : BaseEnv, num_episodes=10, k=2, writer
                 )
                 
                 if temperature < 0:
-                    actions = model.get_argmax_action(Q)
+                    actions = model.get_argmax_action(Q, is_continuous= env.is_continuous)
                 else:
-                    actions = model.get_action(Q, temperature)
+                    actions = model.get_action(Q, temperature, env.is_continuous)
                 
+                actions = env.postprocess_actions(actions)
+
                 current_episode_actions.append(actions)
 
                 

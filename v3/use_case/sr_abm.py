@@ -23,6 +23,7 @@ class DiseaseSpreadEnv(BaseEnv):
             d_relation=d_relation,
             obs_size=4 + d_relation  # [own_state, own_symptom, partner_state, partner_symptom] + edge
         )
+        self.is_continuous = True
         self.beta = beta
         self.k = k
         self.p = p
@@ -210,3 +211,6 @@ class DiseaseSpreadEnv(BaseEnv):
 
     def get_agents(self) -> list:
         return self.agents
+    
+    def postprocess_actions(self, actions):
+        return torch.clamp(actions, 1e-5, 10)
