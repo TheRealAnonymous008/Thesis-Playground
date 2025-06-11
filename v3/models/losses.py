@@ -18,8 +18,10 @@ def threshed_jsd_loss(p, q, s, thresh):
     If the similarity s is less than the threshold, use the JSD; otherwise, output 0.
     """
     m = (F.softmax(p, dim=-1) +  F.softmax(q, dim=-1)) / 2 + 1e-8  # Avoid log(0)
-    p = F.log_softmax(p , dim = -1) 
-    q = F.log_softmax(q, dim = -1) 
+
+    if (p.shape[-1] > 1):
+        p = F.log_softmax(p , dim = -1) 
+        q = F.log_softmax(q, dim = -1) 
     m = torch.log(m)
 
     kl_p = F.kl_div(m, p, reduction='none', log_target = True).sum(-1)
