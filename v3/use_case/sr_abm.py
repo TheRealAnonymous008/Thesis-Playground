@@ -108,10 +108,9 @@ class DiseaseSpreadEnv(BaseEnv):
                 continue
                 
             # Extract logits from edge features
-            logits = np.array([self.graph.adj[i][j][0] for j in neighbors])
+            logits = np.array([(self.graph.adj[i][j][0] + self.graph.adj[j][i][0]) / 2 for j in neighbors])
             
             # Convert logits to probabilities using softmax
-            # For numerical stability: subtract max logit
             max_logit = np.max(logits)
             exp_logits = np.exp(logits - max_logit)
             probs = exp_logits / np.sum(exp_logits)
@@ -123,18 +122,22 @@ class DiseaseSpreadEnv(BaseEnv):
             
             choices[i] = np.random.choice(neighbors, p=probs)
         
-        # Step 2: Form mutual pairs
+        # Step 2: Form mutual pairs in random order
         pairs = []
-        shuffled_index = np.random.shuffle(list(range(self.n_agents)))
-        unpaired = set(shuffled_index)
-        for i in range(shuffled_index):
+        indices = list(range(self.n_agents))
+        random.shuffle(indices)  # Shuffle the indices
+        unpaired = set(indices)
+        
+        for i in indices:
             if i not in unpaired:
                 continue
             j = choices[i]
+            # Check if j exists, is unpaired, and reciprocally chose i
             if j is not None and j in unpaired:
                 pairs.append((i, j))
                 unpaired.discard(i)
                 unpaired.discard(j)
+                
         return pairs
 
     def _get_observations(self) -> Dict[int, np.ndarray]:
