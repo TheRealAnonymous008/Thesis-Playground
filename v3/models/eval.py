@@ -1,10 +1,9 @@
 from collections import defaultdict
 import numpy as np 
 import torch
-from models.model import SACModel
+from models.model import *
 from models.base_env import BaseEnv
 from torch.utils.tensorboard import SummaryWriter
-from torch.distributions import Categorical
 
 def find_pure_equilibria(p1_payoff, p2_payoff):
     """Find pure strategy Nash equilibria"""
@@ -44,7 +43,7 @@ def kmeans(data, k=3, max_iters=100):
         centroids = new_centroids
     return labels, centroids
 
-def evaluate_policy(model: SACModel, env : BaseEnv, num_episodes=10, k=2, writer: SummaryWriter = None, global_step=None, temperature=-1):
+def evaluate_policy(model: PPOModel, env : BaseEnv, num_episodes=10, k=2, writer: SummaryWriter = None, global_step=None, temperature=-1):
     """Evaluate current policy and return average episode return with trait cluster breakdown, including action distributions per cluster."""
     total_returns = []
     episode_actions = []  # List to store actions per episode
@@ -86,10 +85,9 @@ def evaluate_policy(model: SACModel, env : BaseEnv, num_episodes=10, k=2, writer
                 )
                 
                 if temperature < 0:
-                    actions = Q.argmax(dim=-1).cpu().numpy()
+                    actions = model.get_argmax_action(Q)
                 else:
-                    dist = Categorical(logits=Q / temperature)
-                    actions = dist.sample().cpu().numpy()
+                    actions = model.get_action(Q, temperature)
                 
                 current_episode_actions.append(actions)
 

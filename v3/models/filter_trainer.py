@@ -7,7 +7,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from .param_settings import TrainingParameters
 
-def train_filter(model: SACModel | PPOModel, env: BaseEnv, exp: TensorDict, params: TrainingParameters, writer: SummaryWriter = None):
+def train_filter(model: PPOModel, env: BaseEnv, exp: TensorDict, params: TrainingParameters, writer: SummaryWriter = None):
     total_loss = torch.tensor(0.0, device=params.device)
     
     messages = exp["messages"]

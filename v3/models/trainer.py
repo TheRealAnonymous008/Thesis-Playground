@@ -9,7 +9,6 @@ from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 from .param_settings import TrainingParameters
 from .ppo_trainer import *
-from .sac_trainer import *
 from .hypernet_trainer import * 
 from .gnn_trainer import *
 from .filter_trainer import *
@@ -83,8 +82,7 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         )
 
         Q = add_exploration_noise(Q, params, epoch)
-        dists = Categorical(logits=Q)
-        actions = dists.sample().cpu().numpy()
+        actions = model.get_action(Q)
         actions_dict = {agent: int(actions[i]) for i, agent in enumerate(env.get_agents())}
 
         # Critic forward
@@ -189,107 +187,6 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
     
     return TensorDict(experiences, batch_size=params.experience_sampling_steps), indices
 
-def train_sac_model(model: SACModel, env: BaseEnv, params: TrainingParameters, optim_state_dict = None ):
-    if params.verbose:
-        writer = SummaryWriter()
-    else:
-        writer = None 
-
-    optim = torch.optim.Adam([
-        {'params': model.actor_encoder.parameters(), 'lr': params.actor_learning_rate, 'eps' : 1e-5},
-        {'params': model.q1.parameters(), 'lr': params.critic_learning_rate, 'eps' : 1e-5},
-        {'params': model.hypernet.parameters(), 'lr': params.hypernet_learning_rate, 'eps' : 1e-5},
-        {'params': model.filter.parameters(), 'lr': params.filter_learning_rate, 'eps' : 1e-5}, 
-        {'params': model.decoder_update.parameters(), 'lr': params.decoder_learning_rate, 'eps' : 1e-5},
-        {'params': model.q2.parameters(), 'lr': params.critic_learning_rate, 'eps' : 1e-5},
-        {'params': [model.log_alpha], 'lr': params.actor_learning_rate, 'eps' : 1e-5},
-    ])  
-
-    if optim_state_dict != None: 
-        optim.load_state_dict(optim_state_dict)
-
-
-    params.global_steps = 0
-    experiences = TensorDict({})  # Initialize empty experience buffer
-
-    # Initialize the model
-    model.set_alpha(params.alpha)
-    model.to(params.device)
-
-    for i in tqdm(range(params.outer_loops)):
-        model.train()
-        model.requires_grad_(True)
-        
-        # Collect new experiences and explicitly detach+clone
-        new_exp, indices = collect_experiences(model, env, params, i)
-        
-        # Create detached clone of all tensors in the experience
-        detached_exp = TensorDict({
-            k: v.detach().clone() for k, v in new_exp.items()
-        }, batch_size=[params.experience_sampling_steps])
-        
-        # Append to buffer
-        if len(experiences) == 0:
-            experiences = detached_exp
-        else:
-            experiences = torch.cat([experiences, detached_exp], dim=0)
-        
-        # Trim buffer while maintaining computational graph isolation
-        if len(experiences) > params.experience_buffer_size:
-            keep_from = len(experiences) - params.experience_buffer_size
-            experiences = TensorDict(
-                {k: v[keep_from:] for k, v in experiences.items()},
-                batch_size=[params.experience_buffer_size]
-            )
-        
-        for _ in range(params.steps_per_epoch):
-            total_loss = torch.tensor(0.0, requires_grad = True)
-
-            if params.should_train_actor:
-                total_loss = total_loss + train_sac_actor(model, env, experiences, params, writer=writer)
-            
-            if params.should_train_hypernet:
-                total_loss = total_loss + train_hypernet(model, env, experiences, params, writer=writer)
-
-            if params.should_train_gnn:
-                total_loss = total_loss + train_gnn(model, env, experiences, params, writer= writer)
-            
-            if params.should_train_filter:
-                total_loss = total_loss + train_filter(model, env, experiences, params, writer = writer)
-                
-            if writer is not None:
-                writer.add_scalar('State/Epsilon', params.epsilon, global_step = params.global_steps)
-
-            optim.zero_grad()
-            total_loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), params.grad_clip_norm)
-            optim.step()
-            
-            # Update target networks
-            with torch.no_grad():
-                for t_param, param in zip(model.target_q1.parameters(), model.q1.parameters()):
-                    t_param.data.mul_(1 - params.tau).add_(params.tau * param.data)
-                for t_param, param in zip(model.target_q2.parameters(), model.q2.parameters()):
-                    t_param.data.mul_(1 - params.tau).add_(params.tau * param.data)
-
-
-        model.requires_grad_(False)
-        model.train(False)
-        evaluate_policy(model, env, writer=writer, global_step=params.global_steps, temperature=params.eval_temp, k = params.eval_k)
-        params.global_steps += 1
-
-        if params.checkpoint_interval != -1 and params.global_steps % params.checkpoint_interval == 0:
-            checkpoint = {
-                'global_step': params.global_steps,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optim.state_dict(),
-                'params': params.__dict__
-            }
-            torch.save(checkpoint, f"checkpoint_sac_step_{params.global_steps}.pt")
-
-
-    writer.close()
-
 def train_ppo_model(model: PPOModel, env: BaseEnv, params: TrainingParameters, optim_state_dict = None ):
     if params.verbose:
         writer = SummaryWriter()
@@ -380,7 +277,7 @@ def train_ppo_model(model: PPOModel, env: BaseEnv, params: TrainingParameters, o
         writer.close()
 
 
-def train_model(model: SACModel | PPOModel, env: BaseEnv, params: TrainingParameters, path : str = None , override_params = False):
+def train_model(model: PPOModel, env: BaseEnv, params: TrainingParameters, path : str = None , override_params = False):
     model_state_dict = None 
     optim_state_dict = None 
 
@@ -396,8 +293,8 @@ def train_model(model: SACModel | PPOModel, env: BaseEnv, params: TrainingParame
 
     model.to(params.device)
 
-    if type(model) is SACModel:
-        train_sac_model(model, env, params, optim_state_dict)
+    if type(model) is not PPOModel:
+        pass 
     else: 
         train_ppo_model(model, env, params, optim_state_dict)
 
