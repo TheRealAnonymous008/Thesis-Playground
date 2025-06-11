@@ -131,7 +131,7 @@ def evaluate_policy(model: PPOModel, env : BaseEnv, num_episodes=10, k=2, writer
 
     # Process clustering and print breakdown
     median_returns = np.median(total_returns)
-    actions_flat = np.concatenate([np.concatenate(ep_acts) for ep_acts in episode_actions], dtype=np.int16) if episode_actions else np.array([])
+    actions_flat = np.concatenate([np.concatenate(ep_acts) for ep_acts in episode_actions]) if episode_actions else np.array([])
     rewards_dist = np.array(all_rewards)
 
     if len(all_traits) > 0:

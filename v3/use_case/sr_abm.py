@@ -172,13 +172,15 @@ class DiseaseSpreadEnv(BaseEnv):
         
         # Process each pair
         for i, j in self.current_pairs:
-            a_i, a_j = actions[i], actions[j]
+            a_i = actions[i]
+            a_j = actions[j]
             duration = min(a_i, a_j)
             
             # Interaction rewards
-            rewards[i] += self.traits[i, 0] * duration
-            rewards[j] += self.traits[j, 0] * duration
+            rewards[i] += self.traits[i][0] * duration
+            rewards[j] += self.traits[j][0] * duration
             
+
             # Disease transmission
             if self.states[i] == 1 and self.states[j] == 0:
                 if np.random.rand() < 1 - np.exp(-self.beta * duration):
@@ -190,7 +192,7 @@ class DiseaseSpreadEnv(BaseEnv):
         # Infection penalties
         for i in range(self.n_agents):
             if self.states[i] == 1:
-                rewards[i] -= self.traits[i, 1]
+                rewards[i] -= self.traits[i][1]
         
         # Update infection states
         for i in new_infections:
@@ -213,4 +215,5 @@ class DiseaseSpreadEnv(BaseEnv):
         return self.agents
     
     def postprocess_actions(self, actions):
-        return torch.clamp(actions, 1e-5, 10)
+        actions =  torch.clamp(actions.squeeze(), 1e-5, 10).cpu().detach().numpy().astype(np.float16)
+        return actions

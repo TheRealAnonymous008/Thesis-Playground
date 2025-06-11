@@ -116,4 +116,4 @@ class BaseEnv:
         return indices_tensor, edges_tensor, reverse_tensor
     
     def postprocess_actions(self, actions): 
-        return actions 
+        return actions.astype(int) 

@@ -7,7 +7,8 @@ from .param_settings import TrainingParameters
 from .train_utils import * 
 
 
-def compute_core_ppo_losses(new_logits: torch.Tensor, 
+def compute_core_ppo_losses(env : BaseEnv,
+                            new_logits: torch.Tensor, 
                             new_values: torch.Tensor, 
                             actions: torch.Tensor, 
                             advantages: torch.Tensor,
@@ -17,12 +18,22 @@ def compute_core_ppo_losses(new_logits: torch.Tensor,
                             ) -> tuple:
     """Compute PPO policy loss, value loss, and entropy with per-agent calculations."""
 
-    old_dists = Categorical(logits=old_logits)
-    old_log_probs = old_dists.log_prob(actions)
+    if not env.is_continuous:
+        old_dists = Categorical(logits=old_logits)
+        old_log_probs = old_dists.log_prob(actions)
 
-    new_dists = Categorical(logits=new_logits)
-    new_log_probs = new_dists.log_prob(actions)
+        new_dists = Categorical(logits=new_logits)
+        new_log_probs = new_dists.log_prob(actions)
+
+        entropy = new_dists.entropy()
+        entropy_loss = entropy.mean(dim = 0)
+    else: 
+        old_log_probs = old_logits[:, : , 0]
+        new_log_probs = new_logits[:, : , 0]
+
+        entropy_loss = new_log_probs.std().mean(dim = 0)
     
+
     # Independent policy optimization per agent
     ratios = torch.exp(new_log_probs - old_log_probs)
     surr1 = ratios * advantages
@@ -33,9 +44,6 @@ def compute_core_ppo_losses(new_logits: torch.Tensor,
 
     # Agent-wise value loss
     value_loss = torch.nn.functional.huber_loss(new_values.mean(dim=0), returns.mean(dim=0), reduction='none', delta=10.0)  # [agents]
-    
-    entropy = new_dists.entropy()
-    entropy_loss = entropy.mean(dim=0)  # [agents]
     
     # Return unaggregated agent-wise losses
     return policy_loss, value_loss, entropy_loss
@@ -127,6 +135,7 @@ def train_ppo_actor(model: PPOModel, env: BaseEnv, exp: TensorDict, params: Trai
 
     # Calculate losses
     policy_loss, value_loss, entropy = compute_core_ppo_losses(
+        env, 
         new_logits, new_values, exp['actions'], advantages, returns, old_logits, params
     )
 

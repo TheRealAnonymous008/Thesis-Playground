@@ -85,7 +85,7 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
         actions = model.get_action(Q, is_continuous = env.is_continuous)
         actions = env.postprocess_actions(actions)
 
-        actions_dict = {agent: int(actions[i]) for i, agent in enumerate(env.get_agents())}
+        actions_dict = {agent: actions[i] for i, agent in enumerate(env.get_agents())}
 
         # Critic forward
         V = model.actor_encoder_critic.forward(
