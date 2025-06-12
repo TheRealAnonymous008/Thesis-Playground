@@ -56,8 +56,8 @@ class DiseaseSpreadEnv(BaseEnv):
         
         # Initialize agent traits: [alpha, rho, p_s]
         self.traits = np.random.uniform(
-            low=[0.1, 0.5, self.p_min], 
-            high=[5.0, 5.0, self.p_max],
+            low=[0.1, 1.0, self.p_min], 
+            high=[5.0, 10.0, self.p_max],
             size=(self.n_agents, 3)
         ).astype(np.float32)
         

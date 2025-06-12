@@ -206,7 +206,6 @@ def train_ppo_model(model: PPOModel, env: BaseEnv, params: TrainingParameters, o
     if optim_state_dict != None: 
         optim.load_state_dict(optim_state_dict)
 
-    params.global_steps = 0
     experiences = TensorDict({})  # Initialize empty experience buffer
 
     # Initialize the model
