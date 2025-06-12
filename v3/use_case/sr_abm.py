@@ -202,6 +202,7 @@ class DiseaseSpreadEnv(BaseEnv):
     def get_agents(self) -> list:
         return self.agents
     
-    def postprocess_actions(self, actions):
+    def postprocess_actions(self, actions : torch.Tensor):
+        actions = actions.nan_to_num(0, 0, 0)
         actions =  torch.clamp(actions.squeeze(), 1e-5, 10).cpu().detach().numpy().astype(np.float16)
         return actions

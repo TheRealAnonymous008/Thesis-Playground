@@ -69,6 +69,7 @@ def evaluate_policy(model: PPOModel, env : BaseEnv, num_episodes=10, k=2, writer
                 obs_tensor = torch.FloatTensor(obs_array).to(device)
 
                 # Generate hypernet weights
+                trait_vector = torch.tensor(env.traits, device=device)
                 belief_vector = torch.tensor(env.beliefs, device=device)
                 com_vector = torch.tensor(env.comm_state, device=device)
                 lv, wh, _, _ = model.hypernet(trait_vector, obs_tensor, belief_vector, com_vector)
@@ -89,7 +90,7 @@ def evaluate_policy(model: PPOModel, env : BaseEnv, num_episodes=10, k=2, writer
                 else:
                     actions = model.get_action(Q, temperature, env.is_continuous)
                 
-                print(actions)
+                # print(actions)
                 actions = env.postprocess_actions(actions)
 
                 current_episode_actions.append(actions)
@@ -97,9 +98,9 @@ def evaluate_policy(model: PPOModel, env : BaseEnv, num_episodes=10, k=2, writer
                 
                 # Step environment
                 next_obs, rewards, dones, _ = env.step(
-                    {agent: actions[i] for i, agent in enumerate(env.agents)}
+                    {agent: actions[i] for i, agent in enumerate(env.get_agents())}
                 )
-                episode_return += sum(rewards.values()) / len(env.agents)
+                episode_return += sum(rewards.values()) / env.n_agents
                 done = np.any(list(dones.values()))
                 obs = next_obs
 
