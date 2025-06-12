@@ -89,6 +89,7 @@ def evaluate_policy(model: PPOModel, env : BaseEnv, num_episodes=10, k=2, writer
                 else:
                     actions = model.get_action(Q, temperature, env.is_continuous)
                 
+                print(actions)
                 actions = env.postprocess_actions(actions)
 
                 current_episode_actions.append(actions)

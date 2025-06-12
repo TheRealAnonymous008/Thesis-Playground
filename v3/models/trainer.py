@@ -211,12 +211,12 @@ def train_ppo_model(model: PPOModel, env: BaseEnv, params: TrainingParameters, o
     # Initialize the model
     model.to(params.device)
 
-    for i in tqdm(range(params.outer_loops)):
+    for i in tqdm(range(params.global_steps, params.outer_loops)):
         model.train()
         model.requires_grad_(True)
         
         # Collect new experiences and explicitly detach+clone
-        new_exp, indices = collect_experiences(model, env, params, i)
+        new_exp, indices = collect_experiences(model, env, params, params.global_steps)
         
         # Create detached clone of all tensors in the experience
         detached_exp = TensorDict({
@@ -288,6 +288,8 @@ def train_model(model: PPOModel, env: BaseEnv, params: TrainingParameters, path 
         optim_state_dict = checkpoint["optimizer_state_dict"]
         if override_params:
             params = checkpoint['params']
+            params.global_steps = checkpoint["global_step"]
+            print(f"Loading from {params.global_steps}")
         
     if model_state_dict: 
         model.load_state_dict(model_state_dict)
