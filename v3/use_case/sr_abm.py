@@ -56,7 +56,7 @@ class DiseaseSpreadEnv(BaseEnv):
         
         # Initialize agent traits: [alpha, rho, p_s]
         self.traits = np.random.uniform(
-            low=[0.1, 1.0, self.p_min], 
+            low=[0.1, 4.0, self.p_min], 
             high=[5.0, 10.0, self.p_max],
             size=(self.n_agents, 3)
         ).astype(np.float32)
@@ -202,6 +202,7 @@ class DiseaseSpreadEnv(BaseEnv):
     def get_agents(self) -> list:
         return self.agents
     
-    def postprocess_actions(self, actions):
+    def postprocess_actions(self, actions : torch.Tensor):
+        actions = actions.nan_to_num(0, 0, 0)
         actions =  torch.clamp(actions.squeeze(), 1e-5, 10).cpu().detach().numpy().astype(np.float16)
         return actions

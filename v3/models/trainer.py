@@ -80,7 +80,6 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
             wh["belief"], 
             wh["encoder"]
         )
-
         Q = add_exploration_noise(Q, params, epoch)
         actions = model.get_action(Q, is_continuous = env.is_continuous)
         actions = env.postprocess_actions(actions)
