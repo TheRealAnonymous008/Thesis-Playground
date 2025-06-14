@@ -189,6 +189,7 @@ class DiseaseSpreadEnv(BaseEnv):
         for i in range(self.n_agents):
             # Calcualte the rewards
             social_score = self.traits[i][0]
+            infected_penalty = 0
             if self.states[i] == 1:
                 infected_penalty = self.traits[i][1]
             rewards[i] = (social_score - infected_penalty) * durations[i]
