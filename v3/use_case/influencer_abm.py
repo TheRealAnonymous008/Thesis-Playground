@@ -17,7 +17,7 @@ class InfluencerEnv(BaseEnv):
             learning_rate (float): Update rate for idea adoption
         """
         # Action space: 0 (remove) or 1 (add) for non-influencers, 0/1 for influencer perturbation
-        super().__init__(n_agents, d_actions=2, d_relation=0)  # d_relation=0: no edge features
+        super().__init__(n_agents, d_actions=2, d_relation=4)
         
         self.n_influencers = num_influencers
         self.d_idea = d_idea
@@ -121,9 +121,7 @@ class InfluencerEnv(BaseEnv):
             dim = np.random.randint(0, self.d_idea)
             delta = (2 * action - 1) * self.perturbation_step
             self.broadcast_idea[i] = self.true_idea[i].copy()
-            self.broadcast_idea[i, dim] = np.clip(
-                self.broadcast_idea[i, dim] + delta, -1, 1
-            )
+            self.broadcast_idea[i, dim] = np.clip( self.broadcast_idea[i, dim] + delta, -1, 1)
 
         # Phase 2: Idea propagation and adoption
         for j in self.non_influencer_ids:
@@ -135,10 +133,7 @@ class InfluencerEnv(BaseEnv):
                 best_score = -10
                 best_influencer = None
                 for i in influencer_neighbors:
-                    similarity = self._cosine_similarity(
-                        self.broadcast_idea[i], 
-                        self.true_idea[j]
-                    )
+                    similarity = self._cosine_similarity(self.broadcast_idea[i],  self.true_idea[j])
                     score = self.true_alpha[i] * similarity
                     if score > best_score:
                         best_score = score
@@ -148,8 +143,7 @@ class InfluencerEnv(BaseEnv):
                 adoption_prob = self._sigmoid(best_score - self.susceptibility[j])
                 if np.random.rand() < adoption_prob:
                     # Update idea vector
-                    self.true_idea[j] = (1 - self.learning_rate) * self.true_idea[j] + \
-                                         self.learning_rate * self.broadcast_idea[best_influencer]
+                    self.true_idea[j] = (1 - self.learning_rate) * self.true_idea[j] + self.learning_rate * self.broadcast_idea[best_influencer]
                     self.true_idea[j] = np.clip(self.true_idea[j], -1, 1)
 
         # Phase 3: Network rewiring by non-influencers

@@ -3,8 +3,10 @@ import networkx as nx
 
 class DiseaseSpreadEnv(BaseEnv):
     def __init__(self, n_agents: int, d_relation: int = 4, 
+                 initial_infected_range : Tuple[float, float] = (0.1, 0.4),
                  beta_range: Tuple[float, float] = (0.2, 0.8), 
-                 m_range: Tuple[int, int] = (2, 5), 
+                 m_range: Tuple[int, int] = (2, 5),
+                 max_duration = 10,  
                  episode_length: int = 50):
         """
         Environment for disease spread simulation using SI model with scale-free network.
@@ -20,11 +22,11 @@ class DiseaseSpreadEnv(BaseEnv):
             n_agents=n_agents,
             d_actions=1,  # Continuous action (interaction duration)
             d_traits=3,    # [alpha, rho, p_s]
-            d_beliefs=1,   # Unused (minimal size)
-            d_comm_state=1,  # Unused (minimal size)
             d_relation=d_relation,
             obs_size=5 + d_relation  # [own_state, own_symptom, partner_state, partner_symptom, degree] + edge
         )
+        self.max_duration = max_duration
+        self.initial_infection_range = initial_infected_range
         self.is_continuous = True
         self.beta_range = beta_range
         self.m_range = m_range
@@ -33,7 +35,7 @@ class DiseaseSpreadEnv(BaseEnv):
 
         # Define action and observation spaces
         self.action_space = spaces.Box(
-            low=0, high=np.inf, shape=(1,), dtype=np.float32
+            low=0, high=self.max_duration, shape=(1,), dtype=np.float32
         )
         self.observation_space = spaces.Box(
             low=-np.inf, high=np.inf, shape=(self.obs_size,), dtype=np.float32
@@ -51,7 +53,9 @@ class DiseaseSpreadEnv(BaseEnv):
         
         # Initialize agent states (0=susceptible, 1=infected)
         self.states = np.zeros(self.n_agents, dtype=np.float32)
-        initial_infected = np.random.choice(self.n_agents, size=max(1, self.n_agents//20), replace=False)
+        initial_infected_count = np.random.uniform(*self.initial_infection_range)
+        initial_infected = np.random.choice(self.n_agents, size=max(1, initial_infected_count), replace=False)
+
         self.states[initial_infected] = 1.0
         
         # Initialize agent traits: [alpha, rho, p_s]
@@ -66,6 +70,7 @@ class DiseaseSpreadEnv(BaseEnv):
         # Store degrees for observations
         self.degrees = np.array([len(self.graph.adj[i]) for i in range(self.n_agents)], dtype=np.float32)
         self.degrees /= self.n_agents
+        
         # Generate initial symptoms
         self.symptoms = self._generate_symptoms()
         # Form initial pairs
@@ -95,7 +100,6 @@ class DiseaseSpreadEnv(BaseEnv):
         return symptoms
 
     def _sample_pairs(self) -> list:
-        # (Unchanged from original)
         choices = {}
         for i in range(self.n_agents):
             neighbors = list(self.graph.adj[i].keys())
@@ -154,39 +158,41 @@ class DiseaseSpreadEnv(BaseEnv):
                     edge_feat = self.graph.adj[i][j]
                     obs[5:5+self.d_relation] = edge_feat
             
-            # Add degree (always present)
             obs[4] = self.degrees[i] 
             
             obs_dict[i] = obs
         return obs_dict
 
     def step(self, actions: Dict[int, float]) -> Tuple:
-        # (Unchanged from original)
         rewards = {i: 0.0 for i in range(self.n_agents)}
         new_infections = set()
+        durations = {i : 0.0 for i in range(self.n_agents)}
         
         for i, j in self.current_pairs:
             a_i = actions[i]
             a_j = actions[j]
             duration = min(a_i, a_j)
             
-            rewards[i] += self.traits[i][0] * duration
-            rewards[j] += self.traits[j][0] * duration
+            durations[i] = duration
+            durations[j] = durations
             
             if self.states[i] == 1 and self.states[j] == 0:
-                if np.random.rand() < 1 - np.exp(-self.beta * duration):
+                if np.random.rand() < 1 - np.exp(-self.beta * durations[i]):
                     new_infections.add(j)
             if self.states[j] == 1 and self.states[i] == 0:
-                if np.random.rand() < 1 - np.exp(-self.beta * duration):
+                if np.random.rand() < 1 - np.exp(-self.beta * duration[j]):
                     new_infections.add(i)
-        
-        for i in range(self.n_agents):
-            if self.states[i] == 1:
-                rewards[i] -= self.traits[i][1]
-        
+
         for i in new_infections:
             self.states[i] = 1.0
-        
+
+        for i in range(self.n_agents):
+            # Calcualte the rewards
+            social_score += self.traits[i][0]
+            if self.states[i] == 1:
+                infected_penalty -= self.traits[i][1]
+            rewards[i] = (social_score - infected_penalty) * durations[i]
+
         self.total_steps += 1
         done = self.total_steps >= self.episode_length
         
@@ -204,5 +210,5 @@ class DiseaseSpreadEnv(BaseEnv):
     
     def postprocess_actions(self, actions : torch.Tensor):
         actions = actions.nan_to_num(0, 0, 0)
-        actions =  torch.clamp(actions.squeeze(), 1e-5, 10).cpu().detach().numpy().astype(np.float16)
+        actions =  torch.clamp(actions.squeeze(), 1e-5, self.max_duration).cpu().detach().numpy().astype(np.float32)
         return actions
