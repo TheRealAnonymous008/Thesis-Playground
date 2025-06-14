@@ -180,7 +180,7 @@ class DiseaseSpreadEnv(BaseEnv):
                 if np.random.rand() < 1 - np.exp(-self.beta * durations[i]):
                     new_infections.add(j)
             if self.states[j] == 1 and self.states[i] == 0:
-                if np.random.rand() < 1 - np.exp(-self.beta * duration[j]):
+                if np.random.rand() < 1 - np.exp(-self.beta * durations[j]):
                     new_infections.add(i)
 
         for i in new_infections:
