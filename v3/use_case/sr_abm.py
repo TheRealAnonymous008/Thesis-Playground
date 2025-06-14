@@ -174,7 +174,7 @@ class DiseaseSpreadEnv(BaseEnv):
             duration = min(a_i, a_j)
             
             durations[i] = duration
-            durations[j] = durations
+            durations[j] = duration
             
             if self.states[i] == 1 and self.states[j] == 0:
                 if np.random.rand() < 1 - np.exp(-self.beta * durations[i]):
