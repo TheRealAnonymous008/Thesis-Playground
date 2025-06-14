@@ -22,6 +22,9 @@ def threshed_jsd_loss(p, q, s, thresh):
     if (p.shape[-1] > 1):
         p = F.log_softmax(p , dim = -1) 
         q = F.log_softmax(q, dim = -1) 
+    else: 
+        p = (p - torch.min(p)) / (torch.max(p) - torch.min(p) + 1e-8)
+        q = (q - torch.min(q)) / (torch.max(q) - torch.min(q) + 1e-8)
         
     m = torch.log(m)
 
