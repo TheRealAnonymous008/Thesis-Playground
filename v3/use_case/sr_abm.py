@@ -6,6 +6,8 @@ class DiseaseSpreadEnv(BaseEnv):
                  initial_infected_range : Tuple[float, float] = (0.1, 0.4),
                  beta_range: Tuple[float, float] = (0.2, 0.8), 
                  m_range: Tuple[int, int] = (2, 5),
+                 p_min_range : Tuple[float, float] = (0, 0.4),
+                 p_max_range : Tuple[float, float] = (0.5, 0.6),
                  max_duration = 10,  
                  episode_length: int = 50):
         """
@@ -30,6 +32,8 @@ class DiseaseSpreadEnv(BaseEnv):
         self.is_continuous = True
         self.beta_range = beta_range
         self.m_range = m_range
+        self.p_min_range = p_min_range
+        self.p_max_range = p_max_range
         self.episode_length = episode_length
         self.agents = list(range(n_agents))
 
@@ -48,9 +52,11 @@ class DiseaseSpreadEnv(BaseEnv):
         # Reinitialize parameters each reset
         self.beta = np.random.uniform(*self.beta_range)
         self.m = np.random.randint(*self.m_range)
-        self.p_min = np.random.uniform(0, 0.6)
-        self.p_max = np.random.uniform(self.p_min, 1.0)
-        
+        pmin = np.random.uniform(*self.p_min_range)
+        pmax = np.random.uniform(*self.p_max_range)
+        self.p_min = min(pmin, pmax)
+        self.p_max = min(pmin, pmax)
+
         # Initialize agent states (0=susceptible, 1=infected)
         self.states = np.zeros(self.n_agents, dtype=np.float32)
         initial_infected_count = np.random.uniform(*self.initial_infection_range)
@@ -60,8 +66,8 @@ class DiseaseSpreadEnv(BaseEnv):
         
         # Initialize agent traits: [alpha, rho, p_s]
         self.traits = np.random.uniform(
-            low=[0.1, 4.0, self.p_min], 
-            high=[5.0, 10.0, self.p_max],
+            low=[0.1, 1.0, self.p_min], 
+            high=[5.0, 5.0, self.p_max],
             size=(self.n_agents, 3)
         ).astype(np.float32)
         
@@ -87,7 +93,7 @@ class DiseaseSpreadEnv(BaseEnv):
         
         # Add edges to our directed graph (with symmetric connections)
         for u, v in ba_graph.edges():
-            edge_feat = np.zeros(self.d_relation, dtype=np.float32)
+            edge_feat = np.random.standard_normal(self.d_relation).astype(np.float32)
             edge_feat[0] = 1.0  # First component as edge weight
             self.graph.add_edge(u, v, edge_feat)
             self.graph.add_edge(v, u, edge_feat)
@@ -167,6 +173,8 @@ class DiseaseSpreadEnv(BaseEnv):
         rewards = {i: 0.0 for i in range(self.n_agents)}
         new_infections = set()
         durations = {i : 0.0 for i in range(self.n_agents)}
+
+        # print(actions)
         
         for i, j in self.current_pairs:
             a_i = actions[i]
@@ -210,6 +218,5 @@ class DiseaseSpreadEnv(BaseEnv):
         return self.agents
     
     def postprocess_actions(self, actions : torch.Tensor):
-        actions = actions.nan_to_num(0, 0, 0)
         actions =  torch.clamp(actions.squeeze(), 1e-5, self.max_duration).cpu().detach().numpy().astype(np.float32)
         return actions
