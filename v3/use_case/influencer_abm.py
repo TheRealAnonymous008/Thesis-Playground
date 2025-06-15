@@ -3,7 +3,7 @@ from models.base_env import *
 
 class InfluencerEnv(BaseEnv):
     def __init__(self, n_agents, num_influencers, d_idea=5, episode_length=10, m=2, perturbation_step=0.1, learning_rate=0.1):
-        super().__init__(n_agents, d_actions=2, d_relation=4)
+        super().__init__(n_agents, d_traits = 1, d_actions=2, d_relation=4)
         
         self.n_influencers = num_influencers
         self.d_idea = d_idea
@@ -12,8 +12,8 @@ class InfluencerEnv(BaseEnv):
         self.perturbation_step = perturbation_step
         self.learning_rate = learning_rate
         
-        # Calculate new observation size: [own idea] + [influencer ideas] + [follow indicators]
-        self.obs_size = d_idea + num_influencers * d_idea + num_influencers
+        # Calculate new observation size: [influencer flag] + [own idea] + [influencer ideas] + [follow indicators]
+        self.obs_size = 1 + d_idea + num_influencers * d_idea + num_influencers
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Box(
             low=-np.inf,
@@ -30,6 +30,8 @@ class InfluencerEnv(BaseEnv):
         self.broadcast_idea = None
         self.susceptibility = None
         self.true_alpha = np.zeros(n_agents, dtype=np.float32)
+        # Store influencer status as part of agent traits
+        self.influencer_status = np.zeros(n_agents, dtype=np.float32)
 
     def reset(self):
         super().reset()
@@ -38,6 +40,10 @@ class InfluencerEnv(BaseEnv):
         # Assign influencer status
         self.influencer_ids = sorted(np.random.choice(self.agents, self.n_influencers, replace=False))
         self.non_influencer_ids = [a for a in self.agents if a not in self.influencer_ids]
+        
+        # Set influencer status flags
+        self.influencer_status.fill(0.0)
+        self.influencer_status[self.influencer_ids] = 1.0
         
         # Build scale-free network
         self._build_scale_free_graph()
@@ -62,6 +68,10 @@ class InfluencerEnv(BaseEnv):
         max_deg = np.max(degrees) if len(degrees) > 0 else 1
         for i in self.influencer_ids:
             self.true_alpha[i] = degrees[i] / max_deg
+
+
+        # Initialize traits
+        self.initialize_traits()
         
         return self._get_observations()
 
@@ -162,19 +172,17 @@ class InfluencerEnv(BaseEnv):
         sorted_influencers = sorted(self.influencer_ids)
         
         for agent in self.agents:
-            if agent in self.influencer_ids:
-                # Influencers: own idea + zeros for other components
-                obs = np.zeros(self.obs_size, dtype=np.float32)
-                obs[:self.d_idea] = self.true_idea[agent]
-            else:
-                # Non-influencers: own idea + followed influencers' broadcasted ideas + follow indicators
-                obs = np.zeros(self.obs_size, dtype=np.float32)
-                
-                # Own idea (first d_idea elements)
-                obs[:self.d_idea] = self.true_idea[agent]
-                
-                # Followed influencers' broadcasted ideas and follow indicators
-                offset = self.d_idea
+            obs = np.zeros(self.obs_size, dtype=np.float32)
+            
+            # First element: influencer status flag
+            obs[0] = self.influencer_status[agent]
+            
+            # Next d_idea elements: own idea
+            obs[1:1+self.d_idea] = self.true_idea[agent]
+            
+            # Only non-influencers get additional info
+            if agent in self.non_influencer_ids:
+                offset = 1 + self.d_idea
                 for inf in sorted_influencers:
                     # Check if following this influencer
                     following = 1.0 if self.graph.has_edge(agent, inf) else 0.0
@@ -193,5 +201,5 @@ class InfluencerEnv(BaseEnv):
     def get_agents(self):
         return self.agents
 
-    def get_traits(self):
-        return self.true_idea
+    def initialize_traits(self):
+        self.traits[:, 0] = self.influencer_status
