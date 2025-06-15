@@ -3,6 +3,7 @@ from .baseline_het import *
 from .baseline_comm import *
 from .baseline_net import *
 from .sr_abm import *
+from .influencer_abm import * 
 
 def initialize_baseline(seed = 1337, n_agents = 1000, N = 10):
     np.random.seed(seed)
@@ -28,3 +29,9 @@ def initialize_network_env(seed = 1337, n_agents = 1000, n_types = 2):
 def initialize_sir_env(seed = 1337, n_agents = 1000, eps_length= 20):
     np.random.seed(seed)
     return DiseaseSpreadEnv(n_agents, episode_length=eps_length)
+
+def initialize_influencer_env(seed = 1337, n_agents = 1000, eps_length = 20):
+    np.random.seed(seed)
+
+    influencers = int(0.01 * n_agents)
+    return InfluencerEnv(n_agents = n_agents, num_influencers = influencers, episode_length= eps_length)

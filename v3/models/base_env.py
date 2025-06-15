@@ -38,7 +38,11 @@ class Graph:
             if 0 <= u < self.n_agents and 0 <= v < self.n_agents:
                 if v in self.adj[u]:
                     self.adj[u][v] = edge.copy()
-
+                    
+    def has_edge(self, u: int, v: int) -> bool:
+        if not (0 <= u < self.n_agents) or not (0 <= v < self.n_agents):
+            raise ValueError(f"Nodes must be between 0 and {self.n_agents - 1}.")
+        return v in self.adj[u]
 eps = 1e-8
 
 class BaseEnv:
