@@ -93,7 +93,7 @@ class DiseaseSpreadEnv(BaseEnv):
         
         # Add edges to our directed graph (with symmetric connections)
         for u, v in ba_graph.edges():
-            edge_feat = np.zeros(self.d_relation, dtype=np.float32)
+            edge_feat = np.random.standard_normal(self.d_relation).astype(np.float32)
             edge_feat[0] = 1.0  # First component as edge weight
             self.graph.add_edge(u, v, edge_feat)
             self.graph.add_edge(v, u, edge_feat)
