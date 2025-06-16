@@ -220,3 +220,16 @@ class DiseaseSpreadEnv(BaseEnv):
     def postprocess_actions(self, actions : torch.Tensor):
         actions =  torch.clamp(actions.squeeze(), 1e-5, self.max_duration).cpu().detach().numpy().astype(np.float32)
         return actions
+    
+    def report_reset_statistics(self, writer, global_step: int) -> None:
+        # Calculate statistics
+        susceptible_count = np.sum(self.states == 0)
+        infected_count = np.sum(self.states == 1)
+        total_agents = self.n_agents
+        
+        susceptible_prop = susceptible_count / total_agents
+        infected_prop = infected_count / total_agents
+        
+        # Log to TensorBoard
+        writer.add_scalar("reset/susceptible", susceptible_prop, global_step)
+        writer.add_scalar("reset/infected", infected_prop, global_step)

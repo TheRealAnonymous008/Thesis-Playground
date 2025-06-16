@@ -43,7 +43,14 @@ def kmeans(data, k=3, max_iters=100):
         centroids = new_centroids
     return labels, centroids
 
-def evaluate_policy(model: PPOModel, env : BaseEnv, num_episodes=10, k=2, writer: SummaryWriter = None, global_step=None, temperature=-1):
+def evaluate_policy(
+        model: PPOModel, 
+        env : BaseEnv, 
+        num_episodes=10, 
+        k=2, 
+        writer: SummaryWriter = None, 
+        global_step=None, 
+        temperature=-1):
     """Evaluate current policy and return average episode return with trait cluster breakdown, including action distributions per cluster."""
     total_returns = []
     episode_actions = []  # List to store actions per episode
@@ -123,6 +130,8 @@ def evaluate_policy(model: PPOModel, env : BaseEnv, num_episodes=10, k=2, writer
                 for agent in env.agents:
                     agent_returns[agent] += rewards[agent]
 
+                env.report_step_statistics(writer, global_step)
+
             # Store episode actions and agent data
             episode_actions.append(current_episode_actions)
             for i, agent in enumerate(env.agents):
@@ -130,6 +139,8 @@ def evaluate_policy(model: PPOModel, env : BaseEnv, num_episodes=10, k=2, writer
                 all_rewards.append(agent_returns[agent])
 
             total_returns.append(episode_return)
+
+            env.report_reset_statistics(writer, global_step)
 
     # Process clustering and print breakdown
     median_returns = np.median(total_returns)

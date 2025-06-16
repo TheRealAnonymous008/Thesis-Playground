@@ -3,6 +3,7 @@ import torch
 import random
 import numpy as np
 from gymnasium import spaces
+from torch.utils.tensorboard import SummaryWriter
 
 class Graph:
     def __init__(self, n_agents: int, d_edge: int):
@@ -38,7 +39,7 @@ class Graph:
             if 0 <= u < self.n_agents and 0 <= v < self.n_agents:
                 if v in self.adj[u]:
                     self.adj[u][v] = edge.copy()
-                    
+
     def has_edge(self, u: int, v: int) -> bool:
         if not (0 <= u < self.n_agents) or not (0 <= v < self.n_agents):
             raise ValueError(f"Nodes must be between 0 and {self.n_agents - 1}.")
@@ -121,3 +122,22 @@ class BaseEnv:
     
     def postprocess_actions(self, actions): 
         return actions.astype(int) 
+    
+    def report_reset_statistics(self, writer : SummaryWriter, global_step: int) -> None:
+        """
+        Report environment statistics after reset using TensorBoard writer.
+        
+        Args:
+            writer: TensorBoard SummaryWriter object
+            global_step: Current global step for logging
+        """
+        # Default implementation does nothing
+        pass
+
+    # New method for step statistics reporting
+    def report_step_statistics(self, writer : SummaryWriter, global_step: int) -> None:
+        """
+        Report environment statistics after step using TensorBoard writer.
+        """
+        # Default implementation does nothing
+        pass
