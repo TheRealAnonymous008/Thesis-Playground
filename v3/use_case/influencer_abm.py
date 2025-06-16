@@ -2,8 +2,8 @@ import networkx as nx
 from models.base_env import *
 
 class InfluencerEnv(BaseEnv):
-    def __init__(self, n_agents, num_influencers, d_idea=5, episode_length=10, m=2, perturbation_step=0.1, learning_rate=0.1):
-        super().__init__(n_agents, d_traits = 1, d_actions=2, d_relation=4)
+    def __init__(self, n_agents, num_influencers, d_idea=1, episode_length=10, m=2, perturbation_step=0.1, learning_rate=0.1):
+        super().__init__(n_agents, d_traits=1, d_actions=2, d_relation=4)
         
         self.n_influencers = num_influencers
         self.d_idea = d_idea
@@ -68,7 +68,6 @@ class InfluencerEnv(BaseEnv):
         max_deg = np.max(degrees) if len(degrees) > 0 else 1
         for i in self.influencer_ids:
             self.true_alpha[i] = degrees[i] / max_deg
-
 
         # Initialize traits
         self.initialize_traits()
@@ -147,8 +146,27 @@ class InfluencerEnv(BaseEnv):
 
         # Phase 4: Compute rewards
         rewards = {agent: 0.0 for agent in self.agents}
-        mean_vector = np.mean(self.true_idea, axis=0)
         
+        # Precompute majority sign for each dimension
+        majority_sign_per_dim = []
+        for d in range(self.d_idea):
+            positive_count = np.sum(self.true_idea[:, d] >= 0)
+            majority_sign_per_dim.append(positive_count >= self.n_agents / 2.0)
+        
+        # Assign rewards for non-influencers
+        for j in self.non_influencer_ids:
+            count_majority = 0
+            for d in range(self.d_idea):
+                if majority_sign_per_dim[d]:
+                    if self.true_idea[j, d] >= 0:
+                        count_majority += 1
+                else:
+                    if self.true_idea[j, d] < 0:
+                        count_majority += 1
+            rewards[j] = count_majority / float(self.d_idea)
+        
+        # Assign rewards for influencers (negative distance to mean)
+        mean_vector = np.mean(self.true_idea, axis=0)
         for i in self.influencer_ids:
             dist = np.linalg.norm(self.true_idea[i] - mean_vector)
             rewards[i] = -dist

@@ -10,22 +10,12 @@ class DiseaseSpreadEnv(BaseEnv):
                  p_max_range : Tuple[float, float] = (0.5, 0.6),
                  max_duration = 10,  
                  episode_length: int = 50):
-        """
-        Environment for disease spread simulation using SI model with scale-free network.
-        
-        Args:
-            n_agents: Number of agents
-            d_relation: Dimension of edge features
-            beta_range: Range for disease transmission rate (sampled each reset)
-            m_range: Range for scale-free graph parameter (number of edges to attach)
-            episode_length: Total steps per episode
-        """
         super().__init__(
             n_agents=n_agents,
             d_actions=1,  # Continuous action (interaction duration)
-            d_traits=3,    # [alpha, rho, p_s]
+            d_traits=4,    # [alpha, rho, p_s, min_threshold]  # CHANGED to 4 traits
             d_relation=d_relation,
-            obs_size=5 + d_relation  # [own_state, own_symptom, partner_state, partner_symptom, degree] + edge
+            obs_size=6 + d_relation  # CHANGED: added min_threshold [own_state, own_symptom, partner_state, partner_symptom, degree, min_threshold] + edge
         )
         self.max_duration = max_duration
         self.initial_infection_range = initial_infected_range
@@ -64,11 +54,11 @@ class DiseaseSpreadEnv(BaseEnv):
 
         self.states[initial_infected] = 1.0
         
-        # Initialize agent traits: [alpha, rho, p_s]
+        # Initialize agent traits: [alpha, rho, p_s, min_threshold]  # ADDED min_threshold
         self.traits = np.random.uniform(
-            low=[0.1, 1.0, self.p_min], 
-            high=[5.0, 5.0, self.p_max],
-            size=(self.n_agents, 3)
+            low=[0.1, 1.0, self.p_min, 0.5], 
+            high=[5.0, 5.0, self.p_max, self.max_duration * 0.5],  # min_threshold max = 50% of max_duration
+            size=(self.n_agents, 4)
         ).astype(np.float32)
         
         # Build scale-free social network
@@ -162,9 +152,10 @@ class DiseaseSpreadEnv(BaseEnv):
                 # Edge features
                 if j in self.graph.adj[i]:
                     edge_feat = self.graph.adj[i][j]
-                    obs[5:5+self.d_relation] = edge_feat
+                    obs[6:6+self.d_relation] = edge_feat  # CHANGED index from 5 to 6
             
             obs[4] = self.degrees[i] 
+            obs[5] = self.traits[i, 3]  # ADDED: min_threshold observation
             
             obs_dict[i] = obs
         return obs_dict
@@ -174,8 +165,6 @@ class DiseaseSpreadEnv(BaseEnv):
         new_infections = set()
         durations = {i : 0.0 for i in range(self.n_agents)}
 
-        # print(actions)
-        
         for i, j in self.current_pairs:
             a_i = actions[i]
             a_j = actions[j]
@@ -195,12 +184,20 @@ class DiseaseSpreadEnv(BaseEnv):
             self.states[i] = 1.0
 
         for i in range(self.n_agents):
-            # Calcualte the rewards
+            # Calculate the rewards
             social_score = self.traits[i][0]
             infected_penalty = 0
             if self.states[i] == 1:
                 infected_penalty = self.traits[i][1]
-            rewards[i] = (social_score - infected_penalty) * durations[i]
+            base_reward = (social_score - infected_penalty) * durations[i]
+            
+            # ADDED: Penalty for interaction below desired threshold
+            min_threshold = self.traits[i, 3]
+            if durations[i] < min_threshold:
+                penalty = self.traits[i, 0] * (min_threshold - durations[i])
+                base_reward -= penalty
+                
+            rewards[i] = base_reward
 
         self.total_steps += 1
         done = self.total_steps >= self.episode_length
