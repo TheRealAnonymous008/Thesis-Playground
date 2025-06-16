@@ -58,6 +58,8 @@ class BaseEnv:
 
         self.is_continuous = False
 
+        self.action_space : spaces.Space = None
+
     def reset(self) -> dict[int, Any]:
         self.graph = Graph(self.n_agents, self.d_relation)
         self.traits = np.zeros((self.n_agents, self.d_traits), dtype=np.float32)
@@ -141,3 +143,24 @@ class BaseEnv:
         """
         # Default implementation does nothing
         pass
+
+    def sample_action(self, device) -> dict[int, torch.Tensor]:
+        """
+        Sample actions for all agents in the environment.
+        
+        Returns:
+            Dictionary mapping agent indices to:
+            - For discrete: uniform logits over action space (shape [n_actions])
+            - For continuous: sampled actions from action space
+        """
+        actions = {}
+        if self.is_continuous:
+            # Continuous: sample actions directly
+            for agent_id in range(self.n_agents):
+                actions[agent_id] = self.action_space.sample()
+            actions = torch.tensor(actions)
+        else:
+            # Discrete: return uniform logits for action distribution
+            actions = torch.log(torch.ones((self.n_agents, self.n_actions)) / self.n_actions)
+        actions =actions.to(device)
+        return actions
