@@ -4,7 +4,7 @@ import networkx as nx
 class DiseaseSpreadEnv(BaseEnv):
     def __init__(self, n_agents: int, d_relation: int = 4, 
                  initial_infected_range : Tuple[float, float] = (0.1, 0.4),
-                 beta_range: Tuple[float, float] = (0.2, 0.8), 
+                 beta_range: Tuple[float, float] = (0.75, 1.0), 
                  m_range: Tuple[int, int] = (2, 5),
                  p_min_range : Tuple[float, float] = (0, 0.4),
                  p_max_range : Tuple[float, float] = (0.5, 0.6),

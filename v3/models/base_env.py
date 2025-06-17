@@ -153,12 +153,12 @@ class BaseEnv:
             - For discrete: uniform logits over action space (shape [n_actions])
             - For continuous: sampled actions from action space
         """
-        actions = {}
         if self.is_continuous:
             # Continuous: sample actions directly
+            actions = torch.zeros((self.n_agents, self.n_actions))
             for agent_id in range(self.n_agents):
-                actions[agent_id] = self.action_space.sample()
-            actions = torch.tensor(actions)
+                actions[agent_id] = torch.as_tensor(self.action_space.sample())
+            
         else:
             # Discrete: return uniform logits for action distribution
             actions = torch.log(torch.ones((self.n_agents, self.n_actions)) / self.n_actions)
