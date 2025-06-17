@@ -164,3 +164,10 @@ class BaseEnv:
             actions = torch.log(torch.ones((self.n_agents, self.n_actions)) / self.n_actions)
         actions =actions.to(device)
         return actions
+    
+    def sample_agents(self, sampled_agents: int):
+        self._chosen_agents = np.random.choice(self.n_agents, size = sampled_agents, replace = False)
+        return self._chosen_agents
+    
+    def get_sampled_agents(self):
+        return self._chosen_agents

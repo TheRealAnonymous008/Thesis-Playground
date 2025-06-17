@@ -35,7 +35,9 @@ def add_exploration_noise(env : BaseEnv, logits: torch.Tensor, params: TrainingP
         params.epsilon = max(params.epsilon_end, params.epsilon_start * (params.epsilon_decay ** epoch))
     
     # Create exploration mask [buffer, agents]
-    exploration_mask = torch.rand((n_agents), device=device) < params.epsilon
+    sampled_agents = env.get_sampled_agents()
+    exploration_mask = torch.zeros((n_agents), device = device, dtype = torch.bool)
+    exploration_mask[sampled_agents] = torch.rand((len(sampled_agents)), device=device) < params.epsilon
     
     # Create uniform logits for entire batch [buffer, agents, actions]
     uniform_logits = env.sample_action(device = device)

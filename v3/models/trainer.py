@@ -58,7 +58,7 @@ def collect_experiences(model : PPOModel, env : BaseEnv, params : TrainingParame
     pair_logits = []
 
     sampled_agents = int(params.sampled_agents_proportion * env.n_agents)
-    indices = np.random.choice(env.n_agents, size = sampled_agents, replace = False)
+    indices = env.sample_agents(sampled_agents)
     
     for i in range(params.experience_sampling_steps):
         obs_array = np.stack([obs[agent] for agent in env.get_agents()])
