@@ -11,7 +11,7 @@ class LatentEncoder(nn.Module):
     def __init__(self, config: ParameterSettings):
         super().__init__()
         self.het_latent = config.d_het_latent
-        input_dim = config.d_traits + config.d_beliefs + config.d_obs + config.d_comm_state
+        input_dim = config.d_traits + config.d_obs + config.d_beliefs
         self.mean_net = make_net([input_dim, 64, config.d_het_latent], last_activation=False)
         self.std_net = make_net([input_dim, 64,config.d_het_latent ], last_activation = "softplus")
 
@@ -162,7 +162,7 @@ class HyperNetwork (nn.Module):
         """
 
         
-        inputs = torch.cat([c, o, h, z], dim=1)  # Concatenate along feature dimension
+        inputs = torch.cat([c ,o,  h], dim=1)  # Concatenate along feature dimension
         mu, sigma = self.latent_encoder(inputs)
 
         cov_matrix = torch.diag_embed(sigma) + 1e-8  # Create diagonal covariance matrix from variances

@@ -8,6 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 from .param_settings import TrainingParameters
 from .ppo_trainer import *
 
+
 def train_hypernet(model: PPOModel, env: BaseEnv, exp: TensorDict, params: TrainingParameters, writer: SummaryWriter = None):
     num_agents = int(env.n_agents * params.sampled_agents_proportion)
     # JSD loss computation with sampled agent pairs within the same timestep
@@ -42,10 +43,13 @@ def train_hypernet(model: PPOModel, env: BaseEnv, exp: TensorDict, params: Train
         # Get trait vectors for each agent pair
         traits_p = exp["traits"][timesteps, agent_i]
         traits_q = exp["traits"][timesteps, agent_j]
+        belief_p = exp["belief"][timesteps, agent_i]
+        belief_q = exp["belief"][timesteps, agent_j]
 
         # Compute cosine similarity between trait vectors normalized to be between 0 and 1
-        similarities = 0.5 * (1 + torch.nn.functional.cosine_similarity(traits_p, traits_q, dim=1))
-
+        state_sim = 0.5 * (1 + torch.nn.functional.cosine_similarity(belief_p, belief_q, dim=1))
+        trait_sim = 0.5 * (1 + torch.nn.functional.cosine_similarity(traits_p, traits_q, dim=1))
+        similarities = trait_sim
     wh_policy_i = weights_i["policy"]
     wh_policy_j = weights_j["policy"]
 
