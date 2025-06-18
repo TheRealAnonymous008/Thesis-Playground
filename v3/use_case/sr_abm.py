@@ -29,7 +29,7 @@ class DiseaseSpreadEnv(BaseEnv):
 
         # Define action and observation spaces
         self.action_space = spaces.Box(
-            low=0, high=self.max_duration, shape=(1,), dtype=np.float32
+            low=0, high=1, shape=(1,), dtype=np.float32
         )
         self.observation_space = spaces.Box(
             low=-np.inf, high=np.inf, shape=(self.obs_size,), dtype=np.float32
@@ -56,8 +56,8 @@ class DiseaseSpreadEnv(BaseEnv):
         
         # Initialize agent traits: [alpha, rho, p_s, min_threshold]  # ADDED min_threshold
         self.traits = np.random.uniform(
-            low=[0.1, 1.0, self.p_min, 0.5], 
-            high=[5.0, 5.0, self.p_max, self.max_duration * 0.5],  # min_threshold max = 50% of max_duration
+            low=[0.1, 1.0, self.p_min, self.max_duration * 0.1], 
+            high=[5.0, 5.0, self.p_max, self.max_duration * 0.2],  # min_threshold max = 50% of max_duration
             size=(self.n_agents, 4)
         ).astype(np.float32)
         
@@ -215,6 +215,7 @@ class DiseaseSpreadEnv(BaseEnv):
         return self.agents
     
     def postprocess_actions(self, actions : torch.Tensor):
+        actions = (actions * self.max_duration / 2) + self.max_duration / 2
         actions =  torch.clamp(actions.squeeze(), 1e-5, self.max_duration).cpu().detach().numpy().astype(np.float32)
         return actions
     
