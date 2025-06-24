@@ -221,3 +221,19 @@ class InfluencerEnv(BaseEnv):
 
     def initialize_traits(self):
         self.traits[:, 0] = self.influencer_status
+
+    def sample_agents(self, sampled_agents: int):
+        
+        # Include all influencers
+        chosen_influencers = self.influencer_ids
+        remaining = max(0, sampled_agents - len(chosen_influencers))
+        
+        # Sample non-influencers if needed
+        if remaining > 0:
+            chosen_non_influencers = random.sample(self.non_influencer_ids, remaining)
+        else:
+            chosen_non_influencers = []
+        
+        # Combine and store results
+        self._chosen_agents = chosen_influencers + chosen_non_influencers
+        return self._chosen_agents
