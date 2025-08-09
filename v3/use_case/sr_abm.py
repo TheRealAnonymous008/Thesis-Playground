@@ -18,7 +18,7 @@ class DiseaseSpreadEnv(BaseEnv):
             obs_size=6 + d_relation  # CHANGED: added min_threshold [own_state, own_symptom, partner_state, partner_symptom, degree, min_threshold] + edge
         )
         self.max_duration = max_duration
-        self.initial_infection_range = initial_infected_range
+        self.initial_infection_range = (initial_infected_range[0] * n_agents, initial_infected_range[1] * n_agents)
         self.is_continuous = True
         self.beta_range = beta_range
         self.m_range = m_range
@@ -49,7 +49,7 @@ class DiseaseSpreadEnv(BaseEnv):
 
         # Initialize agent states (0=susceptible, 1=infected)
         self.states = np.zeros(self.n_agents, dtype=np.float32)
-        initial_infected_count = np.random.uniform(*self.initial_infection_range)
+        initial_infected_count = int(np.random.uniform(*self.initial_infection_range))
         initial_infected = np.random.choice(self.n_agents, size=max(1, initial_infected_count), replace=False)
 
         self.states[initial_infected] = 1.0

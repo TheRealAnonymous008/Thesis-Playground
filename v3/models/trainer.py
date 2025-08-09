@@ -300,6 +300,15 @@ def train_model(model: PPOModel, env: BaseEnv, params: TrainingParameters, path 
     else: 
         train_ppo_model(model, env, params, optim_state_dict)
 
+def load_model(model : PPOModel, path : str, device : str = "cuda"):
+    if path != None: 
+        checkpoint =  load_checkpoint(path)
+        model_state_dict = checkpoint["model_state_dict"]
+        model.load_state_dict(model_state_dict)
+    model.to(device)
+
+    return model
+
 def load_checkpoint(filepath: str):
     """Loads training state from checkpoint file.
     
